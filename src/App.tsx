@@ -13,6 +13,7 @@ import NotFound from "./pages/NotFound";
 import AddNetworkPage from "@/pages/AddNetworkPage";
 import NetworkDetail from "@/pages/NetworkDetail";
 
+
 const queryClient = new QueryClient();
 
 const App = () => (

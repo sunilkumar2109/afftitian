@@ -16,6 +16,9 @@ import NetworkForm from "@/components/admin/NetworkForm";
 import OfferForm from "@/components/admin/OfferForm";
 import { BannerForm } from "@/components/admin/BannerForm";
 import { BannerList } from "@/components/admin/BannerList";
+import { AffiliateDetails } from "@/components/admin/AffiliateDetails";
+
+
 
 import NetworkList from "@/components/admin/NetworkList";
 import OfferList from "@/components/admin/OfferList";
@@ -190,6 +193,8 @@ const signIn = async (email: string, password: string) => {
             <TabsTrigger value="banners">Banners</TabsTrigger>
             <TabsTrigger value="add-network">Add Network</TabsTrigger>
             <TabsTrigger value="add-offer">Add Offer</TabsTrigger>
+            <TabsTrigger value="affiliate-details">Affiliate Details</TabsTrigger>
+
           </TabsList>
 
           <TabsContent value="networks">
@@ -199,6 +204,10 @@ const signIn = async (email: string, password: string) => {
               masterData={masterData}
             />
           </TabsContent>
+            <TabsContent value="affiliate-details">
+    <AffiliateDetails />
+  </TabsContent>
+
 
           <TabsContent value="offers">
             <OfferList 
@@ -229,6 +238,7 @@ const signIn = async (email: string, password: string) => {
     />
   </div>
 </TabsContent>
+
 
 
           <TabsContent value="add-network">
