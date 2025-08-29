@@ -1,0 +1,12 @@
+[
+  {
+    "title": "Special Offer",
+    "image_url": "https://i.pinimg.com/736x/8f/3b/cf/8f3bcf4fc5c8d72bf11e6ce5c88fdb6c.jpg",
+    "link_url": "https://example.com"
+  },
+  {
+    "title": "Another Deal",
+    "image_url": "https://placehold.co/800x200?text=Banner+2",
+    "link_url": "https://example.com/deal"
+  }
+]
