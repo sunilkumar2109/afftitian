@@ -6,7 +6,7 @@ import NetworkForm from "@/components/admin/NetworkForm";
 const TopBar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate(); // Must be inside the component
-
+// d
   return (
     <div className="bg-red-600 text-white shadow-md">
       {/* Main header bar */}
