@@ -12,6 +12,10 @@ import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import AddNetworkPage from "@/pages/AddNetworkPage";
 import NetworkDetail from "@/pages/NetworkDetail";
+import ReviewFrom from './pages/reviewfrom';
+import HelpPage from './pages/HelpPage';
+
+
 
 
 const queryClient = new QueryClient();
@@ -33,6 +37,8 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
             <Route path="/add-network" element={<AddNetworkPage />} />
+            <Route path="/review-from" element={<ReviewFrom />} /> 
+            <Route path="/help" element={<HelpPage />} /> 
           </Routes>
         </HashRouter>
       </TooltipProvider>

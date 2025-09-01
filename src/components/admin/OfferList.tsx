@@ -141,153 +141,152 @@ const OfferList = ({ offers, networks, onUpdate, masterData }: OfferListProps) =
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {filteredOffers.map((offer) => (
-            <div key={offer.id} className="border rounded-lg p-4 flex items-center justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <h3 className="font-semibold">{offer.name}</h3>
-                  <Badge variant={offer.is_active ? "default" : "secondary"}>
-                    {offer.is_active ? "Active" : "Inactive"}
-                  </Badge>
-                  {offer.is_featured && (
-                    <Badge variant="destructive" className="bg-yellow-500 hover:bg-yellow-600">
-                      <Star className="h-3 w-3 mr-1" />
-                      Featured
-                    </Badge>
-                  )}
-                  <Badge variant="outline">{offer.type}</Badge>
-                  {offer.vertical && (
-                    <Badge variant="outline">
-                      {(() => {
-                        try {
-                          // If it's a string that looks like JSON, parse it
-                          const val = typeof offer.vertical === "string" ? JSON.parse(offer.vertical) : offer.vertical;
-                          return Array.isArray(val) ? val.join(", ") : val;
-                        } catch {
-                          // fallback if parsing fails
-                          return offer.vertical;
-                        }
-                      })()}
-                    </Badge>
-                  )}
-                  
+       <div className="space-y-4">
+  {filteredOffers.map((offer) => (
+    <div
+      key={offer.id}
+      className="border rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+    >
+      {/* Left Content */}
+      <div className="flex-1">
+        <div className="flex flex-wrap items-center gap-2 mb-2">
+          <h3 className="font-semibold">{offer.name}</h3>
+          <Badge variant={offer.is_active ? "default" : "secondary"}>
+            {offer.is_active ? "Active" : "Inactive"}
+          </Badge>
+          {offer.is_featured && (
+            <Badge variant="destructive" className="bg-yellow-500 hover:bg-yellow-600">
+              <Star className="h-3 w-3 mr-1" />
+              Featured
+            </Badge>
+          )}
+          <Badge variant="outline">{offer.type}</Badge>
+          {offer.vertical && (
+            <Badge variant="outline">
+              {(() => {
+                try {
+                  const val = typeof offer.vertical === "string" ? JSON.parse(offer.vertical) : offer.vertical;
+                  return Array.isArray(val) ? val.join(", ") : val;
+                } catch {
+                  return offer.vertical;
+                }
+              })()}
+            </Badge>
+          )}
+        </div>
 
-                </div>
-                
-                <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
-                  <span>Network: {offer.networks?.name}</span>
-                  {offer.payout_amount && (
-                    <span>Payout: {offer.payout_amount} {offer.payout_currency}</span>
-                  )}
-                  <span>Priority: {offer.priority_order}</span>
-                </div>
+        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-2">
+          <span>Network: {offer.networks?.name}</span>
+          {offer.payout_amount && (
+            <span>Payout: {offer.payout_amount} {offer.payout_currency}</span>
+          )}
+          <span>Priority: {offer.priority_order}</span>
+        </div>
 
-                {offer.geo_targets.length > 0 && (
-                  <div className="flex gap-1 mb-2">
-                    <span className="text-sm text-muted-foreground">GEO:</span>
-                    {offer.geo_targets.slice(0, 5).map((geo) => (
-                      <Badge key={geo} variant="outline" className="text-xs">
-                        {geo}
-                      </Badge>
-                    ))}
-                    {offer.geo_targets.length > 5 && (
-                      <Badge variant="outline" className="text-xs">
-                        +{offer.geo_targets.length - 5} more
-                      </Badge>
-                    )}
-                  </div>
-                )}
+        {offer.geo_targets.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-2">
+            <span className="text-sm text-muted-foreground">GEO:</span>
+            {offer.geo_targets.slice(0, 5).map((geo) => (
+              <Badge key={geo} variant="outline" className="text-xs">
+                {geo}
+              </Badge>
+            ))}
+            {offer.geo_targets.length > 5 && (
+              <Badge variant="outline" className="text-xs">
+                +{offer.geo_targets.length - 5} more
+              </Badge>
+            )}
+          </div>
+        )}
 
-                {offer.devices.length > 0 && (
-                  <div className="flex gap-1">
-                    <span className="text-sm text-muted-foreground">Devices:</span>
-                    {offer.devices.map((device) => (
-                      <Badge key={device} variant="outline" className="text-xs">
-                        {device}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
+        {offer.devices.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            <span className="text-sm text-muted-foreground">Devices:</span>
+            {offer.devices.map((device) => (
+              <Badge key={device} variant="outline" className="text-xs">
+                {device}
+              </Badge>
+            ))}
+          </div>
+        )}
 
-                {offer.landing_page_url && (
-                  <div className="mt-2">
-                    <a 
-                      href={offer.landing_page_url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline text-sm"
-                    >
-                      View Landing Page
-                    </a>
-                  </div>
-                )}
-              </div>
+        {offer.landing_page_url && (
+          <div className="mt-2">
+            <a
+              href={offer.landing_page_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline text-sm"
+            >
+              View Landing Page
+            </a>
+          </div>
+        )}
+      </div>
 
-              <div className="flex items-center gap-2">
-                <Button
-                  variant={offer.is_featured ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => toggleFeatured(offer)}
-                >
-                  <Star className="h-4 w-4" />
-                </Button>
+      {/* Right Controls */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          variant={offer.is_featured ? "default" : "outline"}
+          size="sm"
+          onClick={() => toggleFeatured(offer)}
+        >
+          <Star className="h-4 w-4" />
+        </Button>
 
-                <Switch
-                  checked={offer.is_active}
-                  onCheckedChange={() => toggleActive(offer)}
-                />
-                
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setEditingOffer(offer)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>Edit Offer</DialogTitle>
-                    </DialogHeader>
-                    <OfferForm
-                      offer={editingOffer}
-                      networks={networks}
-                      onSuccess={() => {
-                        onUpdate();
-                        setEditingOffer(null);
-                      }}
-                      masterData={masterData}
-                    />
-                  </DialogContent>
-                </Dialog>
+        <Switch checked={offer.is_active} onCheckedChange={() => toggleActive(offer)} />
 
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Offer</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete "{offer.name}"? This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => deleteOffer(offer)}>
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </div>
-          ))}
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditingOffer(offer)}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Offer</DialogTitle>
+            </DialogHeader>
+            <OfferForm
+              offer={editingOffer}
+              networks={networks}
+              onSuccess={() => {
+                onUpdate();
+                setEditingOffer(null);
+              }}
+              masterData={masterData}
+            />
+          </DialogContent>
+        </Dialog>
+
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" size="sm">
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Offer</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete "{offer.name}"? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => deleteOffer(offer)}>
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </div>
+  ))}
+
 
           {filteredOffers.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">

@@ -179,7 +179,7 @@ const resolveNetworkId = (raw: any): { id: string | null; usedName?: string } =>
     }
 
     const CSV_URL =
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vQmdaMr7n9hPynxTIDOlwD4zcb_cH35l88dq_Y21S4thuvTjfhntD_l4P9PNjI02cFJ3g0LEFI0dZsf/pub?gid=0&single=true&output=csv";
+      "https://docs.google.com/spreadsheets/d/e/2PACX-1vRaZX_27PntpNo5T4TVmslAlRihUxrGJGyUH5LliT0VBn1bZD8CPZ4bYDwFHactzxQei2qMnm640r_R/pub?output=csv";
 
     const response = await fetch(CSV_URL);
     const csvText = await response.text();

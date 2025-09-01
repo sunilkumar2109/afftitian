@@ -122,117 +122,123 @@ const getRemainingDays = (expirationDate: string | null) => {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {filteredNetworks.map((network) => (
-            <div key={network.id} className="border rounded-lg p-4 flex items-center justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <h3 className="font-semibold">{network.name}</h3>
-                  <Badge variant={network.is_active ? "default" : "secondary"}>
-                    {network.is_active ? "Active" : "Inactive"}
-                  </Badge>
-                  <Badge variant="outline">{network.type}</Badge>
-                </div>
-                
-                {network.description && (
-                  <p className="text-sm text-muted-foreground mb-2">{network.description}</p>
-                )}
-                
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-  {network.payment_frequency && (
-    <span>Payment: {network.payment_frequency}</span>
-  )}
-  <span>Priority: {network.priority_order}</span>
-  {network.expiration_date && (
-    <span className={getRemainingDays(network.expiration_date) <= 5 ? "text-red-400 font-semibold" : "text-green-400"}>
-      {getRemainingDays(network.expiration_date)} days left
-    </span>
-  )}
-  {network.website_link && (
-    <a 
-      href={network.website_link} 
-      target="_blank" 
-      rel="noopener noreferrer"
-      className="text-primary hover:underline"
+  {filteredNetworks.map((network) => (
+    <div
+      key={network.id}
+      className="border rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
     >
-      Visit Website
-    </a>
-  )}
-</div>
+      {/* Left Content */}
+      <div className="flex-1">
+        <div className="flex flex-wrap items-center gap-2 mb-2">
+          <h3 className="font-semibold">{network.name}</h3>
+          <Badge variant={network.is_active ? "default" : "secondary"}>
+            {network.is_active ? "Active" : "Inactive"}
+          </Badge>
+          <Badge variant="outline">{network.type}</Badge>
+        </div>
 
-                
+        {network.description && (
+          <p className="text-sm text-muted-foreground mb-2">{network.description}</p>
+        )}
 
-                {network.categories.length > 0 && (
-                  <div className="flex gap-1 mt-2">
-                    {network.categories.slice(0, 3).map((category) => (
-                      <Badge key={category} variant="outline" className="text-xs">
-                        {category}
-                      </Badge>
-                    ))}
-                    {network.categories.length > 3 && (
-                      <Badge variant="outline" className="text-xs">
-                        +{network.categories.length - 3} more
-                      </Badge>
-                    )}
-                  </div>
-                )}
-              </div>
+        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+          {network.payment_frequency && <span>Payment: {network.payment_frequency}</span>}
+          <span>Priority: {network.priority_order}</span>
+          {network.expiration_date && (
+            <span
+              className={
+                getRemainingDays(network.expiration_date) <= 5
+                  ? "text-red-400 font-semibold"
+                  : "text-green-400"
+              }
+            >
+              {getRemainingDays(network.expiration_date)} days left
+            </span>
+          )}
+          {network.website_link && (
+            <a
+              href={network.website_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              Visit Website
+            </a>
+          )}
+        </div>
 
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={network.is_active}
-                  onCheckedChange={() => toggleActive(network)}
-                />
-                
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setEditingNetwork(network)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>Edit Network</DialogTitle>
-                    </DialogHeader>
-                    <NetworkForm
-                      network={editingNetwork}
-                      onSuccess={() => {
-                        onUpdate();
-                        setEditingNetwork(null);
-                      }}
-                      masterData={masterData}
-                    />
-                  </DialogContent>
-                </Dialog>
+        {network.categories.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2">
+            {network.categories.slice(0, 3).map((category) => (
+              <Badge key={category} variant="outline" className="text-xs">
+                {category}
+              </Badge>
+            ))}
+            {network.categories.length > 3 && (
+              <Badge variant="outline" className="text-xs">
+                +{network.categories.length - 3} more
+              </Badge>
+            )}
+          </div>
+        )}
+      </div>
 
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Network</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete "{network.name}"? This action cannot be undone.
-                        All offers associated with this network will also be deleted.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => deleteNetwork(network)}>
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </div>
-          ))}
+      {/* Right Controls */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Switch checked={network.is_active} onCheckedChange={() => toggleActive(network)} />
+
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditingNetwork(network)}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Network</DialogTitle>
+            </DialogHeader>
+            <NetworkForm
+              network={editingNetwork}
+              onSuccess={() => {
+                onUpdate();
+                setEditingNetwork(null);
+              }}
+              masterData={masterData}
+            />
+          </DialogContent>
+        </Dialog>
+
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" size="sm">
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Network</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete "{network.name}"? This action
+                cannot be undone. All offers associated with this network will
+                also be deleted.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => deleteNetwork(network)}>
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </div>
+  ))}
+
 
           {filteredNetworks.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">

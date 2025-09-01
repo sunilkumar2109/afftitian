@@ -175,88 +175,104 @@ const signIn = async (email: string, password: string) => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-foreground">Admin Dashboard</h1>
-          <div className="flex items-center gap-4">
-            <Badge variant="outline">{user.email}</Badge>
-            <Button onClick={signOut} variant="outline">Sign Out</Button>
-          </div>
-        </div>
-      </header>
-
-      <div className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="networks" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="networks">Networks</TabsTrigger>
-            <TabsTrigger value="offers">Offers</TabsTrigger>
-            <TabsTrigger value="banners">Banners</TabsTrigger>
-            <TabsTrigger value="add-network">Add Network</TabsTrigger>
-            <TabsTrigger value="add-offer">Add Offer</TabsTrigger>
-            <TabsTrigger value="affiliate-details">Affiliate Details</TabsTrigger>
-
-          </TabsList>
-
-          <TabsContent value="networks">
-            <NetworkList 
-              networks={networks} 
-              onUpdate={loadData}
-              masterData={masterData}
-            />
-          </TabsContent>
-            <TabsContent value="affiliate-details">
-    <AffiliateDetails />
-  </TabsContent>
-
-
-          <TabsContent value="offers">
-            <OfferList 
-              offers={offers} 
-              networks={networks}
-              onUpdate={loadData}
-              masterData={masterData}
-            />
-          </TabsContent>
-
-         <TabsContent value="banners">
-  <div className="space-y-6">
-    {(editingBanner !== undefined) && (
-      <BannerForm 
-        onSuccess={() => {
-          loadData();
-          setEditingBanner(undefined);
-        }}
-        editingBanner={editingBanner || null}
-        onCancelEdit={() => setEditingBanner(undefined)}
-      />
-    )}
-    
-    <BannerList 
-      banners={banners}
-      onRefresh={loadData}
-      onEdit={setEditingBanner}
-    />
+<header className="border-b bg-card">
+  <div className="container mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+    <h1 className="text-2xl font-bold text-foreground text-center sm:text-left">
+      Admin Dashboard
+    </h1>
+    <div className="flex flex-wrap justify-center sm:justify-end items-center gap-2">
+      <Badge variant="outline" className="text-xs sm:text-sm">{user.email}</Badge>
+      <Button onClick={signOut} variant="outline" className="text-xs sm:text-sm px-3 py-1">
+        Sign Out
+      </Button>
+    </div>
   </div>
-</TabsContent>
+</header>
 
+<div className="container mx-auto px-2 sm:px-4 py-8">
+  <Tabs defaultValue="networks" className="space-y-6">
+    {/* ✅ Fixed TabsList */}
+    <TabsList className="flex flex-wrap gap-2 w-full justify-center sm:justify-start">
+      <TabsTrigger value="networks" className="text-xs sm:text-sm px-2 py-1">
+        Networks
+      </TabsTrigger>
+      <TabsTrigger value="offers" className="text-xs sm:text-sm px-2 py-1">
+        Offers
+      </TabsTrigger>
+      <TabsTrigger value="banners" className="text-xs sm:text-sm px-2 py-1">
+        Banners
+      </TabsTrigger>
+      <TabsTrigger value="add-network" className="text-xs sm:text-sm px-2 py-1">
+        Add Network
+      </TabsTrigger>
+      <TabsTrigger value="add-offer" className="text-xs sm:text-sm px-2 py-1">
+        Add Offer
+      </TabsTrigger>
+      <TabsTrigger value="affiliate-details" className="text-xs sm:text-sm px-2 py-1">
+        Affiliate Details
+      </TabsTrigger>
+    </TabsList>
 
+    {/* Keep your TabsContent sections the same */}
+    <TabsContent value="networks">
+      <NetworkList 
+        networks={networks} 
+        onUpdate={loadData}
+        masterData={masterData}
+      />
+    </TabsContent>
 
-          <TabsContent value="add-network">
-            <NetworkForm 
-              onSuccess={loadData}
-              masterData={masterData}
-            />
-          </TabsContent>
+    <TabsContent value="affiliate-details">
+      <AffiliateDetails />
+    </TabsContent>
 
-          <TabsContent value="add-offer">
-            <OfferForm 
-              onSuccess={loadData}
-              networks={networks}
-              masterData={masterData}
-            />
-          </TabsContent>
-        </Tabs>
+    <TabsContent value="offers">
+      <OfferList 
+        offers={offers} 
+        networks={networks}
+        onUpdate={loadData}
+        masterData={masterData}
+      />
+    </TabsContent>
+
+    <TabsContent value="banners">
+      <div className="space-y-6">
+        {(editingBanner !== undefined) && (
+          <BannerForm 
+            onSuccess={() => {
+              loadData();
+              setEditingBanner(undefined);
+            }}
+            editingBanner={editingBanner || null}
+            onCancelEdit={() => setEditingBanner(undefined)}
+          />
+        )}
+        <BannerList 
+          banners={banners}
+          onRefresh={loadData}
+          onEdit={setEditingBanner}
+        />
       </div>
+    </TabsContent>
+
+    <TabsContent value="add-network">
+      <NetworkForm 
+        onSuccess={loadData}
+        masterData={masterData}
+      />
+    </TabsContent>
+
+    <TabsContent value="add-offer">
+      <OfferForm 
+        onSuccess={loadData}
+        networks={networks}
+        masterData={masterData}
+      />
+    </TabsContent>
+  </Tabs>
+</div>
+
+
     </div>
   );
 };
