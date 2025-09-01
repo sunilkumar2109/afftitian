@@ -104,24 +104,6 @@ export const BannerForm = ({ onSuccess, onCancel }: BannerFormProps) => {
   const rotationWeight = watch("rotation_weight");
   const rotationDuration = watch("rotation_duration_ms");
 
-// add near top of file, after imports
-const SUPABASE_DOMAIN = "booohlpwrvqtgvlngzrf.supabase.co";
-const SITE_DOMAIN = "https://afftitans.com";
-
-const getBannerSrc = (b: any) => {
-  if (!b) return "";
-  const raw = b.filename || b.image_url || "";
-  if (!raw) return "";
-  if (typeof raw === "string" && raw.startsWith("http")) {
-    if (raw.includes(SUPABASE_DOMAIN)) {
-      const fname = raw.split("/").pop()?.split("?")[0] || raw;
-      return `${SITE_DOMAIN}/banners/${fname}`;
-    }
-    return raw; // external URL — keep as-is
-  }
-  // treat as filename e.g. "banner-123.png"
-  return `${SITE_DOMAIN}/banners/${raw}`;
-};
 
   // Helper object to map sections to Tailwind CSS classes
   const sectionClasses = {
@@ -133,44 +115,68 @@ const getBannerSrc = (b: any) => {
   };
 
   // ✅ File Upload
-const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-  const file = event.target.files?.[0];
-  if (!file) return;
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-  if (!file.type.startsWith("image/")) {
-    toast({ title: "Error", description: "Please select an image file", variant: "destructive" });
-    return;
-  }
-  if (file.size > 5 * 1024 * 1024) {
-    toast({ title: "Error", description: "Image size should be less than 5MB", variant: "destructive" });
-    return;
-  }
+    if (!file.type.startsWith("image/")) {
+      toast({
+        title: "Error",
+        description: "Please select an image file",
+        variant: "destructive",
+      });
+      return;
+    }
 
-  setIsLoading(true);
-  try {
-    const fileExt = file.name.split(".").pop();
-    const fileName = `banner-${Date.now()}.${fileExt}`;           // <<< filename only
-    const filePath = `banners/${fileName}`;                      // path uploaded to bucket
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Error",
+        description: "Image size should be less than 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    const { error: uploadError } = await supabase.storage
-      .from("images")
-      .upload(filePath, file, { cacheControl: "3600", upsert: true });
+    setIsLoading(true);
 
-    if (uploadError) throw uploadError;
+    try {
+      const fileExt = file.name.split(".").pop();
+      const filePath = `banners/banner-${Date.now()}.${fileExt}`;
 
-    // NOTE: we DO NOT store the full public URL; we store the filename
-    setUploadedImageUrl(fileName);           // used for DB insert
-    setPreviewImage(URL.createObjectURL(file)); // local preview
-    setValue("image_url", fileName);         // form value = filename
+      const { error: uploadError } = await supabase.storage
+        .from("images") // bucket name
+        .upload(filePath, file, {
+          cacheControl: "3600",
+          upsert: true,
+        });
 
-    toast({ title: "Success", description: "Image uploaded successfully" });
-  } catch (err) {
-    console.error("Error uploading image:", err);
-    toast({ title: "Error", description: "Failed to upload image", variant: "destructive" });
-  } finally {
-    setIsLoading(false);
-  }
-};
+      if (uploadError) throw uploadError;
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("images").getPublicUrl(filePath);
+
+      if (!publicUrl) throw new Error("Could not get public URL");
+
+      setUploadedImageUrl(publicUrl);
+      setPreviewImage(URL.createObjectURL(file));
+      setValue("image_url", publicUrl);
+
+      toast({
+        title: "Success",
+        description: "Image uploaded successfully",
+      });
+    } catch (err) {
+      console.error("Error uploading image:", err);
+      toast({
+        title: "Error",
+        description: "Failed to upload image",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const clearUploadedImage = () => {
     setUploadedImageUrl("");
@@ -231,22 +237,13 @@ const onSubmit = async (data: BannerFormData) => {
       return; // stop here
     }
 
-// prepare final image value: either uploaded filename OR if user provided URL, possibly convert
-let rawImage = uploadedImageUrl || bannerData.image_url || "";
-let imageForDb = rawImage;
-
-// if user pasted a Supabase URL (or older records), convert it to filename
-if (typeof rawImage === "string" && rawImage.startsWith("http") && rawImage.includes(SUPABASE_DOMAIN)) {
-  imageForDb = rawImage.split("/").pop()?.split("?")[0] || rawImage;
-}
-
-// Final banner payload: store imageForDb (either filename OR full external URL)
-const finalBannerData = {
-  image_url: imageForDb,   // IMPORTANT: when this is a small filename like "banner-123.png", frontend will request /banners/<name>
-  link_url: bannerData.link_url,
-  section: bannerData.section,
-  expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-};
+    // === SINGLE BANNER CREATION ===
+    const finalBannerData = {
+      image_url: uploadedImageUrl || bannerData.image_url,
+      link_url: bannerData.link_url,
+      section: bannerData.section,
+      expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    };
 
     const { error } = await supabase.from("banners").insert([finalBannerData]);
     if (error) throw error;
@@ -572,8 +569,7 @@ const finalBannerData = {
                     );
                   }}
                 />
-                <img src={getBannerSrc(b)} alt={b.title} className="w-20 h-12 object-cover rounded" />
-
+                <img src={b.image_url} alt={b.title} className="w-20 h-12 object-cover rounded" />
                 <div className="text-sm truncate">
                   <div className="font-medium">{b.title || b.id}</div>
                   <div className="text-xs text-muted-foreground">{Array.isArray(b.section) ? b.section.join(",") : b.section}</div>
