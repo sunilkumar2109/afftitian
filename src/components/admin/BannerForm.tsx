@@ -52,6 +52,7 @@ export const BannerForm = ({ onSuccess, onCancel }: BannerFormProps) => {
   const [rotationSectionSelect, setRotationSectionSelect] = useState<string>("top");
   const [expiryOption, setExpiryOption] = useState<"2h"|"1d"|"5d"|"custom">("1d");
   const [customExpiry, setCustomExpiry] = useState<string>(""); // for datetime-local
+  const [bannerExpiry, setBannerExpiry] = useState("30d");
   
  useEffect(() => {
   const fetchExisting = async () => {
@@ -241,6 +242,7 @@ const onSubmit = async (data: BannerFormData) => {
       image_url: uploadedImageUrl || bannerData.image_url,
       link_url: bannerData.link_url,
       section: bannerData.section,
+      expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
     };
 
     const { error } = await supabase.from("banners").insert([finalBannerData]);
@@ -519,6 +521,24 @@ const onSubmit = async (data: BannerFormData) => {
               placeholder="https://example.com/target-page"
             />
           </div>
+          <div>
+  <Label>Banner Expiry</Label>
+  <select
+    value={bannerExpiry}
+    onChange={(e) => setBannerExpiry(e.target.value)}
+    className="mt-1 p-2 border rounded"
+  >
+   
+    <option value="30d">30 days (default)</option>
+    
+  </select>
+  {bannerExpiry === "custom" && (
+    <Input
+      type="datetime-local"
+      onChange={(e) => setBannerExpiry(e.target.value)}
+    />
+  )}
+</div>
           {/* === Rotation options === */}
 <div className="mt-4 border rounded p-3">
   <div className="flex items-center gap-2 mb-3">

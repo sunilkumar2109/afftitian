@@ -50,6 +50,7 @@ const Footer = () => {
             <li><a href="#">Promote Your Offers</a></li>
             <li><a href="#">Add Your Network</a></li>
             <li><a href="#">Partner With Us</a></li>
+            <li><a href="#">join the Telegram community</a></li>
           </ul>
         </div>
 
@@ -60,6 +61,7 @@ const Footer = () => {
             <li><a href="#">Explore Networks</a></li>
             <li><a href="#">Browse Offers</a></li>
             <li><a href="#">Affiliate Resources</a></li>
+            
           </ul>
         </div>
 

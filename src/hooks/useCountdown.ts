@@ -16,13 +16,20 @@ export function useCountdown(expiryTime?: string | null) {
         return;
       }
 
-      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
-      if (hours > 0) setTimeLeft(`${hours}h ${minutes}m left`);
-      else if (minutes > 0) setTimeLeft(`${minutes}m ${seconds}s left`);
-      else setTimeLeft(`${seconds}s left`);
+      if (days > 0) {
+        setTimeLeft(`${days}d ${hours}h ${minutes}m left`);
+      } else if (hours > 0) {
+        setTimeLeft(`${hours}h ${minutes}m ${seconds}s left`);
+      } else if (minutes > 0) {
+        setTimeLeft(`${minutes}m ${seconds}s left`);
+      } else {
+        setTimeLeft(`${seconds}s left`);
+      }
     };
 
     updateCountdown();

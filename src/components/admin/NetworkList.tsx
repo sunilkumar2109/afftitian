@@ -93,6 +93,14 @@ const NetworkList = ({ networks, onUpdate, masterData }: NetworkListProps) => {
       });
     }
   };
+const getRemainingDays = (expirationDate: string | null) => {
+  if (!expirationDate) return null;
+  const now = new Date();
+  const exp = new Date(expirationDate);
+  const diffMs = exp.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  return diffDays > 0 ? diffDays : 0;
+};
 
   return (
     <Card>
@@ -130,21 +138,28 @@ const NetworkList = ({ networks, onUpdate, masterData }: NetworkListProps) => {
                 )}
                 
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  {network.payment_frequency && (
-                    <span>Payment: {network.payment_frequency}</span>
-                  )}
-                  <span>Priority: {network.priority_order}</span>
-                  {network.website_link && (
-                    <a 
-                      href={network.website_link} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline"
-                    >
-                      Visit Website
-                    </a>
-                  )}
-                </div>
+  {network.payment_frequency && (
+    <span>Payment: {network.payment_frequency}</span>
+  )}
+  <span>Priority: {network.priority_order}</span>
+  {network.expiration_date && (
+    <span className={getRemainingDays(network.expiration_date) <= 5 ? "text-red-400 font-semibold" : "text-green-400"}>
+      {getRemainingDays(network.expiration_date)} days left
+    </span>
+  )}
+  {network.website_link && (
+    <a 
+      href={network.website_link} 
+      target="_blank" 
+      rel="noopener noreferrer"
+      className="text-primary hover:underline"
+    >
+      Visit Website
+    </a>
+  )}
+</div>
+
+                
 
                 {network.categories.length > 0 && (
                   <div className="flex gap-1 mt-2">

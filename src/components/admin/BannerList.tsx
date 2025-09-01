@@ -80,8 +80,6 @@ export const BannerList = ({ banners, onEdit, onRefresh }: BannerListProps) => {
     </div>
   );
 };
-
-// ✅ Extracted row component so hooks are safe
 const BannerRow = ({
   banner,
   onEdit,
@@ -91,7 +89,8 @@ const BannerRow = ({
   onEdit: (banner: Banner | null) => void;
   onDelete: (banner: Banner) => void;
 }) => {
-  const countdown = banner.is_rotation ? useCountdown(banner.expires_at) : null;
+  const countdown = useCountdown(banner.expires_at); // ✅ apply for both
+  const isExpired = countdown === "Expired";
 
   return (
     <TableRow>
@@ -121,26 +120,33 @@ const BannerRow = ({
 
       <TableCell>
         {banner.is_rotation ? (
-          <span
-            className={
-              countdown === "Expired"
-                ? "text-red-600 font-medium"
-                : "text-blue-600"
-            }
-          >
+          <span className={isExpired ? "text-red-600 font-medium" : "text-blue-600"}>
             {countdown}
           </span>
-        ) : banner.link_url ? (
-          <a
-            href={banner.link_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary hover:underline truncate max-w-xs block"
-          >
-            {banner.link_url}
-          </a>
         ) : (
-          <span className="text-muted-foreground">No Link</span>
+          <div className="flex flex-col">
+            {banner.link_url ? (
+              <a
+                href={banner.link_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline truncate max-w-xs"
+              >
+                {banner.link_url}
+              </a>
+            ) : (
+              <span className="text-muted-foreground">No Link</span>
+            )}
+            {banner.expires_at && (
+              <span
+                className={`text-xs mt-1 ${
+                  isExpired ? "text-red-600 font-medium" : "text-blue-600"
+                }`}
+              >
+                {countdown}
+              </span>
+            )}
+          </div>
         )}
       </TableCell>
 
@@ -153,15 +159,10 @@ const BannerRow = ({
               <Edit className="h-4 w-4" />
             </Button>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onDelete(banner)}
-          >
+          <Button variant="outline" size="sm" onClick={() => onDelete(banner)}>
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
-       {/* vanakam */}
       </TableCell>
     </TableRow>
   );

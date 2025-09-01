@@ -103,7 +103,7 @@ const BannerDisplay = ({ banners, section, intervalMs = 5000 }: { banners: Banne
       break;
     case "fixed-bottom":
       containerClass = "fixed bottom-0 left-0 right-0 z-50 bg-black shadow-md";
-      imageClass = "w-full h-20 object-cover";
+      imageClass = "w-full h-[100px] object-fill";
       break;
     case "sidebar":
       containerClass = "mb-4";
@@ -112,12 +112,12 @@ const BannerDisplay = ({ banners, section, intervalMs = 5000 }: { banners: Banne
       
     case "top":
   containerClass = "my-4 flex justify-end pr-3"; 
-  imageClass = "w-[900px] h-[100px] object-contain";  // reduced width
+  imageClass = "w-[900px] h-[100px] object-fill";  // reduced width
   break;
 
     case "footer":
       containerClass = "my-6";
-      imageClass = "w-full h-20 object-cover";
+      imageClass = "w-full h-[100px] object-fill";
       break;
   }
 
@@ -554,48 +554,50 @@ const offersToDisplay = allOffers.filter((offer) => {
     );
   };
   
-    return (
-    <div className="min-h-screen bg-black text-white">
-      {/* TopBar with Logo */}
-      <div className="relative">
-        <TopBar />
-        {/* Logo positioned in top left corner */}
-        <div className="absolute top-20 left-10 z-50">
-          <img 
-            src="https://pepeleads.com/uploads/1756199032-7299397.png"
-            alt="AffiTitans Logo" 
-            className="h-12 w-auto object-contain"
-          />
-        </div>
+return (
+  <div className="min-h-screen bg-black text-white">
+    {/* Fixed Top Banners */}
+    {rotationGroupsBySection["fixed-top"].map((rotation) => (
+      <BannerDisplay
+        key={rotation.id}
+        banners={bannersForRotation(rotation)}
+        section="fixed-top"
+        intervalMs={rotation.rotation_duration_ms || 5000}
+      />
+    ))}
+    {fixedTopBanners.length > 0 && (
+      <BannerDisplay banners={fixedTopBanners} section="fixed-top" />
+    )}
+
+    {/* TopBar with Logo */}
+    <div className="relative">
+      <TopBar />
+      {/* Logo positioned in top left corner */}
+      <div className="absolute top-20 left-10 z-50">
+        <img 
+          src="https://pepeleads.com/uploads/1756199032-7299397.png"
+          alt="AffiTitans Logo" 
+          className="h-12 w-auto object-contain"
+        />
       </div>
-      
-      {/* Fixed Top Banners */}
-      {rotationGroupsBySection["fixed-top"].map((rotation) => (
+    </div>
+
+    {/* Top Banners - aligned to right */}
+    <div className="flex justify-end px-6 pt-4">
+      {rotationGroupsBySection["top"].map((rotation) => (
         <BannerDisplay
           key={rotation.id}
           banners={bannersForRotation(rotation)}
-          section="fixed-top"
+          section="top"
           intervalMs={rotation.rotation_duration_ms || 5000}
         />
       ))}
-      {fixedTopBanners.length > 0 && (
-        <BannerDisplay banners={fixedTopBanners} section="fixed-top" />
+      {topBanners.length > 0 && (
+        <BannerDisplay banners={topBanners} section="top" />
       )}
-      
-      {/* Top Banners - Now aligned to the right with proper spacing */}
-      <div className="flex justify-end px-6 pt-4">
-        {rotationGroupsBySection["top"].map((rotation) => (
-          <BannerDisplay
-            key={rotation.id}
-            banners={bannersForRotation(rotation)}
-            section="top"
-            intervalMs={rotation.rotation_duration_ms || 5000}
-          />
-        ))}
-        {topBanners.length > 0 && (
-          <BannerDisplay banners={topBanners} section="top" />
-        )}
-      </div>
+    </div>
+  
+
       {/* Header with Filters */}
       <div className="bg-gray-900 border-b border-gray-700 px-6 py-4">
         <div className="flex items-center gap-4 flex-wrap">

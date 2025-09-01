@@ -21,19 +21,38 @@ const NetworkForm = ({ onSuccess, masterData, network }: NetworkFormProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [fileLoading, setFileLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    name: network?.name || "",
-    type: network?.type || "",
-    description: network?.description || "",
-    logo_url: network?.logo_url || "",
-    website_link: network?.website_link || "",
-    payment_frequency: network?.payment_frequency || "",
-    payment_methods: network?.payment_methods?.join(", ") || "",
-    categories: network?.categories?.join(", ") || "",
-    tags: network?.tags?.join(", ") || "",
-    is_active: network?.is_active ?? true,
-    priority_order: network?.priority_order || 0,
-  });
+const [formData, setFormData] = useState({
+  name: network?.name || "",
+  type: network?.type || "",
+  description: network?.description || "",
+  logo_url: network?.logo_url || "",
+  website_link: network?.website_link || "",
+  payment_frequency: network?.payment_frequency || "",
+  payment_methods: network?.payment_methods?.join(", ") || "",
+  categories: network?.categories?.join(", ") || "",
+  tags: network?.tags?.join(", ") || "",
+  is_active: network?.is_active ?? true,
+  priority_order: network?.priority_order || 0,
+
+  // 🆕 New fields
+  number_of_offers: network?.number_of_offers || "",
+  type_of_commission: network?.type_of_commission || "",
+  minimum_withdrawal: network?.minimum_withdrawal || "",
+  referral_commission: network?.referral_commission || "",
+  tracking_software: network?.tracking_software || "",
+  tracking_link: network?.tracking_link || "",
+  payment_constancy: network?.payment_constancy || "",
+  website_email: network?.website_email || "",
+  facebook_id: network?.facebook_id || "",
+  twitter_id: network?.twitter_id || "",
+  linkedin_id: network?.linkedin_id || "",
+  ceo: network?.ceo || "",
+  headquarter: network?.headquarter || "",
+  phone_number: network?.phone_number || "",
+  affiliate_manager: network?.affiliate_manager || "",
+  expiration_date: network?.expiration_date || "",
+});
+
 
   // Handle single form submit
   const handleSubmit = async (e: React.FormEvent) => {
@@ -41,25 +60,46 @@ const NetworkForm = ({ onSuccess, masterData, network }: NetworkFormProps) => {
     setLoading(true);
 
     try {
-      const networkData = {
-        name: formData.name,
-        type: formData.type,
-        description: formData.description || null,
-        logo_url: formData.logo_url || null,
-        website_link: formData.website_link || null,
-        payment_frequency: formData.payment_frequency || null,
-        payment_methods: formData.payment_methods
-          ? formData.payment_methods.split(",").map(s => s.trim())
-          : [],
-        categories: formData.categories
-          ? formData.categories.split(",").map(s => s.trim())
-          : [],
-        tags: formData.tags
-          ? formData.tags.split(",").map(s => s.trim())
-          : [],
-        is_active: formData.is_active,
-        priority_order: formData.priority_order,
-      };
+const networkData = {
+  name: formData.name,
+  type: formData.type,
+  description: formData.description || null,
+  logo_url: formData.logo_url || null,
+  website_link: formData.website_link || null,
+  payment_frequency: formData.payment_frequency || null,
+  payment_methods: formData.payment_methods
+    ? formData.payment_methods.split(",").map(s => s.trim())
+    : [],
+  categories: formData.categories
+    ? formData.categories.split(",").map(s => s.trim())
+    : [],
+  tags: formData.tags
+    ? formData.tags.split(",").map(s => s.trim())
+    : [],
+  is_active: formData.is_active,
+  priority_order: formData.priority_order,
+
+  // 🆕 New fields
+  number_of_offers: formData.number_of_offers || null,
+  type_of_commission: formData.type_of_commission || null,
+  minimum_withdrawal: formData.minimum_withdrawal || null,
+  referral_commission: formData.referral_commission || null,
+  tracking_software: formData.tracking_software || null,
+  tracking_link: formData.tracking_link || null,
+  payment_constancy: formData.payment_constancy || null,
+  website_email: formData.website_email || null,
+  facebook_id: formData.facebook_id || null,
+  twitter_id: formData.twitter_id || null,
+  linkedin_id: formData.linkedin_id || null,
+  ceo: formData.ceo || null,
+  headquarter: formData.headquarter || null,
+  phone_number: formData.phone_number || null,
+  affiliate_manager: formData.affiliate_manager || null,
+  expiration_date: formData.expiration_date
+  ? new Date(formData.expiration_date).toISOString()
+  : null,
+
+};
 
       let result;
       if (network) {
@@ -313,7 +353,179 @@ const NetworkForm = ({ onSuccess, masterData, network }: NetworkFormProps) => {
               onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
             />
             <Label htmlFor="is_active">Active</Label>
+
+
           </div>
+          <div>
+  <Label htmlFor="expiration_date">Expiration Date</Label>
+  <Input
+    id="expiration_date"
+    type="date"
+    value={formData.expiration_date ? formData.expiration_date.split("T")[0] : ""}
+    onChange={(e) => setFormData({ ...formData, expiration_date: e.target.value })}
+  />
+  <p className="text-xs text-gray-500">Default: 30 days from today</p>
+</div>
+
+          {/* 🆕 Additional Fields from Screenshot */}
+<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  <div>
+    <Label htmlFor="number_of_offers">Number of Offers</Label>
+    <Input
+      id="number_of_offers"
+      type="number"
+      value={formData.number_of_offers}
+      onChange={(e) => setFormData({ ...formData, number_of_offers: e.target.value })}
+    />
+  </div>
+
+  <div>
+    <Label htmlFor="type_of_commission">Type of Commission</Label>
+    <Input
+      id="type_of_commission"
+      value={formData.type_of_commission}
+      onChange={(e) => setFormData({ ...formData, type_of_commission: e.target.value })}
+      placeholder="RevShare, Hybrid, CPA"
+    />
+  </div>
+
+  <div>
+    <Label htmlFor="minimum_withdrawal">Minimum Withdrawal</Label>
+    <Input
+      id="minimum_withdrawal"
+      type="text"
+      value={formData.minimum_withdrawal}
+      onChange={(e) => setFormData({ ...formData, minimum_withdrawal: e.target.value })}
+      placeholder="$20"
+    />
+  </div>
+
+  <div>
+    <Label htmlFor="referral_commission">Referral Commission</Label>
+    <Input
+      id="referral_commission"
+      type="text"
+      value={formData.referral_commission}
+      onChange={(e) => setFormData({ ...formData, referral_commission: e.target.value })}
+      placeholder="5%"
+    />
+  </div>
+
+  <div>
+    <Label htmlFor="tracking_software">Tracking Software</Label>
+    <Input
+      id="tracking_software"
+      value={formData.tracking_software}
+      onChange={(e) => setFormData({ ...formData, tracking_software: e.target.value })}
+      placeholder="Self Tracker"
+    />
+  </div>
+
+  <div>
+    <Label htmlFor="tracking_link">Tracking Link</Label>
+    <Input
+      id="tracking_link"
+      value={formData.tracking_link}
+      onChange={(e) => setFormData({ ...formData, tracking_link: e.target.value })}
+      placeholder="https://..."
+    />
+  </div>
+
+  <div>
+    <Label htmlFor="payment_constancy">Payment Constancy</Label>
+    <Select
+      value={formData.payment_constancy}
+      onValueChange={(value) => setFormData({ ...formData, payment_constancy: value })}
+    >
+      <SelectTrigger>
+        <SelectValue placeholder="Select constancy" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="Weekly">Weekly</SelectItem>
+        <SelectItem value="Monthly">Monthly</SelectItem>
+      </SelectContent>
+    </Select>
+  </div>
+
+  <div>
+    <Label htmlFor="website_email">Website Email ID</Label>
+    <Input
+      id="website_email"
+      type="email"
+      value={formData.website_email}
+      onChange={(e) => setFormData({ ...formData, website_email: e.target.value })}
+      placeholder="support@domain.com"
+    />
+  </div>
+
+  <div>
+    <Label htmlFor="facebook_id">Facebook ID</Label>
+    <Input
+      id="facebook_id"
+      value={formData.facebook_id}
+      onChange={(e) => setFormData({ ...formData, facebook_id: e.target.value })}
+    />
+  </div>
+
+  <div>
+    <Label htmlFor="twitter_id">Twitter ID</Label>
+    <Input
+      id="twitter_id"
+      value={formData.twitter_id}
+      onChange={(e) => setFormData({ ...formData, twitter_id: e.target.value })}
+      placeholder="https://twitter.com/..."
+    />
+  </div>
+
+  <div>
+    <Label htmlFor="linkedin_id">LinkedIn ID</Label>
+    <Input
+      id="linkedin_id"
+      value={formData.linkedin_id}
+      onChange={(e) => setFormData({ ...formData, linkedin_id: e.target.value })}
+      placeholder="https://linkedin.com/company/..."
+    />
+  </div>
+
+  <div>
+    <Label htmlFor="ceo">Chief Executive Officer</Label>
+    <Input
+      id="ceo"
+      value={formData.ceo}
+      onChange={(e) => setFormData({ ...formData, ceo: e.target.value })}
+    />
+  </div>
+
+  <div>
+    <Label htmlFor="headquarter">Headquarter</Label>
+    <Input
+      id="headquarter"
+      value={formData.headquarter}
+      onChange={(e) => setFormData({ ...formData, headquarter: e.target.value })}
+    />
+  </div>
+
+  <div>
+    <Label htmlFor="phone_number">Phone Number</Label>
+    <Input
+      id="phone_number"
+      type="tel"
+      value={formData.phone_number}
+      onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
+    />
+  </div>
+
+  <div>
+    <Label htmlFor="affiliate_manager">Affiliate Manager</Label>
+    <Input
+      id="affiliate_manager"
+      value={formData.affiliate_manager}
+      onChange={(e) => setFormData({ ...formData, affiliate_manager: e.target.value })}
+      placeholder="Name / Email"
+    />
+  </div>
+</div>
+
 
           <Button type="submit" disabled={loading} className="w-full">
             {loading ? "Saving..." : `${network ? "Update" : "Create"} Network`}
