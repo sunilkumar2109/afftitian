@@ -84,6 +84,25 @@ const useRotatingBanners = (banners: Banner[], intervalMs: number = 5000) => {
   return banners.length > 0 ? banners[currentIndex] : null;
 };
 
+// add near top
+const SUPABASE_DOMAIN = "booohlpwrvqtgvlngzrf.supabase.co";
+const SITE_DOMAIN = "https://afftitans.com";
+
+const getBannerSrc = (b: any) => {
+  if (!b) return "";
+  const raw = b.filename || b.image_url || "";
+  if (!raw) return "";
+  if (typeof raw === "string" && raw.startsWith("http")) {
+    if (raw.includes(SUPABASE_DOMAIN)) {
+      const fname = raw.split("/").pop()?.split("?")[0] || raw;
+      return `${SITE_DOMAIN}/banners/${fname}`;
+    }
+    return raw; // external URL
+  }
+  // treat as filename
+  return `${SITE_DOMAIN}/banners/${raw}`;
+};
+
 const BannerDisplay = ({ banners, section, intervalMs = 5000 }: { banners: Banner[], section: "top" | "footer" | "sidebar" | "fixed-top" | "fixed-bottom", intervalMs?: number }) => {
   const currentBanner = useRotatingBanners(banners, intervalMs);
 
@@ -130,10 +149,11 @@ const BannerDisplay = ({ banners, section, intervalMs = 5000 }: { banners: Banne
         className="block w-full"
       >
         <img
-          src={currentBanner.image_url}
-          alt={`${section} banner`}
-          className={`${imageClass} rounded-md`}
-        />
+  src={getBannerSrc(currentBanner)}
+  alt={`${section} banner`}
+  className={`${imageClass} rounded-md`}
+/>
+
       </a>
     </div>
   );
@@ -151,10 +171,11 @@ const SidebarBannerDisplay = ({ banners }: { banners: Banner[] }) => {
           className="block w-full"
         >
           <img
-            src={`https://afftitans.com/images/banners/${banner.filename}`}
-            alt="Sidebar banner"
-            className="w-full h-[200px] sm:h-[400px] object-contain rounded-md"
-          />
+  src={getBannerSrc(banner)}
+  alt="Sidebar banner"
+  className="w-full h-[200px] sm:h-[400px] object-contain rounded-md"
+/>
+
         </a>
       ))}
     </div>
