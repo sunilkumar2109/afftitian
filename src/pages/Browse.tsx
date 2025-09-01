@@ -151,7 +151,7 @@ const SidebarBannerDisplay = ({ banners }: { banners: Banner[] }) => {
           className="block w-full"
         >
           <img
-            src={banner.image_url}
+            src={`https://afftitans.com/images/banners/${banner.filename}`}
             alt="Sidebar banner"
             className="w-full h-[200px] sm:h-[400px] object-contain rounded-md"
           />
