@@ -1,0 +1,9 @@
+{
+  "redirects": [
+    {
+      "source": "/banners/(.*)",
+      "destination": "https://booohlpwrvqtgvlngzrf.supabase.co/storage/v1/object/public/images/banners/$1",
+      "status": 200
+    }
+  ]
+}
