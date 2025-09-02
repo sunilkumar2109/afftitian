@@ -125,18 +125,33 @@ const BannerRow = ({
           </span>
         ) : (
           <div className="flex flex-col">
-            {banner.link_url ? (
-              <a
-                href={banner.link_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline truncate max-w-xs"
-              >
-                {banner.link_url}
-              </a>
-            ) : (
-              <span className="text-muted-foreground">No Link</span>
-            )}
+            {banner.link_urls && banner.link_urls.length > 0 ? (
+  <div className="flex flex-col gap-1 max-w-xs">
+    {banner.link_urls.map((url, idx) => (
+      <a
+        key={idx}
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-primary hover:underline truncate"
+      >
+        {url}
+      </a>
+    ))}
+  </div>
+) : banner.link_url ? (
+  <a
+    href={banner.link_url}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="text-primary hover:underline truncate max-w-xs"
+  >
+    {banner.link_url}
+  </a>
+) : (
+  <span className="text-muted-foreground">No Link</span>
+)}
+
             {banner.expires_at && (
               <span
                 className={`text-xs mt-1 ${

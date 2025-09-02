@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Network, MasterData } from "@/types/admin";
-import { Edit, Trash2, Search, CheckSquare, Square } from "lucide-react"; // ⬅ Added icons
+import { Edit, Trash2, Search, CheckSquare, Square } from "lucide-react";
+
 import NetworkForm from "./NetworkForm";
 import BulkNetworkForm from "./BulkNetworkForm";
 
@@ -38,19 +39,23 @@ interface NetworkListProps {
 
 const NetworkList = ({ networks, onUpdate, masterData }: NetworkListProps) => {
   const { toast } = useToast();
+
+  // ✅ Local State
   const [searchTerm, setSearchTerm] = useState("");
   const [editingNetwork, setEditingNetwork] = useState<Network | null>(null);
 
-  // 🔹 New State for Bulk Edit
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedNetworks, setSelectedNetworks] = useState<string[]>([]);
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
 
-  const filteredNetworks = networks.filter(network =>
-    network.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    network.type.toLowerCase().includes(searchTerm.toLowerCase())
+  // ✅ Filtering
+  const filteredNetworks = networks.filter(
+    (network) =>
+      network.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      network.type.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // ✅ Selection
   const toggleSelect = (id: string) => {
     setSelectedNetworks((prev) =>
       prev.includes(id) ? prev.filter((n) => n !== id) : [...prev, id]
@@ -65,6 +70,7 @@ const NetworkList = ({ networks, onUpdate, masterData }: NetworkListProps) => {
     }
   };
 
+  // ✅ Toggle Active
   const toggleActive = async (network: Network) => {
     try {
       const { error } = await supabase
@@ -73,25 +79,22 @@ const NetworkList = ({ networks, onUpdate, masterData }: NetworkListProps) => {
         .eq("id", network.id);
 
       if (error) throw error;
-      toast({ title: "Success", description: `Network updated` });
+
+      toast({ title: "Success", description: "Network updated" });
       onUpdate();
     } catch (error) {
-      console.error(error);
-      toast({ title: "Error", description: "Failed to update", variant: "destructive" });
+      console.error("Failed to update network:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update",
+        variant: "destructive",
+      });
     }
-  };
-
-  const getRemainingDays = (expirationDate: string | null) => {
-    if (!expirationDate) return null;
-    const now = new Date();
-    const exp = new Date(expirationDate);
-    const diffMs = exp.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-    return diffDays > 0 ? diffDays : 0;
   };
 
   return (
     <Card>
+      {/* 🔹 Header */}
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           Networks ({networks.length})
@@ -103,14 +106,23 @@ const NetworkList = ({ networks, onUpdate, masterData }: NetworkListProps) => {
                   : "Select All"}
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={() => setBulkMode(!bulkMode)}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setBulkMode(!bulkMode)}
+            >
               {bulkMode ? "Cancel" : "Common Changes"}
             </Button>
             {bulkMode && selectedNetworks.length > 0 && (
-              <Button variant="default" size="sm" onClick={() => setBulkDialogOpen(true)}>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => setBulkDialogOpen(true)}
+              >
                 Edit Selected ({selectedNetworks.length})
               </Button>
             )}
+            {/* 🔎 Search */}
             <div className="relative">
               <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
@@ -124,6 +136,7 @@ const NetworkList = ({ networks, onUpdate, masterData }: NetworkListProps) => {
         </CardTitle>
       </CardHeader>
 
+      {/* 🔹 Content */}
       <CardContent>
         <div className="space-y-4">
           {filteredNetworks.map((network) => (
@@ -131,7 +144,7 @@ const NetworkList = ({ networks, onUpdate, masterData }: NetworkListProps) => {
               key={network.id}
               className="border rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
             >
-              {/* Left Side */}
+              {/* Left side */}
               <div className="flex-1 flex gap-3 items-center">
                 {bulkMode && (
                   <div
@@ -154,16 +167,27 @@ const NetworkList = ({ networks, onUpdate, masterData }: NetworkListProps) => {
                     <Badge variant="outline">{network.type}</Badge>
                   </div>
                   {network.description && (
-                    <p className="text-sm text-muted-foreground mb-2">{network.description}</p>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      {network.description}
+                    </p>
                   )}
                 </div>
               </div>
 
-              {/* Right Controls (Hidden in Bulk Mode) */}
+              {/* Right side (hidden in bulk mode) */}
               {!bulkMode && (
                 <div className="flex flex-wrap items-center gap-2">
-                  <Switch checked={network.is_active} onCheckedChange={() => toggleActive(network)} />
-                  <Dialog>
+                  <Switch
+                    checked={network.is_active}
+                    onCheckedChange={() => toggleActive(network)}
+                  />
+                  {/* Edit Button */}
+                  <Dialog
+                    open={editingNetwork?.id === network.id}
+                    onOpenChange={(open) =>
+                      !open && setEditingNetwork(null)
+                    }
+                  >
                     <DialogTrigger asChild>
                       <Button
                         variant="outline"
@@ -187,6 +211,7 @@ const NetworkList = ({ networks, onUpdate, masterData }: NetworkListProps) => {
                       />
                     </DialogContent>
                   </Dialog>
+                  {/* Delete Button */}
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="destructive" size="sm">
@@ -213,29 +238,30 @@ const NetworkList = ({ networks, onUpdate, masterData }: NetworkListProps) => {
 
           {filteredNetworks.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
-              {searchTerm ? "No networks found matching your search." : "No networks found."}
+              {searchTerm
+                ? "No networks found matching your search."
+                : "No networks found."}
             </div>
           )}
         </div>
       </CardContent>
 
-      {/* Bulk Edit Dialog */}
+      {/* 🔹 Bulk Edit Dialog */}
       <Dialog open={bulkDialogOpen} onOpenChange={setBulkDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-  <DialogHeader>
-    <DialogTitle>Edit Selected Networks</DialogTitle>
-  </DialogHeader>
-  <BulkNetworkForm
-    selectedIds={selectedNetworks}
-    onSuccess={() => {
-      setBulkDialogOpen(false);
-      onUpdate();
-      setSelectedNetworks([]);
-      setBulkMode(false);
-    }}
-  />
-</DialogContent>
-
+          <DialogHeader>
+            <DialogTitle>Edit Selected Networks</DialogTitle>
+          </DialogHeader>
+          <BulkNetworkForm
+            selectedIds={selectedNetworks}
+            onSuccess={() => {
+              setBulkDialogOpen(false);
+              onUpdate();
+              setSelectedNetworks([]);
+              setBulkMode(false);
+            }}
+          />
+        </DialogContent>
       </Dialog>
     </Card>
   );

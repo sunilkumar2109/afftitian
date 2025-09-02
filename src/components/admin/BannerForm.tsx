@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "../../integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, X, Plus } from "lucide-react";
+
+
 import {
   Select,
   SelectTrigger,
@@ -19,7 +22,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 // Define the new BannerFormData interface to support multiple sections and a size field
 interface BannerFormData {
   image_url: string;
-  link_url?: string;
+  link_urls?: string[]; 
   section: string[]; // Now an array of strings
   size: string; // New field for banner size in "width x height" format
    rotation_enabled?: boolean;
@@ -32,6 +35,7 @@ interface BannerPreview {
   id: string;
   title?: string;
   image_url?: string;
+  link_urls?: string[]; 
   section?: string[] | string;
   created_at?: string;
 }
@@ -76,24 +80,28 @@ export const BannerForm = ({ onSuccess, onCancel }: BannerFormProps) => {
   fetchExisting();
 }, []); // run once
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    setValue,
-    watch,
-  } = useForm<BannerFormData>({
-    defaultValues: {
-      section: ["top"],
-      size: "",
-      rotation_enabled: false,
-      rotation_group: "",
-      rotation_weight: 1,
-      rotation_duration_ms: 5000,
-    },
-    // Set default values for the new fields
-    // defaultValues: { section: ["top"], size: "" }, // Resetting default size
-  });
+const {
+  register,
+  handleSubmit,
+  formState: { errors },
+  setValue,
+  watch,
+  control,   // <-- add this
+} = useForm<BannerFormData>({
+  defaultValues: {
+    section: ["top"],
+    size: "",
+    rotation_enabled: false,
+    rotation_group: "",
+    rotation_weight: 1,
+    rotation_duration_ms: 5000,
+    link_urls: [""],   // <-- start with one empty input
+  },
+});
+const { fields, append, remove } = useFieldArray({
+  control,
+  name: "link_urls" as const,
+});
 
   const imageUrl = watch("image_url");
   const sections = watch("section");
@@ -238,12 +246,13 @@ const onSubmit = async (data: BannerFormData) => {
     }
 
     // === SINGLE BANNER CREATION ===
-    const finalBannerData = {
-      image_url: uploadedImageUrl || bannerData.image_url,
-      link_url: bannerData.link_url,
-      section: bannerData.section,
-      expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    };
+const finalBannerData = {
+  image_url: uploadedImageUrl || bannerData.image_url,
+  link_urls: bannerData.link_urls?.filter((u) => u && u.trim() !== ""), // <-- array saved
+  section: bannerData.section,
+  expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+};
+
 
     const { error } = await supabase.from("banners").insert([finalBannerData]);
     if (error) throw error;
@@ -503,24 +512,41 @@ const onSubmit = async (data: BannerFormData) => {
             </div>
           )}
 
-          {/* Link URL */}
-          <div>
-            <Label htmlFor="link_url">Link URL (Optional)</Label>
-            <Input
-              id="link_url"
-              {...register("link_url")}
-              placeholder="https://example.com/target-page"
-            />
-          </div>
-                    {/* Link URL */}
-          <div>
-            <Label htmlFor="link_url">Link URL (Optional)</Label>
-            <Input
-              id="link_url"
-              {...register("link_url")}
-              placeholder="https://example.com/target-page"
-            />
-          </div>
+          {/* Multiple Link URLs */}
+<div>
+  <Label>Link URLs (Optional)</Label>
+
+  {fields.map((field, index) => (
+    <div key={field.id} className="flex items-center gap-2 mt-2">
+      <Input
+        {...register(`link_urls.${index}` as const)}
+        defaultValue={(field as any).value ?? ""} // field.value may not exist for older RHF versions
+        placeholder="https://example.com/target-page"
+      />
+      <Button
+        type="button"
+        variant="destructive"
+        size="sm"
+        onClick={() => remove(index)}
+        disabled={fields.length === 1} // keep at least one (optional)
+      >
+        <X className="h-4 w-4" />
+      </Button>
+    </div>
+  ))}
+
+  <Button
+    type="button"
+    variant="outline"
+    size="sm"
+    className="mt-2"
+    onClick={() => append("")}
+  >
+    <Plus className="h-4 w-4 mr-1" /> Add Link
+  </Button>
+</div>
+
+         
           <div>
   <Label>Banner Expiry</Label>
   <select
