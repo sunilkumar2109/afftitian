@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Network, MasterData } from "@/types/admin";
 import * as XLSX from "xlsx";
 
+
 interface NetworkFormProps {
   onSuccess: () => void;
   masterData: MasterData | null;
@@ -18,9 +19,43 @@ interface NetworkFormProps {
 }
 
 const NetworkForm = ({ onSuccess, masterData, network }: NetworkFormProps) => {
+  const [autoText, setAutoText] = useState("");
+const [aiLoading, setAiLoading] = useState(false);
+
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [fileLoading, setFileLoading] = useState(false);
+  const handleAIExtract = async () => {
+  if (!autoText.trim()) return;
+  setAiLoading(true);
+  try {
+    const res = await fetch("https://your-backend.onrender.com/api/parse-network-text", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: autoText }),
+    });
+    const data = await res.json();
+
+    // Map fields into your formData
+    setFormData(prev => ({
+      ...prev,
+      name: data.network_name || prev.name,
+      website_link: data.website_link || prev.website_link,
+      payment_frequency: data.payment_frequency || prev.payment_frequency,
+      phone_number: data.phone_number || prev.phone_number,
+      description: data.description || prev.description,
+      // Add more fields as needed...
+    }));
+
+    alert("Auto-fill done! Review and save.");
+  } catch (err) {
+    console.error(err);
+    alert("Error extracting fields");
+  } finally {
+    setAiLoading(false);
+  }
+};
+
 const [formData, setFormData] = useState({
   name: network?.name || "",
   type: network?.type || "",
@@ -210,6 +245,24 @@ const networkData = {
         <CardTitle>{network ? "Edit Network" : "Add New Network"}</CardTitle>
       </CardHeader>
       <CardContent>
+        <div className="mb-4">
+  <label className="block mb-1 font-medium">Paste Network Details (AI Auto-fill)</label>
+  <textarea
+    value={autoText}
+    onChange={(e) => setAutoText(e.target.value)}
+    placeholder="Paste text here..."
+    className="w-full border p-2 rounded"
+    rows={4}
+  />
+  <button
+    onClick={handleAIExtract}
+    disabled={aiLoading}
+    className="mt-2 px-4 py-2 bg-blue-500 text-white rounded"
+  >
+    {aiLoading ? "Extracting..." : "Extract"}
+  </button>
+</div>
+
         {/* File upload section */}
         {!network && (
           <div className="mb-4">
