@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Star, CheckCircle } from "lucide-react";
 import OpenAI from "openai";
-
+import ReactMarkdown from "react-markdown";
 interface Feedback {
   id: string;
   user_name: string;
@@ -65,8 +65,10 @@ export default function NetworkDetail() {
           dangerouslyAllowBrowser: true,
         });
 
-        const prompt = `Write a concise, professional affiliate network profile for ${network.name}. 
-        Limit to 3-5 sentences and highlight main benefits.`;
+        const prompt = `Write a concise, professional affiliate network profile for ${network.name}.  
+Highlight the main benefits as 3-5 engaging bullet points instead of a paragraph.  
+Keep it clear and appealing.`;
+
 
         const response = await client.chat.completions.create({
           model: "gpt-4o-mini",
@@ -117,7 +119,16 @@ export default function NetworkDetail() {
             <p className="text-white text-lg">{network.type}</p>
           </div>
         </div>
-        <p className="mt-6 text-lg leading-relaxed text-white">{aiDescription}</p>
+        <div className="mt-6 text-lg leading-relaxed text-white space-y-2">
+  <ReactMarkdown
+    components={{
+      ul: ({node, ...props}) => <ul className="list-disc list-inside space-y-1" {...props} />,
+      li: ({node, ...props}) => <li className="ml-2" {...props} />,
+    }}
+  >
+    {aiDescription}
+  </ReactMarkdown>
+</div>
       </Card>
 
       {/* 🔹 Website Offers Section */}

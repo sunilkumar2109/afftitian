@@ -19,14 +19,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 // Define the new BannerFormData interface to support multiple sections and a size field
 interface BannerFormData {
   image_url: string;
-  link_url?: string;
+  link_urls?: string[]; // Changed to array of strings
   section: string[]; // Now an array of strings
   size: string; // New field for banner size in "width x height" format
-   rotation_enabled?: boolean;
+  rotation_enabled?: boolean;
   rotation_group?: string | null;        // e.g., "home-top" or "sidebar"
   rotation_weight?: number | null;       // higher = show more often
   rotation_duration_ms?: number | null; 
 }
+
 // small preview interface
 interface BannerPreview {
   id: string;
@@ -52,29 +53,34 @@ export const BannerForm = ({ onSuccess, onCancel }: BannerFormProps) => {
   const [rotationSectionSelect, setRotationSectionSelect] = useState<string>("top");
   const [expiryOption, setExpiryOption] = useState<"2h"|"1d"|"5d"|"custom">("1d");
   const [customExpiry, setCustomExpiry] = useState<string>(""); // for datetime-local
-  const [bannerExpiry, setBannerExpiry] = useState("30d");
+  // Updated banner expiry options
+  const [bannerExpiry, setBannerExpiry] = useState<"24h"|"6d"|"1w"|"30d"|"custom">("30d");
+  const [customBannerExpiry, setCustomBannerExpiry] = useState<string>("");
   
- useEffect(() => {
-  const fetchExisting = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("banners")
-        .select("*")
-        .order("created_at", { ascending: false });
+  // New state for multiple link URLs
+  const [linkUrls, setLinkUrls] = useState<string[]>([""]);
+  
+  useEffect(() => {
+    const fetchExisting = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("banners")
+          .select("*")
+          .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      setExistingBanners(data || []);
-    } catch (err) {
-      console.error("Error fetching existing banners:", err);
-      toast({
-        title: "Error",
-        description: "Could not load existing banners.",
-        variant: "destructive",
-      });
-    }
-  };
-  fetchExisting();
-}, []); // run once
+        if (error) throw error;
+        setExistingBanners(data || []);
+      } catch (err) {
+        console.error("Error fetching existing banners:", err);
+        toast({
+          title: "Error",
+          description: "Could not load existing banners.",
+          variant: "destructive",
+        });
+      }
+    };
+    fetchExisting();
+  }, []); // run once
 
   const {
     register,
@@ -90,20 +96,51 @@ export const BannerForm = ({ onSuccess, onCancel }: BannerFormProps) => {
       rotation_group: "",
       rotation_weight: 1,
       rotation_duration_ms: 5000,
+      link_urls: [""],
     },
-    // Set default values for the new fields
-    // defaultValues: { section: ["top"], size: "" }, // Resetting default size
   });
 
   const imageUrl = watch("image_url");
   const sections = watch("section");
   const size = watch("size");
-    // NEW: rotation watches
+  // NEW: rotation watches
   const rotationEnabled = watch("rotation_enabled");
   const rotationGroup = watch("rotation_group");
   const rotationWeight = watch("rotation_weight");
   const rotationDuration = watch("rotation_duration_ms");
 
+  // Helper function to calculate banner expiry date
+  const calculateBannerExpiryDate = (): string => {
+    const now = new Date();
+    let expiresAt: Date;
+    
+    switch (bannerExpiry) {
+      case "24h":
+        expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+        break;
+      case "6d":
+        expiresAt = new Date(now.getTime() + 6 * 24 * 60 * 60 * 1000);
+        break;
+      case "1w":
+        expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+        break;
+      case "30d":
+        expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        break;
+      case "custom":
+        if (!customBannerExpiry) {
+          // Fallback to 30 days if custom date is not provided
+          expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        } else {
+          expiresAt = new Date(customBannerExpiry);
+        }
+        break;
+      default:
+        expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    }
+    
+    return expiresAt.toISOString();
+  };
 
   // Helper object to map sections to Tailwind CSS classes
   const sectionClasses = {
@@ -112,6 +149,37 @@ export const BannerForm = ({ onSuccess, onCancel }: BannerFormProps) => {
     sidebar: "h-[400px] w-[400px] object-contain",
     "fixed-top": "h-20 object-cover",
     "fixed-bottom": "h-20 object-cover",
+  };
+
+  // Functions to handle multiple link URLs
+  const addLinkUrl = () => {
+    setLinkUrls([...linkUrls, ""]);
+  };
+
+  const removeLinkUrl = (index: number) => {
+    if (linkUrls.length > 1) {
+      const newUrls = linkUrls.filter((_, i) => i !== index);
+      setLinkUrls(newUrls);
+      setValue("link_urls", newUrls);
+    }
+  };
+
+  const updateLinkUrl = (index: number, value: string) => {
+    const newUrls = [...linkUrls];
+    newUrls[index] = value;
+    setLinkUrls(newUrls);
+    setValue("link_urls", newUrls);
+  };
+
+  // Validate URL format
+  const isValidUrl = (url: string): boolean => {
+    if (!url.trim()) return true; // Empty URLs are allowed
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   // ✅ File Upload
@@ -184,85 +252,106 @@ export const BannerForm = ({ onSuccess, onCancel }: BannerFormProps) => {
     setValue("image_url", "");
   };
 
-  // ✅ Submit
- // ✅ Submit (supports both single banner and rotation)
-const onSubmit = async (data: BannerFormData) => {
-  const { size, ...bannerData } = data;
+  // ✅ Submit (supports both single banner and rotation)
+  const onSubmit = async (data: BannerFormData) => {
+    const { size, ...bannerData } = data;
 
-  // ❗ Validation for single banner (must have image)
-  if (!rotationEnabled && !bannerData.image_url && !uploadedImageUrl) {
-    toast({
-      title: "Error",
-      description: "Please provide an image URL or upload an image",
-      variant: "destructive",
-    });
-    return;
-  }
-
-  setIsLoading(true);
-  try {
-    // === ROTATION CREATION ===
-    if (rotationEnabled) {
-      if (selectedBannerIds.length < 2) {
-        toast({
-          title: "Error",
-          description: "Select at least 2 banners for rotation",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      // calculate expiry date
-      const now = new Date();
-      let expiresAt: string | null = null;
-      if (expiryOption === "2h") expiresAt = new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString();
-      else if (expiryOption === "1d") expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
-      else if (expiryOption === "5d") expiresAt = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString();
-      else if (expiryOption === "custom" && customExpiry) expiresAt = new Date(customExpiry).toISOString();
-
-      const rotationPayload = {
-        name: `rotation-${Date.now()}`,
-        banner_ids: selectedBannerIds,
-        section: rotationSectionSelect,
-        rotation_duration_ms: Number(rotationDuration) || 5000,
-        expires_at: expiresAt,
-      };
-
-      const { error } = await supabase.from("banner_rotations").insert([rotationPayload]);
-      if (error) throw error;
-
-      toast({ title: "Success", description: "Rotation created successfully" });
-      onSuccess();
-      return; // stop here
+    // ❗ Validation for single banner (must have image)
+    if (!rotationEnabled && !bannerData.image_url && !uploadedImageUrl) {
+      toast({
+        title: "Error",
+        description: "Please provide an image URL or upload an image",
+        variant: "destructive",
+      });
+      return;
     }
 
-    // === SINGLE BANNER CREATION ===
-    const finalBannerData = {
-      image_url: uploadedImageUrl || bannerData.image_url,
-      link_url: bannerData.link_url,
-      section: bannerData.section,
-      expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    };
+    // ❗ Validation for custom banner expiry
+    if (bannerExpiry === "custom" && !customBannerExpiry) {
+      toast({
+        title: "Error",
+        description: "Please provide a custom expiry date for the banner",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    const { error } = await supabase.from("banners").insert([finalBannerData]);
-    if (error) throw error;
+    // ❗ Validation for link URLs
+    const invalidUrls = linkUrls.filter(url => url.trim() && !isValidUrl(url));
+    if (invalidUrls.length > 0) {
+      toast({
+        title: "Error",
+        description: "Please enter valid URLs or leave them empty",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    toast({ title: "Success", description: "Banner created successfully" });
-    onSuccess();
-  } catch (error) {
-    console.error("Error creating banner/rotation:", error);
-    toast({
-      title: "Error",
-      description: "Failed to create banner/rotation",
-      variant: "destructive",
-    });
-  } finally {
-    setIsLoading(false);
-  }
-};
+    setIsLoading(true);
+    try {
+      // === ROTATION CREATION ===
+      if (rotationEnabled) {
+        if (selectedBannerIds.length < 2) {
+          toast({
+            title: "Error",
+            description: "Select at least 2 banners for rotation",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
 
+        // calculate expiry date for rotation
+        const now = new Date();
+        let expiresAt: string | null = null;
+        if (expiryOption === "2h") expiresAt = new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString();
+        else if (expiryOption === "1d") expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
+        else if (expiryOption === "5d") expiresAt = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString();
+        else if (expiryOption === "custom" && customExpiry) expiresAt = new Date(customExpiry).toISOString();
 
+        const rotationPayload = {
+          name: `rotation-${Date.now()}`,
+          banner_ids: selectedBannerIds,
+          section: rotationSectionSelect,
+          rotation_duration_ms: Number(rotationDuration) || 5000,
+          expires_at: expiresAt,
+        };
+
+        const { error } = await supabase.from("banner_rotations").insert([rotationPayload]);
+        if (error) throw error;
+
+        toast({ title: "Success", description: "Rotation created successfully" });
+        onSuccess();
+        return; // stop here
+      }
+
+      // === SINGLE BANNER CREATION ===
+      // Filter out empty URLs and keep only valid ones
+      const validLinkUrls = linkUrls.filter(url => url.trim() && isValidUrl(url));
+      
+      const finalBannerData = {
+        image_url: uploadedImageUrl || bannerData.image_url,
+        link_urls: validLinkUrls.length > 0 ? validLinkUrls : null, // Store as array or null
+        section: bannerData.section,
+        expires_at: calculateBannerExpiryDate(),
+      };
+
+      const { error } = await supabase.from("banners").insert([finalBannerData]);
+      if (error) throw error;
+
+      toast({ title: "Success", description: "Banner created successfully" });
+      onSuccess();
+    } catch (error) {
+      console.error("Error creating banner/rotation:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create banner/rotation",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Function to handle multi-select checkbox changes
   const handleSectionChange = (sectionName: string, isChecked: boolean) => {
@@ -503,163 +592,239 @@ const onSubmit = async (data: BannerFormData) => {
             </div>
           )}
 
-          {/* Link URL */}
-          <div>
-            <Label htmlFor="link_url">Link URL (Optional)</Label>
-            <Input
-              id="link_url"
-              {...register("link_url")}
-              placeholder="https://example.com/target-page"
-            />
-          </div>
-                    {/* Link URL */}
-          <div>
-            <Label htmlFor="link_url">Link URL (Optional)</Label>
-            <Input
-              id="link_url"
-              {...register("link_url")}
-              placeholder="https://example.com/target-page"
-            />
-          </div>
-          <div>
-  <Label>Banner Expiry</Label>
-  <select
-    value={bannerExpiry}
-    onChange={(e) => setBannerExpiry(e.target.value)}
-    className="mt-1 p-2 border rounded"
-  >
-   
-    <option value="30d">30 days (default)</option>
-    
-  </select>
-  {bannerExpiry === "custom" && (
-    <Input
-      type="datetime-local"
-      onChange={(e) => setBannerExpiry(e.target.value)}
-    />
-  )}
-</div>
-          {/* === Rotation options === */}
-<div className="mt-4 border rounded p-3">
-  <div className="flex items-center gap-2 mb-3">
-    <Checkbox
-      id="rotation-enabled"
-      checked={!!rotationEnabled}
-      onCheckedChange={(v) => setValue("rotation_enabled", !!v)}
-    />
-    <Label htmlFor="rotation-enabled">Create Rotation (use existing banners)</Label>
-  </div>
-
-  {rotationEnabled && (
-    <>
-      <div className="mb-3">
-        <Label>Choose existing banners (pick 2–5)</Label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-auto p-2 border rounded mt-2">
-          {existingBanners.length === 0 ? (
-            <div className="text-sm text-muted-foreground">No banners found.</div>
-          ) : (
-            existingBanners.map(b => (
-              <label key={b.id} className="flex items-center gap-2 p-1 cursor-pointer hover:bg-muted/20 rounded">
-                <input
-                  type="checkbox"
-                  checked={selectedBannerIds.includes(b.id)}
-                  onChange={() => {
-                    setSelectedBannerIds(prev =>
-                      prev.includes(b.id) ? prev.filter(x => x !== b.id) : [...prev, b.id]
-                    );
-                  }}
-                />
-                <img src={b.image_url} alt={b.title} className="w-20 h-12 object-cover rounded" />
-                <div className="text-sm truncate">
-                  <div className="font-medium">{b.title || b.id}</div>
-                  <div className="text-xs text-muted-foreground">{Array.isArray(b.section) ? b.section.join(",") : b.section}</div>
+          {/* Multiple Link URLs Section */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>Link URLs (Optional)</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addLinkUrl}
+                className="flex items-center gap-1"
+              >
+                <Plus className="h-4 w-4" />
+                Add URL
+              </Button>
+            </div>
+            
+            <div className="space-y-2">
+              {linkUrls.map((url, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <Input
+                    value={url}
+                    onChange={(e) => updateLinkUrl(index, e.target.value)}
+                    placeholder={`https://example.com/target-page-${index + 1}`}
+                    className={!isValidUrl(url) && url.trim() ? "border-red-500" : ""}
+                  />
+                  {linkUrls.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => removeLinkUrl(index)}
+                      className="px-2"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
-              </label>
-            ))
-          )}
-        </div>
-        <p className="text-xs text-muted-foreground mt-1">You can also create a rotation using a newly uploaded banner by creating the banner first and then creating a rotation (optional).</p>
-      </div>
-
-      <div className="flex items-center gap-4 mb-3">
-        <div>
-          <Label>Rotation Section</Label>
-          <select
-            value={rotationSectionSelect}
-            onChange={(e) => setRotationSectionSelect(e.target.value)}
-            className="mt-1 p-2 border rounded"
-          >
-            <option value="top">Top</option>
-            <option value="footer">Footer</option>
-            <option value="sidebar">Sidebar</option>
-            <option value="fixed-top">Fixed Top</option>
-            <option value="fixed-bottom">Fixed Bottom</option>
-          </select>
-        </div>
-
-        <div>
-          <Label>Interval (ms)</Label>
-          <Input
-            {...register("rotation_duration_ms")}
-            placeholder="e.g., 5000"
-            className="mt-1"
-            defaultValue={rotationDuration || 5000}
-          />
-          <p className="text-xs text-muted-foreground">Time between rotates (ms)</p>
-        </div>
-      </div>
-
-      <div>
-        <Label>Expiry (when rotation should stop / be deleted)</Label>
-        <div className="flex items-center gap-2 mt-2">
-          <Button type="button" size="sm" variant={expiryOption === "2h" ? "default" : "outline"} onClick={() => setExpiryOption("2h")}>2 hours</Button>
-          <Button type="button" size="sm" variant={expiryOption === "1d" ? "default" : "outline"} onClick={() => setExpiryOption("1d")}>1 day</Button>
-          <Button type="button" size="sm" variant={expiryOption === "5d" ? "default" : "outline"} onClick={() => setExpiryOption("5d")}>5 days</Button>
-          <Button type="button" size="sm" variant={expiryOption === "custom" ? "default" : "outline"} onClick={() => setExpiryOption("custom")}>Custom</Button>
-
-        </div>
-
-        {expiryOption === "custom" && (
-          <div className="mt-2">
-            <Input type="datetime-local" value={customExpiry} onChange={(e) => setCustomExpiry(e.target.value)} />
-            <p className="text-xs text-muted-foreground mt-1">Pick local date/time for expiry</p>
+              ))}
+            </div>
+            
+            <p className="text-xs text-muted-foreground">
+              Add multiple URLs that this banner can link to. Leave empty if no link is needed.
+            </p>
+            
+            {/* Show validation error for invalid URLs */}
+            {linkUrls.some(url => url.trim() && !isValidUrl(url)) && (
+              <p className="text-sm text-destructive">
+                Please enter valid URLs (starting with http:// or https://) or leave them empty
+              </p>
+            )}
           </div>
-        )}
-      </div>
-    </>
-  )}
-</div>
-{/* === end rotation UI === */}
 
+          {/* Enhanced Banner Expiry Section */}
+          <div>
+            <Label>Banner Expiry</Label>
+            <div className="flex flex-wrap gap-2 mt-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={bannerExpiry === "24h" ? "default" : "outline"}
+                onClick={() => setBannerExpiry("24h")}
+              >
+                24 Hours
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={bannerExpiry === "6d" ? "default" : "outline"}
+                onClick={() => setBannerExpiry("6d")}
+              >
+                6 Days
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={bannerExpiry === "1w" ? "default" : "outline"}
+                onClick={() => setBannerExpiry("1w")}
+              >
+                1 Week
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={bannerExpiry === "30d" ? "default" : "outline"}
+                onClick={() => setBannerExpiry("30d")}
+              >
+                30 Days (default)
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={bannerExpiry === "custom" ? "default" : "outline"}
+                onClick={() => setBannerExpiry("custom")}
+              >
+                Custom
+              </Button>
+            </div>
+            
+            {bannerExpiry === "custom" && (
+              <div className="mt-3">
+                <Label htmlFor="custom-banner-expiry">Custom Expiry Date & Time</Label>
+                <Input
+                  id="custom-banner-expiry"
+                  type="datetime-local"
+                  value={customBannerExpiry}
+                  onChange={(e) => setCustomBannerExpiry(e.target.value)}
+                  className="mt-1"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Select when this banner should expire
+                </p>
+              </div>
+            )}
+            
+            <p className="text-xs text-muted-foreground mt-2">
+              Banner will be automatically removed after the selected time period
+            </p>
+          </div>
 
-          
+          {/* === Rotation options === */}
+          <div className="mt-4 border rounded p-3">
+            <div className="flex items-center gap-2 mb-3">
+              <Checkbox
+                id="rotation-enabled"
+                checked={!!rotationEnabled}
+                onCheckedChange={(v) => setValue("rotation_enabled", !!v)}
+              />
+              <Label htmlFor="rotation-enabled">Create Rotation (use existing banners)</Label>
+            </div>
 
+            {rotationEnabled && (
+              <>
+                <div className="mb-3">
+                  <Label>Choose existing banners (pick 2–5)</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-auto p-2 border rounded mt-2">
+                    {existingBanners.length === 0 ? (
+                      <div className="text-sm text-muted-foreground">No banners found.</div>
+                    ) : (
+                      existingBanners.map(b => (
+                        <label key={b.id} className="flex items-center gap-2 p-1 cursor-pointer hover:bg-muted/20 rounded">
+                          <input
+                            type="checkbox"
+                            checked={selectedBannerIds.includes(b.id)}
+                            onChange={() => {
+                              setSelectedBannerIds(prev =>
+                                prev.includes(b.id) ? prev.filter(x => x !== b.id) : [...prev, b.id]
+                              );
+                            }}
+                          />
+                          <img src={b.image_url} alt={b.title} className="w-20 h-12 object-cover rounded" />
+                          <div className="text-sm truncate">
+                            <div className="font-medium">{b.title || b.id}</div>
+                            <div className="text-xs text-muted-foreground">{Array.isArray(b.section) ? b.section.join(",") : b.section}</div>
+                          </div>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">You can also create a rotation using a newly uploaded banner by creating the banner first and then creating a rotation (optional).</p>
+                </div>
 
+                <div className="flex items-center gap-4 mb-3">
+                  <div>
+                    <Label>Rotation Section</Label>
+                    <select
+                      value={rotationSectionSelect}
+                      onChange={(e) => setRotationSectionSelect(e.target.value)}
+                      className="mt-1 p-2 border rounded"
+                    >
+                      <option value="top">Top</option>
+                      <option value="footer">Footer</option>
+                      <option value="sidebar">Sidebar</option>
+                      <option value="fixed-top">Fixed Top</option>
+                      <option value="fixed-bottom">Fixed Bottom</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <Label>Interval (ms)</Label>
+                    <Input
+                      {...register("rotation_duration_ms")}
+                      placeholder="e.g., 5000"
+                      className="mt-1"
+                      defaultValue={rotationDuration || 5000}
+                    />
+                    <p className="text-xs text-muted-foreground">Time between rotates (ms)</p>
+                  </div>
+                </div>
+
+                <div>
+                  <Label>Expiry (when rotation should stop / be deleted)</Label>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Button type="button" size="sm" variant={expiryOption === "2h" ? "default" : "outline"} onClick={() => setExpiryOption("2h")}>2 hours</Button>
+                    <Button type="button" size="sm" variant={expiryOption === "1d" ? "default" : "outline"} onClick={() => setExpiryOption("1d")}>1 day</Button>
+                    <Button type="button" size="sm" variant={expiryOption === "5d" ? "default" : "outline"} onClick={() => setExpiryOption("5d")}>5 days</Button>
+                    <Button type="button" size="sm" variant={expiryOption === "custom" ? "default" : "outline"} onClick={() => setExpiryOption("custom")}>Custom</Button>
+                  </div>
+
+                  {expiryOption === "custom" && (
+                    <div className="mt-2">
+                      <Input type="datetime-local" value={customExpiry} onChange={(e) => setCustomExpiry(e.target.value)} />
+                      <p className="text-xs text-muted-foreground mt-1">Pick local date/time for expiry</p>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
           {/* === end rotation UI === */}
 
-{rotationEnabled ? (
-  <div className="flex space-x-2 mt-4">
-    <Button 
-      type="submit" 
-      disabled={isLoading || selectedBannerIds.length < 2}
-      className="bg-primary text-white"
-    >
-      {isLoading ? "Creating..." : "Create Rotation"}
-    </Button>
-    <Button type="button" variant="outline" onClick={onCancel}>
-      Cancel
-    </Button>
-  </div>
-) : (
-  <div className="flex space-x-2 mt-4">
-    <Button type="submit" disabled={isLoading || sections.length === 0}>
-      {isLoading ? "Creating..." : "Create Banner"}
-    </Button>
-    <Button type="button" variant="outline" onClick={onCancel}>
-      Cancel
-    </Button>
-  </div>
-)}
+          {rotationEnabled ? (
+            <div className="flex space-x-2 mt-4">
+              <Button 
+                type="submit" 
+                disabled={isLoading || selectedBannerIds.length < 2}
+                className="bg-primary text-white"
+              >
+                {isLoading ? "Creating..." : "Create Rotation"}
+              </Button>
+              <Button type="button" variant="outline" onClick={onCancel}>
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <div className="flex space-x-2 mt-4">
+              <Button type="submit" disabled={isLoading || sections.length === 0}>
+                {isLoading ? "Creating..." : "Create Banner"}
+              </Button>
+              <Button type="button" variant="outline" onClick={onCancel}>
+                Cancel
+              </Button>
+            </div>
+          )}
 
         </form>
       </CardContent>
