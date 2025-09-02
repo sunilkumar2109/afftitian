@@ -29,7 +29,7 @@ const [aiLoading, setAiLoading] = useState(false);
   if (!autoText.trim()) return;
   setAiLoading(true);
   try {
-    const res = await fetch("https://your-backend.onrender.com/api/parse-network-text", {
+    const res = await fetch("https://afftitans.onrender.com/api/parse-network-text", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text: autoText }),
