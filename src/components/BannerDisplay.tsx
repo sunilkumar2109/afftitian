@@ -9,24 +9,32 @@ const BannerDisplay = () => {
   const [showBanner, setShowBanner] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
 
-  useEffect(() => {
-    const fetchBanners = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('banners')
-          .select('*')
-          
-          .order('priority_order', { ascending: false });
+useEffect(() => {
+  const fetchBanners = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('banners')
+        .select('*')
+        .order('priority_order', { ascending: false });
 
-        if (error) throw error;
-        setBanners(data || []);
-      } catch (error) {
-        console.error('Error fetching banners:', error);
-      }
-    };
+      if (error) throw error;
 
-    fetchBanners();
-  }, []);
+      const bannersWithFullUrl = (data || []).map((banner) => ({
+        ...banner,
+        image_url: banner.image_url.startsWith('http')
+          ? banner.image_url
+          : `https://booohlpwrvqtgvlngzrf.supabase.co/storage/v1/object/public/images/banners/${banner.image_url}`,
+      }));
+
+      setBanners(bannersWithFullUrl);
+    } catch (error) {
+      console.error('Error fetching banners:', error);
+    }
+  };
+
+  fetchBanners();
+}, []);
+
 
   useEffect(() => {
     if (banners.length > 0) {
@@ -66,6 +74,12 @@ const BannerDisplay = () => {
   if (!showBanner || banners.length === 0) return null;
 
   const currentBanner = banners[currentBannerIndex];
+const getBannerUrl = (imageUrl: string) => {
+  if (!imageUrl) return "";
+  const trimmed = imageUrl.trim(); // remove leading/trailing spaces
+  if (trimmed.startsWith("http")) return trimmed; // already full URL
+  return `https://booohlpwrvqtgvlngzrf.supabase.co/storage/v1/object/public/images/banners/${trimmed}`;
+};
 
   return (
     <div
@@ -88,12 +102,14 @@ const BannerDisplay = () => {
           onClick={handleBannerClick}
         >
           <img
-            src={currentBanner?.image_url}
+            src={getBannerUrl(currentBanner?.image_url || "")}
+
             alt={currentBanner?.alt_text || 'Banner'}
             className="w-full h-auto object-cover"
             style={{ maxHeight: '300px' }}
           />
         </div>
+        
 
         {/* Banner Indicators */}
         {banners.length > 1 && (
