@@ -67,6 +67,23 @@ interface BannerRotation {
   expires_at?: string | null;
   created_at?: string;
 }
+const logBannerClick = async (bannerId: string) => {
+  console.log("Click detected for banner:", bannerId); // 👈 Add this
+
+  try {
+    const res = await fetch("https://booohlpwrvqtgvlngzrf.functions.supabase.co/log_click", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ banner_id: bannerId }),
+    });
+
+    console.log("Response status:", res.status); // 👈 Add this
+    const data = await res.json();
+    console.log("Response data:", data); // 👈 Add this
+  } catch (err) {
+    console.error("Failed to log banner click:", err);
+  }
+};
 
 const useRotatingBanners = (banners: Banner[], intervalMs: number = 5000) => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -139,13 +156,17 @@ const BannerDisplay = ({
 
   return (
     <div className={containerClass}>
-      <a
-        href={currentBanner.link_url || "#"}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block w-full"
-        onClick={(e) => e.stopPropagation()}
-      >
+<a
+  href={currentBanner.link_url || "#"}
+  target="_blank"
+  rel="noopener noreferrer"
+  className="block w-full"
+  onClick={async (e) => {
+    e.stopPropagation();
+    await logBannerClick(currentBanner.id);
+  }}
+>
+
         <img
           src={bannerSrc}
           alt={`${section} banner`}
@@ -170,14 +191,18 @@ const SidebarBannerDisplay = ({ banners }: { banners: Banner[] }) => {
           : SUPABASE_BANNERS_BASE + banner.image_url?.trim();
 
         return (
-          <a
-            key={banner.id}
-            href={banner.link_url || "#"}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block w-full"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <a
+          key={banner.id}
+          href={banner.link_url || "#"}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block w-full"
+          onClick={async (e) => {
+            e.stopPropagation();
+            await logBannerClick(banner.id);
+          }}
+        >
+        
             <img
               src={bannerSrc}
               alt="Sidebar banner"
@@ -218,6 +243,7 @@ const Browse = () => {
   const [offerSearchTerm, setOfferSearchTerm] = useState("");
   // New state for global search
   const [globalSearchTerm, setGlobalSearchTerm] = useState("");
+
 
   // Function to handle background click
   const handleBackgroundClick = () => {
