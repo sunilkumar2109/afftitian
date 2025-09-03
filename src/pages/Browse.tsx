@@ -674,7 +674,11 @@ const networksToDisplay = getFilteredNetworks();
     >
 
       {/* TopBar with Logo */}
-      <div className="relative">
+  <div
+  className="relative"
+  onClick={(e) => e.stopPropagation()}
+>
+
         <TopBar />
         {/* Logo positioned in top left corner */}
         <div className="absolute top-20 left-10 z-50">

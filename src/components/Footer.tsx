@@ -1,6 +1,10 @@
 const Footer = () => {
   return (
-    <footer className="bg-black text-white mt-12">
+    <footer
+  className="bg-black text-white mt-12"
+  onClick={(e) => e.stopPropagation()}
+>
+
       <div className="container mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-4 gap-8">
         
         {/* About Section */}

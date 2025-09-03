@@ -8,7 +8,10 @@ const TopBar = () => {
   const navigate = useNavigate(); // Must be inside the component
 // d
   return (
-    <div className="bg-red-600 text-white shadow-md">
+    <div
+  className="bg-red-600 text-white shadow-md"
+  onClick={(e) => e.stopPropagation()}
+>
       {/* Main header bar */}
       <div className="container mx-auto px-2 py-1 flex items-center justify-between">
         {/* Left side buttons */}
