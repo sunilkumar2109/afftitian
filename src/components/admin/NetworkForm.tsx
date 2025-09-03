@@ -246,7 +246,7 @@ const networkData = {
       </CardHeader>
       <CardContent>
         <div className="mb-4">
-  <label className="block mb-1 font-medium">Paste Network Details (AI Auto-fill)</label>
+  <label className="block mb-1 font-medium">Enter details in plain text; the system will intelligently pick and place them in the right boxes.</label>
   <textarea
     value={autoText}
     onChange={(e) => setAutoText(e.target.value)}

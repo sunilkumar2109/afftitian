@@ -14,18 +14,28 @@ const TopBar = () => {
         {/* Left side buttons */}
         <div className="flex items-center gap-2">
           <button
-            onClick={() => navigate("/review-from")}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate("/review-from");
+            }}
             className="text-xs font-medium hover:underline px-2 py-1"
           >
             Add review
           </button>
           <button
-            onClick={() => navigate("/help")}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate("/help");
+            }}
             className="text-xs font-medium hover:underline px-2 py-1"
           >
             Free Help
           </button>
-          <a className="text-xs font-medium hover:underline px-2 py-1" href="#">
+          <a
+            className="text-xs font-medium hover:underline px-2 py-1"
+            href="#"
+            onClick={(e) => e.stopPropagation()}
+          >
             Free Tutorials
           </a>
         </div>
@@ -33,7 +43,10 @@ const TopBar = () => {
         {/* Right side button */}
         <div>
           <button
-            onClick={() => navigate("/add-network")}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate("/add-network");
+            }}
             className="text-xs font-semibold uppercase tracking-wide hover:bg-red-500 px-3 py-1 rounded border border-white"
           >
             ADD YOUR NETWORK
@@ -45,18 +58,28 @@ const TopBar = () => {
       {isMenuOpen && (
         <div className="md:hidden bg-red-700 px-2 py-2">
           <button
-            onClick={() => navigate("/review-from")}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate("/review-from");
+            }}
             className="text-xs font-semibold uppercase tracking-wide hover:bg-red-500 px-3 py-1 rounded border border-white"
           >
             Add Review
           </button>
           <button
-            onClick={() => navigate("/help")}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate("/help");
+            }}
             className="block text-xs font-medium hover:underline px-2 py-1"
           >
             Free Help
           </button>
-          <a className="block text-xs font-medium hover:underline px-2 py-1" href="#">
+          <a
+            className="block text-xs font-medium hover:underline px-2 py-1"
+            href="#"
+            onClick={(e) => e.stopPropagation()}
+          >
             Free Tutorials
           </a>
         </div>

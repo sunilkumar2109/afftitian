@@ -54,6 +54,24 @@ const NetworkList = ({ networks, onUpdate, masterData }: NetworkListProps) => {
       network.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       network.type.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  const deleteNetwork = async (id: string) => {
+  try {
+    const { error } = await supabase.from("networks").delete().eq("id", id);
+
+    if (error) throw error;
+
+    toast({ title: "Success", description: "Network deleted" });
+    onUpdate(); // refresh list
+  } catch (error) {
+    console.error("Failed to delete network:", error);
+    toast({
+      title: "Error",
+      description: "Failed to delete",
+      variant: "destructive",
+    });
+  }
+};
+
 
   // ✅ Selection
   const toggleSelect = (id: string) => {
@@ -227,7 +245,10 @@ const NetworkList = ({ networks, onUpdate, masterData }: NetworkListProps) => {
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction>Delete</AlertDialogAction>
+                        <AlertDialogAction onClick={() => deleteNetwork(network.id)}>
+  Delete
+</AlertDialogAction>
+
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>

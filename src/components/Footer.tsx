@@ -13,44 +13,51 @@ const Footer = () => {
             We help affiliates, advertisers, and marketers discover the best opportunities to grow revenue with
             transparent data, trusted reviews, and real-time performance insights.
           </p>
-          <p className="text-sm"><strong>Email:</strong> support@afftitans.com</p>
+          <p className="text-sm"><strong>Email:</strong> partner@afftitans.com</p>
           <p className="text-sm"><strong>Telegram:</strong> @AffTitansHQ</p>
           <p className="text-sm"><strong>Skype:</strong> live:afftitans.team</p>
 
           {/* Social Icons */}
           <div className="flex gap-3 mt-3">
-            <a href="#" target="_blank" rel="noopener noreferrer">
+            <a href="#" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
               <img 
                 src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/2021_Facebook_icon.svg/2048px-2021_Facebook_icon.svg.png" 
                 alt="Facebook" 
-                className="w-8 h-8 bg-white rounded p-1 hover:opacity-80"
+                className="w-6 h-6 rounded-full"
               />
             </a>
-            <a href="#" target="_blank" rel="noopener noreferrer">
+            <a href="#" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
               <img 
-                src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png" 
-                alt="Twitter" 
-                className="w-8 h-8 bg-white rounded p-1 hover:opacity-80"
+                src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/WhatsApp.svg/1200px-WhatsApp.svg.png" 
+                alt="WhatsApp" 
+                className="w-6 h-6 rounded-full"
               />
             </a>
-            <a href="#" target="_blank" rel="noopener noreferrer">
+            <a href="#" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
               <img 
-                src="https://openvisualfx.com/wp-content/uploads/2019/10/linkedin-icon-logo-png-transparent.png" 
-                alt="LinkedIn" 
-                className="w-8 h-8 bg-white rounded p-1 hover:opacity-80"
+                src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Telegram_logo.svg/2048px-Telegram_logo.svg.png" 
+                alt="Telegram" 
+                className="w-6 h-6 rounded-full"
+              />
+            </a>
+            <a href="#" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+              <img 
+                src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Skype_logo.svg/2560px-Skype_logo.svg.png" 
+                alt="Skype" 
+                className="w-6 h-6 rounded-full"
               />
             </a>
           </div>
-        </div> {/* ✅ closed About section */}
+        </div>
 
-        {/* For Advertiser */}
+        {/* For Advertisers */}
         <div>
           <h3 className="text-lg font-semibold mb-4">For Advertisers</h3>
           <ul className="space-y-2 text-sm">
-            <li><a href="#">Promote Your Offers</a></li>
-            <li><a href="#">Add Your Network</a></li>
-            <li><a href="#">Partner With Us</a></li>
-            <li><a href="#">join the Telegram community</a></li>
+            <li><a href="https://teams.live.com/l/community/FEA1T0XSFnG-sbfOgI" onClick={(e) => e.stopPropagation()}>Our community</a></li>
+            <li><a href="#" onClick={(e) => e.stopPropagation()}>Advertise with us</a></li>
+            <li><a href="#" onClick={(e) => e.stopPropagation()}>Become an exclusive partner</a></li>
+            <li><a href="https://t.me/+DKZPI3yFF5NlOWJl" onClick={(e) => e.stopPropagation()}>join the Telegram community</a></li>
           </ul>
         </div>
 
@@ -58,9 +65,9 @@ const Footer = () => {
         <div>
           <h3 className="text-lg font-semibold mb-4">For AffTitans</h3>
           <ul className="space-y-2 text-sm">
-            <li><a href="#">Explore Networks</a></li>
-            <li><a href="#">Browse Offers</a></li>
-            <li><a href="#">Affiliate Resources</a></li>
+            <li><a href="#" onClick={(e) => e.stopPropagation()}>Explore Networks</a></li>
+            <li><a href="#" onClick={(e) => e.stopPropagation()}>Browse Offers</a></li>
+            <li><a href="#" onClick={(e) => e.stopPropagation()}>Affiliate Resources</a></li>
             
           </ul>
         </div>
@@ -76,8 +83,13 @@ const Footer = () => {
               type="email" 
               placeholder="Your Email" 
               className="px-3 py-2 rounded text-black text-sm"
+              onClick={(e) => e.stopPropagation()} // Stop propagation for input
             />
-            <button type="submit" className="bg-white text-black px-4 py-2 rounded text-sm font-semibold">
+            <button
+              type="submit"
+              className="bg-white text-black px-4 py-2 rounded text-sm font-semibold"
+              onClick={(e) => e.stopPropagation()} // Stop propagation for button
+            >
               Subscribe
             </button>
           </form>
@@ -86,7 +98,7 @@ const Footer = () => {
 
       {/* Bottom copyright */}
       <div className="bg-gray-900 text-center text-sm py-3">
-        &copy; 2015 - 2025 AffTitans. All rights reserved. Empowering affiliates with networks & offers.
+        &copy; 2015 - {new Date().getFullYear()} AffTitans. All rights reserved.
       </div>
     </footer>
   );
