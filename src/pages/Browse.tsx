@@ -247,7 +247,7 @@ const Browse = () => {
 
   // Function to handle background click
   const handleBackgroundClick = () => {
-    window.open("https://www.affplus.com", "_blank", "noopener,noreferrer");
+    window.open("https://www.google.com", "_blank", "noopener,noreferrer");
   };
 
   // Function to handle network click navigation
