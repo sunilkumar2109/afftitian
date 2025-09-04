@@ -250,9 +250,13 @@ useEffect(() => {
 
 
   // Function to handle background click
-  const handleBackgroundClick = () => {
-    window.open("https://www.google.com", "_blank", "noopener,noreferrer");
-  };
+ /* handle background click — open banner's link if present */
+const handleBackgroundClick = () => {
+  const link = (backgroundBanner as any)?.link_url || (backgroundBanner as any)?.link || "";
+  if (link && link !== "#") {
+    window.open(link, "_blank", "noopener,noreferrer");
+  }
+};
 
   // Function to handle network click navigation
   const handleNetworkClick = (networkId: string) => {
@@ -340,28 +344,29 @@ useEffect(() => {
   }, [toast]);
 
   useEffect(() => {
-    const fetchBanners = async () => {
-      setLoadingBanners(true);
-      try {
-        const { data, error } = await supabase
-          .from("banners")
-          .select("*")
-          .order("created_at", { ascending: false });
+   const fetchBanners = async () => {
+  setLoadingBanners(true);
+  try {
+    const { data, error } = await supabase
+      .from("banners")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-        if (error) error;
-        setAllBanners(data || []);
-      } catch (error: any) {
-        console.error("Error fetching banners:", error.message);
-        toast({
-          title: "Error",
-          description: "Failed to load banners.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoadingBanners(false);
-      }
-    };
-    fetchBanners();
+    if (error) throw error;
+    setAllBanners(data || []);
+  } catch (err: any) {
+    console.error("Error fetching banners:", err.message || err);
+    toast({
+      title: "Error",
+      description: "Failed to load banners.",
+      variant: "destructive",
+    });
+  } finally {
+    setLoadingBanners(false);
+  }
+};
+fetchBanners();
+
   }, [toast]);
 
   const isPlaceholder = (value: any): boolean => {
@@ -594,22 +599,39 @@ useEffect(() => {
     return filtered;
   };
 // near top of component, after states are declared and after allBanners is available:
+/* BACKGROUND BANNER — robust handling for different DB shapes */
 const defaultBg = "https://i.pinimg.com/736x/cf/3a/c8/cf3ac842dcb713c45973de67c44d5e78.jpg";
-const backgroundBanner = allBanners.find(
-  (b) =>
-    Array.isArray(b.section)
-      ? b.section.includes("background")
-      : typeof b.section === "string" && b.section === "background"
-);
 
+/* helper: convert section field to array of strings (re-uses your toStringArray) */
+const bannerHasSection = (b: Banner, sec: string) => {
+  try {
+    const sections = toStringArray((b as any).section || b.section, false).map(s => s.toLowerCase());
+    return sections.includes(sec.toLowerCase());
+  } catch {
+    return false;
+  }
+};
 
+/* helper: accept image_url or image_path or plain filename and return full URL */
+const getBannerImageUrl = (b: Banner) => {
+  const path = (b as any).image_url || (b as any).image_path || (b as any).image || "";
+  if (!path) return "";
+  const src = String(path).trim();
+  return src.startsWith("http") ? src : SUPABASE_BANNERS_BASE + src;
+};
+
+/* helper: tiny cache-bust so admin updates show immediately */
+const cacheBusted = (src: string, id?: string) => {
+  if (!src) return src;
+  const sep = src.includes("?") ? "&" : "?";
+  return `${src}${sep}v=${encodeURIComponent(String(id || Date.now()))}`;
+};
+
+const backgroundBanner = allBanners.find(b => bannerHasSection(b, "background"));
+
+// final URL (use cacheBusted so changing the banner in admin shows up for users immediately)
 const backgroundUrl =
-  backgroundBanner
-    ? (backgroundBanner.image_url?.startsWith("http")
-        ? backgroundBanner.image_url
-        : SUPABASE_BANNERS_BASE + (backgroundBanner.image_url ?? "").trim()
-      )
-    : defaultBg;
+  backgroundBanner ? cacheBusted(getBannerImageUrl(backgroundBanner), backgroundBanner.id) : defaultBg;
 
 const offersToDisplay = getFilteredOffers();
 const networksToDisplay = getFilteredNetworks();
