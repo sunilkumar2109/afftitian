@@ -56,6 +56,7 @@ interface Banner {
   section: string[];
   created_at: string;
   title?: string;
+  is_background?: boolean; 
 }
 
 interface BannerRotation {
@@ -243,6 +244,9 @@ const Browse = () => {
   const [offerSearchTerm, setOfferSearchTerm] = useState("");
   // New state for global search
   const [globalSearchTerm, setGlobalSearchTerm] = useState("");
+useEffect(() => {
+  console.log("All banners from DB:", allBanners);
+}, [allBanners]);
 
 
   // Function to handle background click
@@ -589,6 +593,23 @@ const Browse = () => {
 
     return filtered;
   };
+// near top of component, after states are declared and after allBanners is available:
+const defaultBg = "https://i.pinimg.com/736x/cf/3a/c8/cf3ac842dcb713c45973de67c44d5e78.jpg";
+const backgroundBanner = allBanners.find(
+  (b) =>
+    Array.isArray(b.section)
+      ? b.section.includes("background")
+      : typeof b.section === "string" && b.section === "background"
+);
+
+
+const backgroundUrl =
+  backgroundBanner
+    ? (backgroundBanner.image_url?.startsWith("http")
+        ? backgroundBanner.image_url
+        : SUPABASE_BANNERS_BASE + (backgroundBanner.image_url ?? "").trim()
+      )
+    : defaultBg;
 
 const offersToDisplay = getFilteredOffers();
 const networksToDisplay = getFilteredNetworks();
@@ -667,11 +688,12 @@ const networksToDisplay = getFilteredNetworks();
   };
   
     return (
-    <div 
-      className="min-h-screen text-white bg-cover bg-center cursor-pointer" 
-      style={{ backgroundImage: "url('https://i.pinimg.com/736x/cf/3a/c8/cf3ac842dcb713c45973de67c44d5e78.jpg')" }}
-      onClick={handleBackgroundClick}
-    >
+    <div
+  className="min-h-screen text-white bg-cover bg-center cursor-pointer"
+  style={{ backgroundImage: `url('${backgroundUrl}')` }}
+  onClick={handleBackgroundClick}
+>
+
 
       {/* TopBar with Logo */}
   <div

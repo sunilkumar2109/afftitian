@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "../../integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, X, Plus } from "lucide-react";
-
 
 import {
   Select,
@@ -25,11 +25,13 @@ interface BannerFormData {
   link_urls?: string[]; 
   section: string[]; // Now an array of strings
   size: string; // New field for banner size in "width x height" format
-   rotation_enabled?: boolean;
+  rotation_enabled?: boolean;
   rotation_group?: string | null;        // e.g., "home-top" or "sidebar"
   rotation_weight?: number | null;       // higher = show more often
   rotation_duration_ms?: number | null; 
+  is_background?: boolean; // New field for background switch
 }
+
 // small preview interface
 interface BannerPreview {
   id: string;
@@ -45,6 +47,31 @@ interface BannerFormProps {
   onCancel: () => void;
 }
 
+// Background upload function - integrated from your provided block
+// BannerForm.tsx — replace existing uploadAndSaveBackground
+async function uploadAndSaveBackground(file: File) {
+  if (!file) return null;
+  const ext = file.name.split('.').pop();
+  const fileName = `background-${Date.now()}.${ext}`;
+  const path = `backgrounds/${fileName}`;
+
+  // upload
+  const { error: uploadError } = await supabase.storage
+    .from("images")
+    .upload(path, file, { upsert: true });
+  if (uploadError) {
+    console.error("Upload error:", uploadError);
+    return null;
+  }
+
+  // get public URL
+  const { data } = supabase.storage.from("images").getPublicUrl(path);
+  const publicUrl = data?.publicUrl ?? null;
+  return publicUrl;
+}
+
+
+
 export const BannerForm = ({ onSuccess, onCancel }: BannerFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string>("");
@@ -57,6 +84,8 @@ export const BannerForm = ({ onSuccess, onCancel }: BannerFormProps) => {
   const [expiryOption, setExpiryOption] = useState<"2h"|"1d"|"5d"|"custom">("1d");
   const [customExpiry, setCustomExpiry] = useState<string>(""); // for datetime-local
   const [bannerExpiry, setBannerExpiry] = useState("30d");
+  
+
   
  useEffect(() => {
   const fetchExisting = async () => {
@@ -96,8 +125,10 @@ const {
     rotation_weight: 1,
     rotation_duration_ms: 5000,
     link_urls: [""],   // <-- start with one empty input
+    is_background: false, // Default value for background switch
   },
 });
+
 const { fields, append, remove } = useFieldArray({
   control,
   name: "link_urls" as const,
@@ -106,12 +137,12 @@ const { fields, append, remove } = useFieldArray({
   const imageUrl = watch("image_url");
   const sections = watch("section");
   const size = watch("size");
-    // NEW: rotation watches
+  // NEW: rotation watches
   const rotationEnabled = watch("rotation_enabled");
   const rotationGroup = watch("rotation_group");
   const rotationWeight = watch("rotation_weight");
   const rotationDuration = watch("rotation_duration_ms");
-
+  const isBackground = watch("is_background"); // Watch the background switch
 
   // Helper object to map sections to Tailwind CSS classes
   const sectionClasses = {
@@ -120,9 +151,10 @@ const { fields, append, remove } = useFieldArray({
     sidebar: "h-[400px] w-[400px] object-contain",
     "fixed-top": "h-20 object-cover",
     "fixed-bottom": "h-20 object-cover",
+    background: "h-64 object-cover", // Added background section
   };
 
-  // ✅ File Upload
+  // ✅ File Upload (updated to support background uploads)
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -148,32 +180,52 @@ const { fields, append, remove } = useFieldArray({
     setIsLoading(true);
 
     try {
-      const fileExt = file.name.split(".").pop();
-      const filePath = `banners/banner-${Date.now()}.${fileExt}`;
+      // Check if this is a background upload (either checkbox selected or switch enabled)
+      const isBackgroundUpload = sections.includes("background") || isBackground;
+      
+      if (isBackgroundUpload) {
+  const publicUrl = await uploadAndSaveBackground(file);
+  if (!publicUrl) {
+    toast({ title: "Error", description: "Background upload failed", variant: "destructive" });
+    setIsLoading(false);
+    return;
+  }
 
-      const { error: uploadError } = await supabase.storage
-        .from("images") // bucket name
-        .upload(filePath, file, {
-          cacheControl: "3600",
-          upsert: true,
+  // Set form values so onSubmit will save the DB row
+  setUploadedImageUrl(publicUrl);
+  setPreviewImage(publicUrl);        // preview from public URL
+  setValue("image_url", publicUrl);
+
+  toast({ title: "Success", description: "Background uploaded (click Save to persist)", });
+} else {
+        // Original upload logic for regular banners
+        const fileExt = file.name.split(".").pop();
+        const filePath = `banners/banner-${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("images") // bucket name
+          .upload(filePath, file, {
+            cacheControl: "3600",
+            upsert: true,
+          });
+
+        if (uploadError) throw uploadError;
+
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("images").getPublicUrl(filePath);
+
+        if (!publicUrl) throw new Error("Could not get public URL");
+
+        setUploadedImageUrl(publicUrl);
+        setPreviewImage(URL.createObjectURL(file));
+        setValue("image_url", publicUrl);
+
+        toast({
+          title: "Success",
+          description: "Image uploaded successfully",
         });
-
-      if (uploadError) throw uploadError;
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("images").getPublicUrl(filePath);
-
-      if (!publicUrl) throw new Error("Could not get public URL");
-
-      setUploadedImageUrl(publicUrl);
-      setPreviewImage(URL.createObjectURL(file));
-      setValue("image_url", publicUrl);
-
-      toast({
-        title: "Success",
-        description: "Image uploaded successfully",
-      });
+      }
     } catch (err) {
       console.error("Error uploading image:", err);
       toast({
@@ -192,8 +244,7 @@ const { fields, append, remove } = useFieldArray({
     setValue("image_url", "");
   };
 
-  // ✅ Submit
- // ✅ Submit (supports both single banner and rotation)
+// ✅ Submit (supports both single banner and rotation)
 const onSubmit = async (data: BannerFormData) => {
   const { size, ...bannerData } = data;
 
@@ -246,19 +297,31 @@ const onSubmit = async (data: BannerFormData) => {
     }
 
     // === SINGLE BANNER CREATION ===
+// === SINGLE BANNER CREATION ===
+const sectionToSave =
+  (bannerData.section && bannerData.section.length > 0)
+    ? bannerData.section
+    : (isBackground ? ["background"] : []);
+
 const finalBannerData = {
   image_url: uploadedImageUrl || bannerData.image_url,
-  link_urls: bannerData.link_urls?.filter((u) => u && u.trim() !== ""), // <-- array saved
-  section: bannerData.section,
-  expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+  link_urls: bannerData.link_urls?.filter((u) => u && u.trim() !== ""),
+  section: sectionToSave,
+  expires_at: isBackground
+    ? null
+    : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+  is_background: isBackground,   // ✅ use state, not bannerData
+  is_active: true,
+  rotation_duration_ms: bannerData.rotation_duration_ms ?? null,
 };
 
 
-    const { error } = await supabase.from("banners").insert([finalBannerData]);
-    if (error) throw error;
+const { error } = await supabase.from("banners").insert([finalBannerData]);
+if (error) throw error;
 
-    toast({ title: "Success", description: "Banner created successfully" });
-    onSuccess();
+toast({ title: "Success", description: "Banner created successfully" });
+onSuccess();
+
   } catch (error) {
     console.error("Error creating banner/rotation:", error);
     toast({
@@ -270,7 +333,6 @@ const finalBannerData = {
     setIsLoading(false);
   }
 };
-
 
 
   // Function to handle multi-select checkbox changes
@@ -288,6 +350,8 @@ const finalBannerData = {
         setValue("size", "400x400");
     } else if (updatedSections.includes("fixed-top") || updatedSections.includes("fixed-bottom")) {
         setValue("size", "1200x80");
+    } else if (updatedSections.includes("background")) {
+        setValue("size", "1920x1080"); // Default background size
     } else {
         setValue("size", ""); // Reset size when sidebar is deselected
     }
@@ -300,6 +364,8 @@ const finalBannerData = {
     previewStyles = sectionClasses.sidebar;
   } else if (sections.includes("fixed-top") || sections.includes("fixed-bottom")) {
     previewStyles = sectionClasses["fixed-top"];
+  } else if (sections.includes("background") || isBackground) {
+    previewStyles = sectionClasses.background;
   } else if (sections.includes("top") || sections.includes("footer")) {
     // Parse width and height from the size string
     const [width, height] = (size || "auto").split("x").map(Number);
@@ -321,81 +387,102 @@ const finalBannerData = {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {/* Section Selection (Updated to multi-select checkboxes) */}
-          <div>
-            <Label>Banner Section</Label>
-            <div className="flex flex-col space-y-2 mt-2">
-              
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="section-fixed-top"
-                  checked={sections.includes("fixed-top")}
-                  onCheckedChange={(checked) => handleSectionChange("fixed-top", !!checked)}
-                />
-                <Label htmlFor="section-fixed-top">Header (1200x80)</Label>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="section-top"
-                  checked={sections.includes("top")}
-                  onCheckedChange={(checked) => handleSectionChange("top", !!checked)}
-                />
-                <Label htmlFor="section-top">Top Section</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="section-footer"
-                  checked={sections.includes("footer")}
-                  onCheckedChange={(checked) => handleSectionChange("footer", !!checked)}
-                />
-                <Label htmlFor="section-footer">Footer Section</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="section-sidebar"
-                  checked={sections.includes("sidebar")}
-                  onCheckedChange={(checked) => handleSectionChange("sidebar", !!checked)}
-                />
-                <Label htmlFor="section-sidebar">Sidebar (400x400)</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="section-fixed-bottom"
-                  checked={sections.includes("fixed-bottom")}
-                  onCheckedChange={(checked) => handleSectionChange("fixed-bottom", !!checked)}
-                />
-                <Label htmlFor="section-fixed-bottom">Fixed Bottom (1200x80)</Label>
-              </div>
-            </div>
-            {sections.length === 0 && (
-              <p className="text-sm text-destructive mt-1">
-                Please select at least one section.
-              </p>
-            )}
-          </div>
-
-          {/* New Size Selection Field (Updated to a text input) */}
-          <div>
-            <Label>Banner Size (e.g., 400x400)</Label>
-            <Input
-              id="size"
-              {...register("size", {
-                required: "Size is required",
-                pattern: {
-                  value: /^\d+x\d+$/,
-                  message: "Format must be 'widthxheight' (e.g., 400x400)",
-                },
-              })}
-              placeholder="e.g., 800x200"
-              disabled={sections.includes("sidebar") || sections.includes("fixed-top") || sections.includes("fixed-bottom")}
+          {/* Background Switch */}
+          <div className="flex items-center space-x-3">
+            <Switch
+              checked={isBackground}
+              onCheckedChange={(checked) => setValue("is_background", checked)}
             />
-            {errors.size && (
-              <p className="text-sm text-destructive mt-1">
-                {errors.size.message}
-              </p>
-            )}
+            <Label>Use as Background</Label>
           </div>
+
+          {/* Section Selection (Updated to multi-select checkboxes) - Hide when background switch is enabled */}
+          {!isBackground && (
+            <div>
+              <Label>Banner Section</Label>
+              <div className="flex flex-col space-y-2 mt-2">
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="section-fixed-top"
+                    checked={sections.includes("fixed-top")}
+                    onCheckedChange={(checked) => handleSectionChange("fixed-top", !!checked)}
+                  />
+                  <Label htmlFor="section-fixed-top">Header (1200x80)</Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="section-top"
+                    checked={sections.includes("top")}
+                    onCheckedChange={(checked) => handleSectionChange("top", !!checked)}
+                  />
+                  <Label htmlFor="section-top">Top Section</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="section-footer"
+                    checked={sections.includes("footer")}
+                    onCheckedChange={(checked) => handleSectionChange("footer", !!checked)}
+                  />
+                  <Label htmlFor="section-footer">Footer Section</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="section-sidebar"
+                    checked={sections.includes("sidebar")}
+                    onCheckedChange={(checked) => handleSectionChange("sidebar", !!checked)}
+                  />
+                  <Label htmlFor="section-sidebar">Sidebar (400x400)</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="section-fixed-bottom"
+                    checked={sections.includes("fixed-bottom")}
+                    onCheckedChange={(checked) => handleSectionChange("fixed-bottom", !!checked)}
+                  />
+                  <Label htmlFor="section-fixed-bottom">Fixed Bottom (1200x80)</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="section-background"
+                    checked={sections.includes("background")}
+                    onCheckedChange={(checked) => handleSectionChange("background", !!checked)}
+                  />
+                  <Label htmlFor="section-background">Background (1920x1080)</Label>
+                </div>
+              </div>
+              {sections.length === 0 && (
+                <p className="text-sm text-destructive mt-1">
+                  Please select at least one section.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* New Size Selection Field - Auto-set for background or hide when background switch is enabled */}
+          {!isBackground && (
+            <div>
+              <Label>Banner Size (e.g., 400x400)</Label>
+              <Input
+                id="size"
+                {...register("size", {
+                  required: "Size is required",
+                  pattern: {
+                    value: /^\d+x\d+$/,
+                    message: "Format must be 'widthxheight' (e.g., 400x400)",
+                  },
+                })}
+                placeholder="e.g., 800x200"
+                disabled={sections.includes("sidebar") || sections.includes("fixed-top") || sections.includes("fixed-bottom") || sections.includes("background")}
+              />
+              {errors.size && (
+                <p className="text-sm text-destructive mt-1">
+                  {errors.size.message}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Upload Method */}
           <div className="space-y-2">
@@ -425,7 +512,9 @@ const finalBannerData = {
           {uploadMethod === "upload" && (
             <div className="space-y-4">
               <div>
-                <Label htmlFor="file-upload">Upload Banner Image</Label>
+                <Label htmlFor="file-upload">
+                  {sections.includes("background") || isBackground ? "Upload Background Image" : "Upload Banner Image"}
+                </Label>
                 <div className="mt-2">
                   <input
                     id="file-upload"
@@ -445,7 +534,9 @@ const finalBannerData = {
                   >
                     <div className="text-center">
                       <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                      <p className="text-sm">Click to upload banner image</p>
+                      <p className="text-sm">
+                        {sections.includes("background") || isBackground ? "Click to upload background image" : "Click to upload banner image"}
+                      </p>
                       <p className="text-xs text-muted-foreground">
                         PNG, JPG up to 5MB
                       </p>
@@ -459,7 +550,7 @@ const finalBannerData = {
                 <div className="relative">
                   <img
                     src={previewImage}
-                    alt="Banner preview"
+                    alt={sections.includes("background") || isBackground ? "Background preview" : "Banner preview"}
                     className={`${previewStyles} rounded-md border`}
                     style={dynamicStyles}
                   />
@@ -500,7 +591,7 @@ const finalBannerData = {
                 <div className="mt-2">
                   <img
                     src={imageUrl}
-                    alt="Banner preview"
+                    alt={sections.includes("background") || isBackground ? "Background preview" : "Banner preview"}
                     className={`${previewStyles} rounded-md border`}
                     style={dynamicStyles}
                     onError={(e) => {
@@ -512,181 +603,178 @@ const finalBannerData = {
             </div>
           )}
 
-          {/* Multiple Link URLs */}
-<div>
-  <Label>Link URLs (Optional)</Label>
+          {/* Multiple Link URLs - Hide for background uploads */}
+          {!sections.includes("background") && !isBackground && (
+            <div>
+              <Label>Link URLs (Optional)</Label>
 
-  {fields.map((field, index) => (
-    <div key={field.id} className="flex items-center gap-2 mt-2">
-      <Input
-        {...register(`link_urls.${index}` as const)}
-        defaultValue={(field as any).value ?? ""} // field.value may not exist for older RHF versions
-        placeholder="https://example.com/target-page"
-      />
-      <Button
-        type="button"
-        variant="destructive"
-        size="sm"
-        onClick={() => remove(index)}
-        disabled={fields.length === 1} // keep at least one (optional)
-      >
-        <X className="h-4 w-4" />
-      </Button>
-    </div>
-  ))}
-
-  <Button
-    type="button"
-    variant="outline"
-    size="sm"
-    className="mt-2"
-    onClick={() => append("")}
-  >
-    <Plus className="h-4 w-4 mr-1" /> Add Link
-  </Button>
-</div>
-
-         
-          <div>
-  <Label>Banner Expiry</Label>
-  <select
-    value={bannerExpiry}
-    onChange={(e) => setBannerExpiry(e.target.value)}
-    className="mt-1 p-2 border rounded"
-  >
-   
-    <option value="30d">30 days (default)</option>
-    
-  </select>
-  {bannerExpiry === "custom" && (
-    <Input
-      type="datetime-local"
-      onChange={(e) => setBannerExpiry(e.target.value)}
-    />
-  )}
-</div>
-          {/* === Rotation options === */}
-<div className="mt-4 border rounded p-3">
-  <div className="flex items-center gap-2 mb-3">
-    <Checkbox
-      id="rotation-enabled"
-      checked={!!rotationEnabled}
-      onCheckedChange={(v) => setValue("rotation_enabled", !!v)}
-    />
-    <Label htmlFor="rotation-enabled">Create Rotation (use existing banners)</Label>
-  </div>
-
-  {rotationEnabled && (
-    <>
-      <div className="mb-3">
-        <Label>Choose existing banners (pick 2–5)</Label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-auto p-2 border rounded mt-2">
-          {existingBanners.length === 0 ? (
-            <div className="text-sm text-muted-foreground">No banners found.</div>
-          ) : (
-            existingBanners.map(b => (
-              <label key={b.id} className="flex items-center gap-2 p-1 cursor-pointer hover:bg-muted/20 rounded">
-                <input
-                  type="checkbox"
-                  checked={selectedBannerIds.includes(b.id)}
-                  onChange={() => {
-                    setSelectedBannerIds(prev =>
-                      prev.includes(b.id) ? prev.filter(x => x !== b.id) : [...prev, b.id]
-                    );
-                  }}
-                />
-                <img src={b.image_url} alt={b.title} className="w-20 h-12 object-cover rounded" />
-                <div className="text-sm truncate">
-                  <div className="font-medium">{b.title || b.id}</div>
-                  <div className="text-xs text-muted-foreground">{Array.isArray(b.section) ? b.section.join(",") : b.section}</div>
+              {fields.map((field, index) => (
+                <div key={field.id} className="flex items-center gap-2 mt-2">
+                  <Input
+                    {...register(`link_urls.${index}` as const)}
+                    defaultValue={(field as any).value ?? ""} // field.value may not exist for older RHF versions
+                    placeholder="https://example.com/target-page"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => remove(index)}
+                    disabled={fields.length === 1} // keep at least one (optional)
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
-              </label>
-            ))
+              ))}
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={() => append("")}
+              >
+                <Plus className="h-4 w-4 mr-1" /> Add Link
+              </Button>
+            </div>
           )}
-        </div>
-        <p className="text-xs text-muted-foreground mt-1">You can also create a rotation using a newly uploaded banner by creating the banner first and then creating a rotation (optional).</p>
-      </div>
 
-      <div className="flex items-center gap-4 mb-3">
-        <div>
-          <Label>Rotation Section</Label>
-          <select
-            value={rotationSectionSelect}
-            onChange={(e) => setRotationSectionSelect(e.target.value)}
-            className="mt-1 p-2 border rounded"
-          >
-            <option value="top">Top</option>
-            <option value="footer">Footer</option>
-            <option value="sidebar">Sidebar</option>
-            <option value="fixed-top">Fixed Top</option>
-            <option value="fixed-bottom">Fixed Bottom</option>
-          </select>
-        </div>
+          {/* Banner Expiry - Hide for background uploads */}
+          {!sections.includes("background") && !isBackground && (
+            <div>
+              <Label>Banner Expiry</Label>
+              <select
+                value={bannerExpiry}
+                onChange={(e) => setBannerExpiry(e.target.value)}
+                className="mt-1 p-2 border rounded"
+              >
+                <option value="30d">30 days (default)</option>
+              </select>
+              {bannerExpiry === "custom" && (
+                <Input
+                  type="datetime-local"
+                  onChange={(e) => setBannerExpiry(e.target.value)}
+                />
+              )}
+            </div>
+          )}
 
-        <div>
-          <Label>Interval (ms)</Label>
-          <Input
-            {...register("rotation_duration_ms")}
-            placeholder="e.g., 5000"
-            className="mt-1"
-            defaultValue={rotationDuration || 5000}
-          />
-          <p className="text-xs text-muted-foreground">Time between rotates (ms)</p>
-        </div>
-      </div>
+          {/* === Rotation options - Hide for background uploads === */}
+          {!sections.includes("background") && !isBackground && (
+            <div className="mt-4 border rounded p-3">
+              <div className="flex items-center gap-2 mb-3">
+                <Checkbox
+                  id="rotation-enabled"
+                  checked={!!rotationEnabled}
+                  onCheckedChange={(v) => setValue("rotation_enabled", !!v)}
+                />
+                <Label htmlFor="rotation-enabled">Create Rotation (use existing banners)</Label>
+              </div>
 
-      <div>
-        <Label>Expiry (when rotation should stop / be deleted)</Label>
-        <div className="flex items-center gap-2 mt-2">
-          <Button type="button" size="sm" variant={expiryOption === "2h" ? "default" : "outline"} onClick={() => setExpiryOption("2h")}>2 hours</Button>
-          <Button type="button" size="sm" variant={expiryOption === "1d" ? "default" : "outline"} onClick={() => setExpiryOption("1d")}>1 day</Button>
-          <Button type="button" size="sm" variant={expiryOption === "5d" ? "default" : "outline"} onClick={() => setExpiryOption("5d")}>5 days</Button>
-          <Button type="button" size="sm" variant={expiryOption === "custom" ? "default" : "outline"} onClick={() => setExpiryOption("custom")}>Custom</Button>
+              {rotationEnabled && (
+                <>
+                  <div className="mb-3">
+                    <Label>Choose existing banners (pick 2–5)</Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-auto p-2 border rounded mt-2">
+                      {existingBanners.length === 0 ? (
+                        <div className="text-sm text-muted-foreground">No banners found.</div>
+                      ) : (
+                        existingBanners.map(b => (
+                          <label key={b.id} className="flex items-center gap-2 p-1 cursor-pointer hover:bg-muted/20 rounded">
+                            <input
+                              type="checkbox"
+                              checked={selectedBannerIds.includes(b.id)}
+                              onChange={() => {
+                                setSelectedBannerIds(prev =>
+                                  prev.includes(b.id) ? prev.filter(x => x !== b.id) : [...prev, b.id]
+                                );
+                              }}
+                            />
+                            <img src={b.image_url} alt={b.title} className="w-20 h-12 object-cover rounded" />
+                            <div className="text-sm truncate">
+                              <div className="font-medium">{b.title || b.id}</div>
+                              <div className="text-xs text-muted-foreground">{Array.isArray(b.section) ? b.section.join(",") : b.section}</div>
+                            </div>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">You can also create a rotation using a newly uploaded banner by creating the banner first and then creating a rotation (optional).</p>
+                  </div>
 
-        </div>
+                  <div className="flex items-center gap-4 mb-3">
+                    <div>
+                      <Label>Rotation Section</Label>
+                      <select
+                        value={rotationSectionSelect}
+                        onChange={(e) => setRotationSectionSelect(e.target.value)}
+                        className="mt-1 p-2 border rounded"
+                      >
+                        <option value="top">Top</option>
+                        <option value="footer">Footer</option>
+                        <option value="sidebar">Sidebar</option>
+                        <option value="fixed-top">Fixed Top</option>
+                        <option value="fixed-bottom">Fixed Bottom</option>
+                      </select>
+                    </div>
 
-        {expiryOption === "custom" && (
-          <div className="mt-2">
-            <Input type="datetime-local" value={customExpiry} onChange={(e) => setCustomExpiry(e.target.value)} />
-            <p className="text-xs text-muted-foreground mt-1">Pick local date/time for expiry</p>
-          </div>
-        )}
-      </div>
-    </>
-  )}
-</div>
-{/* === end rotation UI === */}
+                    <div>
+                      <Label>Interval (ms)</Label>
+                      <Input
+                        {...register("rotation_duration_ms")}
+                        placeholder="e.g., 5000"
+                        className="mt-1"
+                        defaultValue={rotationDuration || 5000}
+                      />
+                      <p className="text-xs text-muted-foreground">Time between rotates (ms)</p>
+                    </div>
+                  </div>
 
+                  <div>
+                    <Label>Expiry (when rotation should stop / be deleted)</Label>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Button type="button" size="sm" variant={expiryOption === "2h" ? "default" : "outline"} onClick={() => setExpiryOption("2h")}>2 hours</Button>
+                      <Button type="button" size="sm" variant={expiryOption === "1d" ? "default" : "outline"} onClick={() => setExpiryOption("1d")}>1 day</Button>
+                      <Button type="button" size="sm" variant={expiryOption === "5d" ? "default" : "outline"} onClick={() => setExpiryOption("5d")}>5 days</Button>
+                      <Button type="button" size="sm" variant={expiryOption === "custom" ? "default" : "outline"} onClick={() => setExpiryOption("custom")}>Custom</Button>
+                    </div>
 
-          
-
-
+                    {expiryOption === "custom" && (
+                      <div className="mt-2">
+                        <Input type="datetime-local" value={customExpiry} onChange={(e) => setCustomExpiry(e.target.value)} />
+                        <p className="text-xs text-muted-foreground mt-1">Pick local date/time for expiry</p>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
           {/* === end rotation UI === */}
 
-{rotationEnabled ? (
-  <div className="flex space-x-2 mt-4">
-    <Button 
-      type="submit" 
-      disabled={isLoading || selectedBannerIds.length < 2}
-      className="bg-primary text-white"
-    >
-      {isLoading ? "Creating..." : "Create Rotation"}
-    </Button>
-    <Button type="button" variant="outline" onClick={onCancel}>
-      Cancel
-    </Button>
-  </div>
-) : (
-  <div className="flex space-x-2 mt-4">
-    <Button type="submit" disabled={isLoading || sections.length === 0}>
-      {isLoading ? "Creating..." : "Create Banner"}
-    </Button>
-    <Button type="button" variant="outline" onClick={onCancel}>
-      Cancel
-    </Button>
-  </div>
-)}
-
+          {rotationEnabled ? (
+            <div className="flex space-x-2 mt-4">
+              <Button 
+                type="submit" 
+                disabled={isLoading || selectedBannerIds.length < 2}
+                className="bg-primary text-white"
+              >
+                {isLoading ? "Creating..." : "Create Rotation"}
+              </Button>
+              <Button type="button" variant="outline" onClick={onCancel}>
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <div className="flex space-x-2 mt-4">
+              <Button type="submit" disabled={isLoading || (!isBackground && sections.length === 0)}>
+                {isLoading ? "Creating..." : (sections.includes("background") || isBackground) ? "Upload Background" : "Create Banner"}
+              </Button>
+              <Button type="button" variant="outline" onClick={onCancel}>
+                Cancel
+              </Button>
+            </div>
+          )}
         </form>
       </CardContent>
     </Card>
