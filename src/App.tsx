@@ -14,6 +14,7 @@ import AddNetworkPage from "@/pages/AddNetworkPage";
 import NetworkDetail from "@/pages/NetworkDetail";
 import ReviewFrom from './pages/reviewfrom';
 import HelpPage from './pages/HelpPage';
+import Custom from './pages/custom';
 
 
 
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/add-network" element={<AddNetworkPage />} />
             <Route path="/review-from" element={<ReviewFrom />} /> 
             <Route path="/help" element={<HelpPage />} /> 
+             <Route path="/custom" element={<Custom />} /> 
           </Routes>
         </HashRouter>
       </TooltipProvider>
