@@ -8,6 +8,7 @@ import OpenAI from "openai";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import fetch from "node-fetch"; // npm install node-fetch
 
 // ==============================
 // 📌 File setup
@@ -42,6 +43,64 @@ function writeData(data) {
     console.error("❌ Failed to save JSON:", err);
   }
 }
+function normalizeIp(ip) {
+  if (!ip) return "unknown";
+  if (ip === "::1" || ip === "127.0.0.1") return "127.0.0.1";
+  if (ip.startsWith("::ffff:")) return ip.replace("::ffff:", "");
+  return ip;
+}
+
+// parse browser name only
+function parseBrowser(userAgent = "") {
+  if (userAgent.includes("Edg")) return "Edge";
+  if (userAgent.includes("Chrome")) return "Chrome";
+  if (userAgent.includes("Firefox")) return "Firefox";
+  if (userAgent.includes("Safari") && !userAgent.includes("Chrome"))
+    return "Safari";
+  if (userAgent.includes("OPR") || userAgent.includes("Opera")) return "Opera";
+  return "Other";
+}
+
+// ✅ Normalize and get IP
+// ✅ Normalize and get IP
+function getClientIp(req) {
+  let ip =
+    req.headers["x-forwarded-for"]?.split(",")[0] ||
+    req.headers["x-real-ip"] ||
+    req.headers["cf-connecting-ip"] ||
+    req.socket?.remoteAddress ||
+    req.ip;
+
+  if (!ip) return "unknown";
+
+  // Normalize localhost
+  if (ip === "::1" || ip === "127.0.0.1" || ip === "0:0:0:0:0:0:0:1") {
+    return "127.0.0.1";
+  }
+
+  // Normalize IPv6-mapped IPv4 (::ffff:192.168.0.10 → 192.168.0.10)
+  if (ip.startsWith("::ffff:")) {
+    return ip.replace("::ffff:", "");
+  }
+
+  return ip;
+}
+
+// lookup country by IP
+async function lookupCountry(ip) {
+  if (!ip || ip === "127.0.0.1") return "Localhost";
+  try {
+    const res = await fetch(`https://ipapi.co/${ip}/json/`);
+    const data = await res.json();
+    return data.country_name || "Unknown";
+  } catch (err) {
+    console.error("Country lookup failed:", err);
+    return "Unknown";
+  }
+}
+
+// simple memory session store for time spent
+const sessions = {};
 
 // ==============================
 // 📌 App + Middleware
@@ -58,7 +117,7 @@ app.use(
       "http://localhost:8080", // frontend dev server
       "http://localhost:5173", // Vite dev
       "http://localhost:3000", // CRA dev
-      "https://afftitans.com", // your production frontend
+      "https://afftitans.com", // production frontend
     ],
     methods: ["GET", "POST"],
     allowedHeaders: ["Content-Type"],
@@ -143,11 +202,23 @@ app.post("/api/parse-network-text", async (req, res) => {
 // ==============================
 // 📌 Custom Banner Tracking
 // ==============================
-app.post("/api/custom-click", (req, res) => {
+app.post("/api/custom-click", async (req, res) => {
   const { banner_id, banner_title, section, link_url, page } = req.body || {};
-
   const ua = req.headers["user-agent"] || "";
-  const ip = req.headers["x-forwarded-for"]?.split(",")[0] || req.ip;
+  const ip = getClientIp(req);
+
+  // Browser & Country
+  const browser = parseBrowser(ua);
+  const country = await lookupCountry(ip);
+
+  // Time spent tracking
+  const now = Date.now();
+  if (!sessions[ip]) {
+    sessions[ip] = now; // first click for this IP
+  }
+  const timeSpentMs = now - sessions[ip];
+  const timeSpentMinutes = Math.floor(timeSpentMs / 60000);
+  const timeSpentSeconds = Math.floor(timeSpentMs / 1000);
 
   const click = {
     id: Date.now(),
@@ -156,22 +227,93 @@ app.post("/api/custom-click", (req, res) => {
     section,
     link_url,
     page,
-    user_agent: ua,
+    browser,
+    country,
     ip,
+    time_spent_minutes: timeSpentMinutes,
+    time_spent_seconds: timeSpentSeconds,
     clicked_at: new Date().toISOString(),
   };
 
-  const data = readData();
+
+
+let data = readData();
+
+// 🔑 unique key = banner_id + section + ip
+const key = `${banner_id}|${section}|${ip}`;
+const index = data.findIndex(
+  (c) => `${c.banner_id}|${c.section}|${c.ip}` === key
+);
+
+if (index >= 0) {
+  // ✅ Update existing record
+  data[index] = {
+    ...data[index],
+    browser,
+    country,
+    time_spent_minutes: timeSpentMinutes,
+    time_spent_seconds: timeSpentSeconds,
+    clicked_at: new Date().toISOString(), // refresh last clicked
+  };
+} else {
+  // ✅ Insert new
   data.push(click);
-  writeData(data);
+}
+
+writeData(data);
 
   res.json({ ok: true });
 });
 
+// 🚀 Fetch all custom banner clicks
 app.get("/api/custom-clicks", (req, res) => {
   const data = readData();
   console.log("📤 Returning", data.length, "custom clicks");
   res.json(data);
+});
+
+// 🚀 Aggregated: Top IPs by section (descending by max time)
+app.get("/api/section-ip-stats", (req, res) => {
+  const data = readData();
+
+  const map = new Map(); // key = `${section}|${ip}`
+
+  for (const c of data) {
+    const section = c.section || "unknown";
+    const ip = c.ip || "unknown";
+    const key = `${section}|${ip}`;
+    const current =
+      map.get(key) || {
+        section,
+        ip,
+        max_time: 0,
+        max_time_seconds: 0,
+        last_clicked_at: null,
+      };
+
+    const tMin = Number.isFinite(c.time_spent_minutes)
+      ? c.time_spent_minutes
+      : 0;
+    const tSec = Number.isFinite(c.time_spent_seconds)
+      ? c.time_spent_seconds
+      : 0;
+
+    if (tMin > current.max_time) {
+      current.max_time = tMin;
+      current.last_clicked_at = c.clicked_at || current.last_clicked_at;
+    }
+    if (tSec > current.max_time_seconds) {
+      current.max_time_seconds = tSec;
+    }
+
+    map.set(key, current);
+  }
+
+  const list = Array.from(map.values()).sort(
+    (a, b) => b.max_time - a.max_time
+  );
+
+  res.json(list);
 });
 
 // ==============================

@@ -9,7 +9,7 @@ import { ChevronDown, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Footer from "@/components/Footer";
 import TopBar from "@/components/TopBar";
-import { TRACKING_API } from "@/config";
+// import { TRACKING_API } from "@/config";
 
 interface Network {
   id: string;
@@ -188,26 +188,31 @@ const BannerDisplay = ({
     : SUPABASE_BANNERS_BASE + currentBanner.image_url?.trim();
 
   // ✅ Cyclic link click handler
-  const handleBannerClick = async (banner: Banner, e: React.MouseEvent) => {
-    e.stopPropagation();
+ // inside BannerDisplay component in Browse.tsx
+const handleBannerClick = async (banner: Banner, e: React.MouseEvent) => {
+  e.stopPropagation();
 
-    const links = (banner as any).link_urls || [banner.link_url].filter(Boolean);
-    if (!links || links.length === 0) return;
+  const links = (banner as any).link_urls || [banner.link_url].filter(Boolean);
+  if (!links || links.length === 0) return;
 
-    const currentIndex = clickIndexMap[banner.id] || 0;
-    const linkToOpen = links[currentIndex % links.length];
+  const currentIndex = clickIndexMap[banner.id] || 0;
+  const linkToOpen = links[currentIndex % links.length];
 
+  // ✅ single, full payload log
+  await logCustomClick({ banner, linkOpened: linkToOpen, section });
 
+  // open the advertiser link
+  window.open(linkToOpen, "_blank", "noopener,noreferrer");
 
-    window.open(linkToOpen, "_blank", "noopener,noreferrer");
-    await logBannerClick(banner.id);
-    await logCustomClick({ banner, linkOpened: linkToOpen, section });
+  // optional: your Supabase logger
+  await logBannerClick(banner.id);
 
-    setClickIndexMap((prev) => ({
-      ...prev,
-      [banner.id]: (currentIndex + 1) % links.length,
-    }));
-  };
+  setClickIndexMap(prev => ({
+    ...prev,
+    [banner.id]: (currentIndex + 1) % links.length,
+  }));
+};
+
 
   return (
     <div className={containerClass}>
@@ -329,21 +334,21 @@ const handleBannerClick = async (banner: Banner, e: React.MouseEvent) => {
   await logBannerClick(banner.id);
 
   // 🚀 Log to Custom Server
-  try {
-    const res = await fetch("http://localhost:5000/api/custom-click", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        banner_id: banner.id,
-        user_agent: navigator.userAgent,
-      }),
-    });
+  // try {
+  //   const res = await fetch("http://localhost:5000/api/custom-click", {
+  //     method: "POST",
+  //     headers: { "Content-Type": "application/json" },
+  //     body: JSON.stringify({
+  //       banner_id: banner.id,
+  //       user_agent: navigator.userAgent,
+  //     }),
+  //   });
 
-    const data = await res.json();
-    console.log("✅ Custom click logged:", data);
-  } catch (err) {
-    console.error("❌ Failed to log custom click:", err);
-  }
+  //   const data = await res.json();
+  //   console.log("✅ Custom click logged:", data);
+  // } catch (err) {
+  //   console.error("❌ Failed to log custom click:", err);
+  // }
 
   // 🚀 Rotate link index
   setClickIndexMap((prev) => ({
