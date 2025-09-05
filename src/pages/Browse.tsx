@@ -106,7 +106,6 @@ const useRotatingBanners = (banners: Banner[], intervalMs: number = 5000) => {
 
 const SUPABASE_BANNERS_BASE =
   "https://booohlpwrvqtgvlngzrf.supabase.co/storage/v1/object/public/images/banners/";
-
 const BannerDisplay = ({
   banners,
   section,
@@ -117,12 +116,11 @@ const BannerDisplay = ({
   intervalMs?: number;
 }) => {
   const currentBanner = useRotatingBanners(banners, intervalMs);
+  const [clickIndexMap, setClickIndexMap] = useState<Record<string, number>>({});
 
   if (!currentBanner) return null;
 
-  const isSidebar = section === "sidebar";
-  const isFixed = section === "fixed-top" || section === "fixed-bottom";
-
+  // ✅ Keep container + image class logic
   let containerClass = "";
   let imageClass = "";
 
@@ -150,26 +148,36 @@ const BannerDisplay = ({
       break;
   }
 
-  // Build full banner URL
+  // ✅ Full image URL
   const bannerSrc = currentBanner.image_url?.startsWith("http")
     ? currentBanner.image_url
     : SUPABASE_BANNERS_BASE + currentBanner.image_url?.trim();
 
-  console.log("Banner src:", bannerSrc);
+  // ✅ Cyclic link click handler
+  const handleBannerClick = async (banner: Banner, e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    const links = (banner as any).link_urls || [banner.link_url].filter(Boolean);
+    if (!links || links.length === 0) return;
+
+    const currentIndex = clickIndexMap[banner.id] || 0;
+    const linkToOpen = links[currentIndex % links.length];
+
+    window.open(linkToOpen, "_blank", "noopener,noreferrer");
+    await logBannerClick(banner.id);
+
+    setClickIndexMap((prev) => ({
+      ...prev,
+      [banner.id]: (currentIndex + 1) % links.length,
+    }));
+  };
 
   return (
     <div className={containerClass}>
-<a
-  href={currentBanner.link_url || "#"}
-  target="_blank"
-  rel="noopener noreferrer"
-  className="block w-full"
-  onClick={async (e) => {
-    e.stopPropagation();
-    await logBannerClick(currentBanner.id);
-  }}
->
-
+      <div
+        className="block w-full cursor-pointer"
+        onClick={(e) => handleBannerClick(currentBanner, e)}
+      >
         <img
           src={bannerSrc}
           alt={`${section} banner`}
@@ -179,13 +187,33 @@ const BannerDisplay = ({
             e.currentTarget.style.display = "none";
           }}
         />
-      </a>
+      </div>
     </div>
   );
 };
 
+
 // Sidebar version
 const SidebarBannerDisplay = ({ banners }: { banners: Banner[] }) => {
+  const [clickIndexMap, setClickIndexMap] = useState<Record<string, number>>({});
+
+  const handleBannerClick = async (banner: Banner, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const links = (banner as any).link_urls || [banner.link_url].filter(Boolean);
+    if (!links || links.length === 0) return;
+
+    const currentIndex = clickIndexMap[banner.id] || 0;
+    const linkToOpen = links[currentIndex % links.length];
+
+    window.open(linkToOpen, "_blank", "noopener,noreferrer");
+    await logBannerClick(banner.id);
+
+    setClickIndexMap((prev) => ({
+      ...prev,
+      [banner.id]: (currentIndex + 1) % links.length,
+    }));
+  };
+
   return (
     <div className="space-y-4">
       {banners.map((banner) => {
@@ -194,18 +222,11 @@ const SidebarBannerDisplay = ({ banners }: { banners: Banner[] }) => {
           : SUPABASE_BANNERS_BASE + banner.image_url?.trim();
 
         return (
-        <a
-          key={banner.id}
-          href={banner.link_url || "#"}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block w-full"
-          onClick={async (e) => {
-            e.stopPropagation();
-            await logBannerClick(banner.id);
-          }}
-        >
-        
+          <div
+            key={banner.id}
+            className="block w-full cursor-pointer"
+            onClick={(e) => handleBannerClick(banner, e)}
+          >
             <img
               src={bannerSrc}
               alt="Sidebar banner"
@@ -215,12 +236,13 @@ const SidebarBannerDisplay = ({ banners }: { banners: Banner[] }) => {
                 e.currentTarget.style.display = "none";
               }}
             />
-          </a>
+          </div>
         );
       })}
     </div>
   );
 };
+
 
 const Browse = () => {
   const navigate = useNavigate();
