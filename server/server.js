@@ -88,11 +88,20 @@ function getClientIp(req) {
 
 // lookup country by IP
 async function lookupCountry(ip) {
-  if (!ip || ip === "127.0.0.1") return "Localhost";
   try {
-    const res = await fetch(`https://ipapi.co/${ip}/json/`);
+    // If localhost, fetch public IP
+    if (ip === "::1" || ip === "127.0.0.1") {
+      const myIpRes = await fetch("https://api.ipify.org?format=json");
+      const myIpData = await myIpRes.json();
+      ip = myIpData.ip; // your real public IP
+    }
+
+    const res = await fetch(`https://ipinfo.io/${ip}/json?token=89f114513906ed`);
     const data = await res.json();
-    return data.country_name || "Unknown";
+
+    console.log("🌍 IPInfo Response:", ip, data);
+
+    return data.country || "Unknown";
   } catch (err) {
     console.error("Country lookup failed:", err);
     return "Unknown";
