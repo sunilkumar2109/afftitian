@@ -27,159 +27,175 @@ const Admin = () => {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [editingBanner, setEditingBanner] = useState<Banner | null | undefined>(undefined);
   const [masterData, setMasterData] = useState<MasterData | null>(null);
-  const [requests, setRequests] = useState<any[]>([]); // 🆕 network requests
+  const [requests, setRequests] = useState<any[]>([]);
   const [bannerClicks, setBannerClicks] = useState<any[]>([]);
+  const [customBannerClicks, setCustomBannerClicks] = useState<any[]>([]);
 
+  // ✅ Custom Clicks Loader
+  const loadCustomData = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/custom-clicks"); // point to backend server
+      if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
+      const data = await res.json();
+      console.log("Custom clicks from server:", data); // 👀 debug
+      setCustomBannerClicks(data);
+    } catch (err) {
+      console.error("Failed to load custom clicks", err);
+    }
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       setUser(user);
       setLoading(false);
-      if (user) loadData();
+      if (user) {
+        loadData();
+        loadCustomData(); // ✅ also load custom clicks
+      }
     };
     checkAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
-      if (session?.user) loadData();
+      if (session?.user) {
+        loadData();
+        loadCustomData(); // ✅ reload when auth changes
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
- const loadData = async () => {
-  try {
-    // Load networks
-    const { data: networksData, error: networksError } = await supabase
-      .from("networks")
-      .select("*")
-      .order("priority_order", { ascending: false });
-    if (networksError) throw networksError;
-    setNetworks(networksData || []);
+  const loadData = async () => {
+    try {
+      // Load networks
+      const { data: networksData, error: networksError } = await supabase
+        .from("networks")
+        .select("*")
+        .order("priority_order", { ascending: false });
+      if (networksError) throw networksError;
+      setNetworks(networksData || []);
 
-    // Load offers
-    const { data: offersData, error: offersError } = await supabase
-      .from("offers")
-      .select(`*, networks!inner(name)`)
-      .order("priority_order", { ascending: false });
-    if (offersError) throw offersError;
-    setOffers(offersData || []);
+      // Load offers
+      const { data: offersData, error: offersError } = await supabase
+        .from("offers")
+        .select(`*, networks!inner(name)`)
+        .order("priority_order", { ascending: false });
+      if (offersError) throw offersError;
+      setOffers(offersData || []);
 
-    // Load banners
-    const { data: bannersData, error: bannersError } = await supabase
-      .from("banners")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (bannersError) throw bannersError;
+      // Load banners
+      const { data: bannersData, error: bannersError } = await supabase
+        .from("banners")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (bannersError) throw bannersError;
 
-    const { data: rotationsData, error: rotationsError } = await supabase
-      .from("banner_rotations")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (rotationsError) throw rotationsError;
+      const { data: rotationsData, error: rotationsError } = await supabase
+        .from("banner_rotations")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (rotationsError) throw rotationsError;
 
-    const mergedBanners = [
-      ...(bannersData || []),
-      ...(rotationsData || []).map((r) => ({ ...r, is_rotation: true })),
-    ];
-    setBanners(mergedBanners);
+      const mergedBanners = [
+        ...(bannersData || []),
+        ...(rotationsData || []).map((r) => ({ ...r, is_rotation: true })),
+      ];
+      setBanners(mergedBanners);
 
-    // Load master data
-    const { data: masterDataRes, error: masterError } = await supabase
-      .from("master_data")
-      .select("*")
-      .limit(1)
-      .single();
-    if (masterError) throw masterError;
-    setMasterData({
-      ...masterDataRes,
-      geo_list: Array.isArray(masterDataRes.geo_list)
-        ? (masterDataRes.geo_list as Array<{ code: string; name: string }>)
-        : [],
-    });
+      // Load master data
+      const { data: masterDataRes, error: masterError } = await supabase
+        .from("master_data")
+        .select("*")
+        .limit(1)
+        .single();
+      if (masterError) throw masterError;
+      setMasterData({
+        ...masterDataRes,
+        geo_list: Array.isArray(masterDataRes.geo_list)
+          ? (masterDataRes.geo_list as Array<{ code: string; name: string }>)
+          : [],
+      });
 
-    // Load banner click logs
-// 1. Get all clicks (raw logs)
-const { data: clicks, error: clickError } = await supabase
-  .from("banner_clicks")
-  .select("*")
-  .order("clicked_at", { ascending: false });
+      // Load banner click logs
+      const { data: clicks, error: clickError } = await supabase
+        .from("banner_clicks")
+        .select("*")
+        .order("clicked_at", { ascending: false });
+      if (clickError) throw clickError;
 
-if (clickError) throw clickError;
+      const { data: bannersRes, error: bannerError } = await supabase
+        .from("banners")
+        .select("id, image_url");
+      if (bannerError) throw bannerError;
 
-// 2. Get banners
-const { data: banners, error: bannerError } = await supabase
-  .from("banners")
-  .select("id, image_url");
+      const { data: clickStats, error: statsError } = await supabase
+        .from("banner_click_counts")
+        .select("*")
+        .order("click_count", { ascending: false });
+      if (statsError) throw statsError;
 
-if (bannerError) throw bannerError;
+      const merged = clickStats?.map((stat) => {
+        const banner = bannersRes?.find((b) => b.id === stat.banner_id);
+        const lastClick = clicks?.find((c) => c.banner_id === stat.banner_id);
+        const cleanIp = (ip: string | null | undefined) =>
+          ip ? ip.split(",")[0].trim() : "—";
+        const firstClick = clicks
+          ?.filter((c) => c.banner_id === stat.banner_id)
+          .slice(-1)[0];
 
-// 3. Get aggregated click counts
-const { data: clickStats, error: statsError } = await supabase
-  .from("banner_click_counts")
-  .select("*")
-  .order("click_count", { ascending: false });
+        return {
+          banner_id: stat.banner_id,
+          image_url: banner?.image_url,
+          click_count: stat.click_count,
+          country: lastClick?.country || "Unknown",
+          ip_address: cleanIp(lastClick?.ip_address),
+          clicked_at: lastClick?.clicked_at || null,
+          first_country: firstClick?.country || "Unknown",
+          first_ip: cleanIp(firstClick?.ip_address),
+          first_clicked_at: firstClick?.clicked_at || null,
+        };
+      });
 
-if (statsError) throw statsError;
+      setBannerClicks(merged || []);
 
-// 4. Merge into one row per banner
-const merged = clickStats?.map((stat) => {
-  const banner = banners?.find((b) => b.id === stat.banner_id);
-  const lastClick = clicks?.find((c) => c.banner_id === stat.banner_id); // first one since clicks are ordered DESC
-const cleanIp = (ip: string | null | undefined) =>
-  ip ? ip.split(",")[0].trim() : "—";
-
-const firstClick = clicks
-  ?.filter((c) => c.banner_id === stat.banner_id)
-  .slice(-1)[0]; // oldest because list is DESC
-
-return {
-  banner_id: stat.banner_id,
-  image_url: banner?.image_url,
-  click_count: stat.click_count,
-
-  // last click info
-  country: lastClick?.country || "Unknown",
-  ip_address: cleanIp(lastClick?.ip_address),
-  clicked_at: lastClick?.clicked_at || null,
-
-  // 🆕 first click info
-  first_country: firstClick?.country || "Unknown",
-  first_ip: cleanIp(firstClick?.ip_address),
-  first_clicked_at: firstClick?.clicked_at || null,
-};
-
-});
-
-setBannerClicks(merged || []);
-
-
-
-    // Load requests
-    const { data: rqData, error: rqError } = await supabase
-      .from("network_requests")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (rqError) throw rqError;
-    setRequests(rqData || []);
-  } catch (error) {
-    console.error("Error loading data:", error);
-    toast({
-      title: "Error",
-      description: "Failed to load data",
-      variant: "destructive",
-    });
-  }
-};
+      // Load requests
+      const { data: rqData, error: rqError } = await supabase
+        .from("network_requests")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (rqError) throw rqError;
+      setRequests(rqData || []);
+    } catch (error) {
+      console.error("Error loading data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load data",
+        variant: "destructive",
+      });
+    }
+  };
 
   const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
     if (error) {
-      toast({ title: "Login Failed", description: error.message, variant: "destructive" });
+      toast({
+        title: "Login Failed",
+        description: error.message,
+        variant: "destructive",
+      });
     } else {
       setUser(data.user);
       loadData();
+      loadCustomData();
     }
   };
 
@@ -215,8 +231,14 @@ setBannerClicks(merged || []);
             Admin Dashboard
           </h1>
           <div className="flex flex-wrap justify-center sm:justify-end items-center gap-2">
-            <Badge variant="outline" className="text-xs sm:text-sm">{user.email}</Badge>
-            <Button onClick={signOut} variant="outline" className="text-xs sm:text-sm px-3 py-1">
+            <Badge variant="outline" className="text-xs sm:text-sm">
+              {user.email}
+            </Badge>
+            <Button
+              onClick={signOut}
+              variant="outline"
+              className="text-xs sm:text-sm px-3 py-1"
+            >
               Sign Out
             </Button>
           </div>
@@ -226,99 +248,148 @@ setBannerClicks(merged || []);
       <div className="container mx-auto px-2 sm:px-4 py-8">
         <Tabs defaultValue="networks" className="space-y-6">
           <TabsList className="flex flex-wrap gap-2 w-full justify-center sm:justify-start">
-            <TabsTrigger value="networks" className="text-xs sm:text-sm px-2 py-1">Networks</TabsTrigger>
-            <TabsTrigger value="offers" className="text-xs sm:text-sm px-2 py-1">Offers</TabsTrigger>
-            <TabsTrigger value="banners" className="text-xs sm:text-sm px-2 py-1">Banners</TabsTrigger>
-            <TabsTrigger value="network-requests" className="text-xs sm:text-sm px-2 py-1">Network Requests</TabsTrigger>
-            <TabsTrigger value="add-network" className="text-xs sm:text-sm px-2 py-1">Add Network</TabsTrigger>
-            <TabsTrigger value="add-offer" className="text-xs sm:text-sm px-2 py-1">Add Offer</TabsTrigger>
-            <TabsTrigger value="affiliate-details" className="text-xs sm:text-sm px-2 py-1">Affiliate Details</TabsTrigger>
-            <TabsTrigger value="banner-details" className="text-xs sm:text-sm px-2 py-1">
-  Banner Details
-</TabsTrigger>
-
+            <TabsTrigger value="networks">Networks</TabsTrigger>
+            <TabsTrigger value="offers">Offers</TabsTrigger>
+            <TabsTrigger value="banners">Banners</TabsTrigger>
+            <TabsTrigger value="network-requests">Network Requests</TabsTrigger>
+            <TabsTrigger value="add-network">Add Network</TabsTrigger>
+            <TabsTrigger value="add-offer">Add Offer</TabsTrigger>
+            <TabsTrigger value="affiliate-details">Affiliate Details</TabsTrigger>
+            <TabsTrigger value="banner-details">Banner Details</TabsTrigger>
+            <TabsTrigger value="custom-banner-details">Custom Banner Details</TabsTrigger>
           </TabsList>
+
+          {/* Banner Click Details */}
           <TabsContent value="banner-details">
-  <Card>
-    <CardHeader>
-      <CardTitle>Banner Click Details</CardTitle>
-    </CardHeader>
-    <CardContent>
-      {bannerClicks.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No banner clicks found.</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
-           <thead>
-  <tr className="bg-muted text-left">
-    <th className="p-2 border">Banner</th>
-    <th className="p-2 border">latest Country</th>
-    <th className="p-2 border">latest IP</th>
-    <th className="p-2 border">latest Clicked time</th>
-    <th className="p-2 border">Click Count</th> {/* 🆕 new column */}
-    <th className="p-2 border">First IP</th>
-    <th className="p-2 border">First Clicked At</th>
-    <th className="p-2 border">First Country</th>
+            <Card>
+              <CardHeader>
+                <CardTitle>Banner Click Details</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {bannerClicks.length === 0 ? (
+                  <p>No banner clicks found.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm border-collapse">
+                      <thead>
+                        <tr>
+                          <th className="p-2 border">Banner</th>
+                          <th className="p-2 border">latest Country</th>
+                          <th className="p-2 border">latest IP</th>
+                          <th className="p-2 border">latest Clicked time</th>
+                          <th className="p-2 border">Click Count</th>
+                          <th className="p-2 border">First IP</th>
+                          <th className="p-2 border">First Clicked At</th>
+                          <th className="p-2 border">First Country</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {bannerClicks.map((click) => (
+                          <tr key={click.banner_id}>
+                            <td className="p-2 border">
+                              {click.image_url ? (
+                                <img
+                                  src={click.image_url}
+                                  alt="banner"
+                                  className="w-16 h-10 object-cover rounded"
+                                />
+                              ) : (
+                                "No Image"
+                              )}
+                            </td>
+                            <td className="p-2 border">{click.country}</td>
+                            <td className="p-2 border">{click.ip_address}</td>
+                            <td className="p-2 border">
+                              {click.clicked_at
+                                ? new Date(click.clicked_at).toLocaleString()
+                                : "—"}
+                            </td>
+                            <td className="p-2 border">{click.click_count}</td>
+                            <td className="p-2 border">{click.first_ip}</td>
+                            <td className="p-2 border">
+                              {click.first_clicked_at
+                                ? new Date(click.first_clicked_at).toLocaleString()
+                                : "—"}
+                            </td>
+                            <td className="p-2 border">{click.first_country}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-  </tr>
-</thead>
-<tbody>
-  {bannerClicks.map((click) => (
-    <tr key={click.banner_id} className="border-t">
-      <td className="p-2 border">
-        {click.image_url ? (
-          <img
-            src={click.image_url}
-            alt="banner"
-            className="w-16 h-10 object-cover rounded"
-          />
-        ) : (
-          "No Image"
-        )}
-      </td>
-      <td className="p-2 border">{click.country}</td>
-      <td className="p-2 border">{click.ip_address}</td>
-      <td className="p-2 border">
-        {click.clicked_at
-          ? new Date(click.clicked_at).toLocaleString()
-          : "—"}
-      </td>
-      <td className="p-2 border">{click.click_count}</td>
-      <td className="p-2 border">{click.first_ip}</td>
-<td className="p-2 border">
-  {click.first_clicked_at
-    ? new Date(click.first_clicked_at).toLocaleString()
-    : "—"}
-</td>
-<td className="p-2 border">{click.first_country}</td>
-
-    </tr>
-  ))}
-</tbody>
-
-
-
-          </table>
-        </div>
-      )}
-    </CardContent>
-  </Card>
-</TabsContent>
-
+          {/* Custom Banner Click Details */}
+          <TabsContent value="custom-banner-details">
+            <Card>
+              <CardHeader>
+                <CardTitle>Custom Banner Click Details</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {customBannerClicks.length === 0 ? (
+                  <p>No custom clicks found.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm border-collapse">
+                      <thead>
+                        <tr>
+                          <th className="p-2 border">Banner ID</th>
+                          <th className="p-2 border">IP</th>
+                          <th className="p-2 border">Country</th>
+                          <th className="p-2 border">User Agent</th>
+                          <th className="p-2 border">Clicked At</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {customBannerClicks.map((c) => (
+                          <tr key={c.id}>
+                            <td className="p-2 border">{c.banner_id}</td>
+                            <td className="p-2 border">{c.ip}</td>
+                            <td className="p-2 border">{c.country}</td>
+                            <td className="p-2 border truncate">{c.user_agent}</td>
+                            <td className="p-2 border">
+                              {c.clicked_at
+                                ? new Date(c.clicked_at).toLocaleString()
+                                : "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="networks">
-            <NetworkList networks={networks} onUpdate={loadData} masterData={masterData} />
+            <NetworkList
+              networks={networks}
+              onUpdate={loadData}
+              masterData={masterData}
+            />
           </TabsContent>
 
           <TabsContent value="offers">
-            <OfferList offers={offers} networks={networks} onUpdate={loadData} masterData={masterData} />
+            <OfferList
+              offers={offers}
+              networks={networks}
+              onUpdate={loadData}
+              masterData={masterData}
+            />
           </TabsContent>
 
           <TabsContent value="banners">
             <div className="space-y-6">
               {editingBanner !== undefined && (
-                <BannerForm 
-                  onSuccess={() => { loadData(); setEditingBanner(undefined); }}
+                <BannerForm
+                  onSuccess={() => {
+                    loadData();
+                    setEditingBanner(undefined);
+                  }}
                   editingBanner={editingBanner || null}
                   onCancelEdit={() => setEditingBanner(undefined)}
                 />
@@ -360,43 +431,44 @@ const NetworkRequestList = ({
   const { toast } = useToast();
 
   const handleApprove = async (req: any) => {
-    // insert into networks
-    const { error: insErr } = await supabase.from("networks").insert([{
-      name: req.name,
-      type: req.type,
-      description: req.description,
-      logo_url: req.logo_url,
-      website_link: req.website_link,
-      payment_frequency: req.payment_frequency,
-      payment_methods: req.payment_methods,
-      categories: req.categories,
-      tags: req.tags,
-      is_active: req.is_active,
-      priority_order: req.priority_order,
-      number_of_offers: req.number_of_offers,
-      type_of_commission: req.type_of_commission,
-      minimum_withdrawal: req.minimum_withdrawal,
-      referral_commission: req.referral_commission,
-      tracking_software: req.tracking_software,
-      tracking_link: req.tracking_link,
-      payment_constancy: req.payment_constancy,
-      website_email: req.website_email,
-      facebook_id: req.facebook_id,
-      twitter_id: req.twitter_id,
-      linkedin_id: req.linkedin_id,
-      ceo: req.ceo,
-      headquarter: req.headquarter,
-      phone_number: req.phone_number,
-      affiliate_manager: req.affiliate_manager,
-      expiration_date: req.expiration_date,
-    }]);
+    const { error: insErr } = await supabase.from("networks").insert([
+      {
+        name: req.name,
+        type: req.type,
+        description: req.description,
+        logo_url: req.logo_url,
+        website_link: req.website_link,
+        payment_frequency: req.payment_frequency,
+        payment_methods: req.payment_methods,
+        categories: req.categories,
+        tags: req.tags,
+        is_active: req.is_active,
+        priority_order: req.priority_order,
+        number_of_offers: req.number_of_offers,
+        type_of_commission: req.type_of_commission,
+        minimum_withdrawal: req.minimum_withdrawal,
+        referral_commission: req.referral_commission,
+        tracking_software: req.tracking_software,
+        tracking_link: req.tracking_link,
+        payment_constancy: req.payment_constancy,
+        website_email: req.website_email,
+        facebook_id: req.facebook_id,
+        twitter_id: req.twitter_id,
+        linkedin_id: req.linkedin_id,
+        ceo: req.ceo,
+        headquarter: req.headquarter,
+        phone_number: req.phone_number,
+        affiliate_manager: req.affiliate_manager,
+        expiration_date: req.expiration_date,
+      },
+    ]);
     if (insErr) {
       toast({ title: "Error", description: insErr.message, variant: "destructive" });
       return;
     }
 
-    // update request status
-    await supabase.from("network_requests")
+    await supabase
+      .from("network_requests")
       .update({ status: "approved", approved_at: new Date().toISOString() })
       .eq("id", req.id);
 
@@ -405,9 +477,7 @@ const NetworkRequestList = ({
   };
 
   const handleReject = async (req: any) => {
-    await supabase.from("network_requests")
-      .update({ status: "rejected" })
-      .eq("id", req.id);
+    await supabase.from("network_requests").update({ status: "rejected" }).eq("id", req.id);
 
     toast({ title: "Rejected", description: `${req.name} has been rejected` });
     onReject();
@@ -419,21 +489,32 @@ const NetworkRequestList = ({
         <CardTitle>Network Requests</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {requests.length === 0 && <p className="text-sm text-muted-foreground">No requests found.</p>}
+        {requests.length === 0 && <p>No requests found.</p>}
         {requests.map((req) => (
           <div key={req.id} className="border rounded-lg p-3 flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <div className="font-medium">{req.name}</div>
-              <Badge variant={req.status === "pending" ? "outline" : "default"}>{req.status}</Badge>
+              <Badge variant={req.status === "pending" ? "outline" : "default"}>
+                {req.status}
+              </Badge>
             </div>
             <div className="text-sm text-muted-foreground">
               Requested: {new Date(req.created_at).toLocaleString()}
             </div>
             <div className="flex gap-2">
-              <Button size="sm" onClick={() => handleApprove(req)} disabled={req.status !== "pending"}>
+              <Button
+                size="sm"
+                onClick={() => handleApprove(req)}
+                disabled={req.status !== "pending"}
+              >
                 Approve
               </Button>
-              <Button size="sm" variant="outline" onClick={() => handleReject(req)} disabled={req.status !== "pending"}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleReject(req)}
+                disabled={req.status !== "pending"}
+              >
                 Reject
               </Button>
             </div>
@@ -469,7 +550,9 @@ const LoginForm = ({ onSignIn }: { onSignIn: (email: string, password: string) =
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
-            <Button type="submit" className="w-full">Sign In</Button>
+            <Button type="submit" className="w-full">
+              Sign In
+            </Button>
           </form>
         </CardContent>
       </Card>

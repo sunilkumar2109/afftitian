@@ -9,52 +9,47 @@ const BannerDisplay = () => {
   const [showBanner, setShowBanner] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
 
-useEffect(() => {
-  const fetchBanners = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('banners')
-        .select('*')
-        .order('priority_order', { ascending: false });
+  useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('banners')
+          .select('*')
+          .order('priority_order', { ascending: false });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      const bannersWithFullUrl = (data || []).map((banner) => ({
-        ...banner,
-        image_url: banner.image_url.startsWith('http')
-          ? banner.image_url
-          : `https://booohlpwrvqtgvlngzrf.supabase.co/storage/v1/object/public/images/banners/${banner.image_url}`,
-      }));
+        const bannersWithFullUrl = (data || []).map((banner) => ({
+          ...banner,
+          image_url: banner.image_url.startsWith('http')
+            ? banner.image_url
+            : `https://booohlpwrvqtgvlngzrf.supabase.co/storage/v1/object/public/images/banners/${banner.image_url}`,
+        }));
 
-      setBanners(bannersWithFullUrl);
-    } catch (error) {
-      console.error('Error fetching banners:', error);
-    }
-  };
+        setBanners(bannersWithFullUrl);
+      } catch (error) {
+        console.error('Error fetching banners:', error);
+      }
+    };
 
-  fetchBanners();
-}, []);
-
+    fetchBanners();
+  }, []);
 
   useEffect(() => {
     if (banners.length > 0) {
-      // Show banner after 5 seconds
       const timer = setTimeout(() => {
         setShowBanner(true);
         setIsVisible(true);
       }, 5000);
-
       return () => clearTimeout(timer);
     }
   }, [banners]);
 
   useEffect(() => {
     if (banners.length > 1 && showBanner) {
-      // Rotate banners every 10 seconds
       const interval = setInterval(() => {
         setCurrentBannerIndex((prev) => (prev + 1) % banners.length);
       }, 10000);
-
       return () => clearInterval(interval);
     }
   }, [banners.length, showBanner]);
@@ -64,8 +59,25 @@ useEffect(() => {
     setTimeout(() => setShowBanner(false), 300);
   };
 
-  const handleBannerClick = () => {
+  const handleBannerClick = async () => {
     const currentBanner = banners[currentBannerIndex];
+    if (!currentBanner) return;
+
+    // 👉 Log custom click
+    try {
+      await fetch("http://localhost:5000/api/custom-click", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          banner_id: currentBanner.id,
+          user_agent: navigator.userAgent,
+        }),
+      });
+    } catch (err) {
+      console.error("Failed to log custom click:", err);
+    }
+
+    // 👉 Open banner link
     if (currentBanner?.link_url) {
       window.open(currentBanner.link_url, '_blank');
     }
@@ -74,12 +86,12 @@ useEffect(() => {
   if (!showBanner || banners.length === 0) return null;
 
   const currentBanner = banners[currentBannerIndex];
-const getBannerUrl = (imageUrl: string) => {
-  if (!imageUrl) return "";
-  const trimmed = imageUrl.trim(); // remove leading/trailing spaces
-  if (trimmed.startsWith("http")) return trimmed; // already full URL
-  return `https://booohlpwrvqtgvlngzrf.supabase.co/storage/v1/object/public/images/banners/${trimmed}`;
-};
+  const getBannerUrl = (imageUrl: string) => {
+    if (!imageUrl) return "";
+    const trimmed = imageUrl.trim();
+    if (trimmed.startsWith("http")) return trimmed;
+    return `https://booohlpwrvqtgvlngzrf.supabase.co/storage/v1/object/public/images/banners/${trimmed}`;
+  };
 
   return (
     <div
@@ -103,13 +115,11 @@ const getBannerUrl = (imageUrl: string) => {
         >
           <img
             src={getBannerUrl(currentBanner?.image_url || "")}
-
             alt={currentBanner?.alt_text || 'Banner'}
             className="w-full h-auto object-cover"
             style={{ maxHeight: '300px' }}
           />
         </div>
-        
 
         {/* Banner Indicators */}
         {banners.length > 1 && (

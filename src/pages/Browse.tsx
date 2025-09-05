@@ -268,6 +268,45 @@ const Browse = () => {
   const [offerSearchTerm, setOfferSearchTerm] = useState("");
   // New state for global search
   const [globalSearchTerm, setGlobalSearchTerm] = useState("");
+const handleBannerClick = async (banner: Banner, e: React.MouseEvent) => {
+  e.stopPropagation();
+  const links = (banner as any).link_urls || [banner.link_url].filter(Boolean);
+  if (!links || links.length === 0) return;
+
+  const currentIndex = clickIndexMap[banner.id] || 0;
+  const linkToOpen = links[currentIndex % links.length];
+
+  // 🚀 Open link
+  window.open(linkToOpen, "_blank", "noopener,noreferrer");
+
+  // 🚀 Log to Supabase (your existing system)
+  await logBannerClick(banner.id);
+
+  // 🚀 Log to Custom Server
+  try {
+    const res = await fetch("http://localhost:5000/api/custom-click", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        banner_id: banner.id,
+        user_agent: navigator.userAgent,
+      }),
+    });
+
+    const data = await res.json();
+    console.log("✅ Custom click logged:", data);
+  } catch (err) {
+    console.error("❌ Failed to log custom click:", err);
+  }
+
+  // 🚀 Rotate link index
+  setClickIndexMap((prev) => ({
+    ...prev,
+    [banner.id]: (currentIndex + 1) % links.length,
+  }));
+};
+
+
 useEffect(() => {
   console.log("All banners from DB:", allBanners);
 }, [allBanners]);
