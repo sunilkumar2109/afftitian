@@ -127,15 +127,29 @@ if (statsError) throw statsError;
 const merged = clickStats?.map((stat) => {
   const banner = banners?.find((b) => b.id === stat.banner_id);
   const lastClick = clicks?.find((c) => c.banner_id === stat.banner_id); // first one since clicks are ordered DESC
+const cleanIp = (ip: string | null | undefined) =>
+  ip ? ip.split(",")[0].trim() : "—";
 
-  return {
-    banner_id: stat.banner_id,
-    image_url: banner?.image_url,
-    click_count: stat.click_count,
-    country: lastClick?.country || "Unknown",
-    ip_address: lastClick?.ip_address || "—",
-    clicked_at: lastClick?.clicked_at || null,
-  };
+const firstClick = clicks
+  ?.filter((c) => c.banner_id === stat.banner_id)
+  .slice(-1)[0]; // oldest because list is DESC
+
+return {
+  banner_id: stat.banner_id,
+  image_url: banner?.image_url,
+  click_count: stat.click_count,
+
+  // last click info
+  country: lastClick?.country || "Unknown",
+  ip_address: cleanIp(lastClick?.ip_address),
+  clicked_at: lastClick?.clicked_at || null,
+
+  // 🆕 first click info
+  first_country: firstClick?.country || "Unknown",
+  first_ip: cleanIp(firstClick?.ip_address),
+  first_clicked_at: firstClick?.clicked_at || null,
+};
+
 });
 
 setBannerClicks(merged || []);
@@ -238,10 +252,14 @@ setBannerClicks(merged || []);
            <thead>
   <tr className="bg-muted text-left">
     <th className="p-2 border">Banner</th>
-    <th className="p-2 border">Country</th>
-    <th className="p-2 border">IP</th>
-    <th className="p-2 border">Clicked At</th>
+    <th className="p-2 border">latest Country</th>
+    <th className="p-2 border">latest IP</th>
+    <th className="p-2 border">latest Clicked time</th>
     <th className="p-2 border">Click Count</th> {/* 🆕 new column */}
+    <th className="p-2 border">First IP</th>
+    <th className="p-2 border">First Clicked At</th>
+    <th className="p-2 border">First Country</th>
+
   </tr>
 </thead>
 <tbody>
@@ -266,6 +284,14 @@ setBannerClicks(merged || []);
           : "—"}
       </td>
       <td className="p-2 border">{click.click_count}</td>
+      <td className="p-2 border">{click.first_ip}</td>
+<td className="p-2 border">
+  {click.first_clicked_at
+    ? new Date(click.first_clicked_at).toLocaleString()
+    : "—"}
+</td>
+<td className="p-2 border">{click.first_country}</td>
+
     </tr>
   ))}
 </tbody>
