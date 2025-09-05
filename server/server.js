@@ -1,3 +1,6 @@
+// ==============================
+// 📌 Imports
+// ==============================
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
@@ -6,12 +9,18 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
+// ==============================
+// 📌 File setup
+// ==============================
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// 📂 Path to JSON file for storing custom clicks
+// Path to JSON file for storing custom clicks
 const DATA_FILE = path.join(__dirname, "custom_clicks.json");
 
+// ==============================
+// 📌 Helpers
+// ==============================
 function readData() {
   if (!fs.existsSync(DATA_FILE)) {
     console.log("ℹ️ No data file yet, returning []");
@@ -25,7 +34,7 @@ function readData() {
   }
 }
 
-function saveData(data) {
+function writeData(data) {
   try {
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
     console.log("✅ Saved", data.length, "clicks to file at:", DATA_FILE);
@@ -34,16 +43,33 @@ function saveData(data) {
   }
 }
 
+// ==============================
+// 📌 App + Middleware
+// ==============================
 dotenv.config();
 const app = express();
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-app.use(cors());
+app.set("trust proxy", true);
+
+app.use(
+  cors({
+    origin: [
+      "http://localhost:8080", // frontend dev server
+      "http://localhost:5173", // Vite dev
+      "http://localhost:3000", // CRA dev
+      "https://afftitans.com", // your production frontend
+    ],
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type"],
+  })
+);
+
 app.use(express.json());
 
-/* ==============================
-   📌 OpenAI Endpoint (unchanged)
-   ============================== */
+// ==============================
+// 📌 OpenAI Endpoint
+// ==============================
 app.post("/api/parse-network-text", async (req, res) => {
   try {
     const { text } = req.body;
@@ -114,54 +140,43 @@ app.post("/api/parse-network-text", async (req, res) => {
   }
 });
 
-/* ==============================
-   📌 Custom Banner Tracking
-   ============================== */
-
-// 🚀 Log a custom banner click
+// ==============================
+// 📌 Custom Banner Tracking
+// ==============================
 app.post("/api/custom-click", (req, res) => {
-  const { banner_id, user_agent } = req.body;
-  console.log("👉 Incoming custom click body:", req.body);
+  const { banner_id, banner_title, section, link_url, page } = req.body || {};
 
-  if (!banner_id) {
-    console.log("❌ Missing banner_id, not saving.");
-    return res.status(400).json({ error: "banner_id is required" });
-  }
+  const ua = req.headers["user-agent"] || "";
+  const ip = req.headers["x-forwarded-for"]?.split(",")[0] || req.ip;
 
-  // get client IP
-  const ip =
-    req.headers["x-forwarded-for"]?.split(",")[0] ||
-    req.connection?.remoteAddress ||
-    "unknown";
-
-  const newClick = {
-    id: Date.now().toString(),
+  const click = {
+    id: Date.now(),
     banner_id,
+    banner_title,
+    section,
+    link_url,
+    page,
+    user_agent: ua,
     ip,
-    country: "Unknown", // later you can add IP → Country lookup
-    user_agent: user_agent || "unknown",
     clicked_at: new Date().toISOString(),
   };
 
   const data = readData();
-  data.push(newClick);
-  saveData(data);
+  data.push(click);
+  writeData(data);
 
-  console.log("🖱️ New click saved:", newClick);
-
-  res.json({ success: true, click: newClick });
+  res.json({ ok: true });
 });
 
-// 🚀 Fetch all custom banner clicks
 app.get("/api/custom-clicks", (req, res) => {
   const data = readData();
   console.log("📤 Returning", data.length, "custom clicks");
   res.json(data);
 });
 
-/* ==============================
-   📌 Start Server
-   ============================== */
+// ==============================
+// 📌 Start Server
+// ==============================
 app.listen(5000, () => {
   console.log("🚀 Server running on http://localhost:5000");
   console.log("📂 Data file:", DATA_FILE);

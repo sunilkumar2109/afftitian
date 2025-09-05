@@ -9,6 +9,7 @@ import { ChevronDown, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Footer from "@/components/Footer";
 import TopBar from "@/components/TopBar";
+import { TRACKING_API } from "@/config";
 
 interface Network {
   id: string;
@@ -68,6 +69,38 @@ interface BannerRotation {
   expires_at?: string | null;
   created_at?: string;
 }
+// Where your Node server is hosted (local in dev, real URL in prod)
+// 👇 Add this before your component definitions
+const TRACKING_API =
+  (import.meta as any).env?.VITE_TRACKING_API || "http://localhost:5000";
+
+async function logCustomClick({
+  banner,
+  linkOpened,
+  section,
+}: {
+  banner: Banner;
+  linkOpened: string;
+  section: string;
+}) {
+  try {
+    await fetch(`${TRACKING_API}/api/custom-click`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        banner_id: banner.id,
+        banner_title: (banner as any).title || null,
+        section,
+        link_url: linkOpened,
+        page: window.location.pathname,
+      }),
+    });
+  } catch (err) {
+    console.error("Custom click log failed:", err);
+  }
+}
+
+
 const logBannerClick = async (bannerId: string) => {
   console.log("Click detected for banner:", bannerId); // 👈 Add this
 
@@ -117,6 +150,7 @@ const BannerDisplay = ({
 }) => {
   const currentBanner = useRotatingBanners(banners, intervalMs);
   const [clickIndexMap, setClickIndexMap] = useState<Record<string, number>>({});
+  
 
   if (!currentBanner) return null;
 
@@ -163,8 +197,11 @@ const BannerDisplay = ({
     const currentIndex = clickIndexMap[banner.id] || 0;
     const linkToOpen = links[currentIndex % links.length];
 
+
+
     window.open(linkToOpen, "_blank", "noopener,noreferrer");
     await logBannerClick(banner.id);
+    await logCustomClick({ banner, linkOpened: linkToOpen, section });
 
     setClickIndexMap((prev) => ({
       ...prev,
@@ -204,9 +241,13 @@ const SidebarBannerDisplay = ({ banners }: { banners: Banner[] }) => {
 
     const currentIndex = clickIndexMap[banner.id] || 0;
     const linkToOpen = links[currentIndex % links.length];
+    
+
 
     window.open(linkToOpen, "_blank", "noopener,noreferrer");
     await logBannerClick(banner.id);
+    await logCustomClick({ banner, linkOpened: linkToOpen, section: "sidebar" });
+
 
     setClickIndexMap((prev) => ({
       ...prev,
@@ -266,6 +307,9 @@ const Browse = () => {
   const [networkSearchTerm, setNetworkSearchTerm] = useState("");
   // New state for offer search
   const [offerSearchTerm, setOfferSearchTerm] = useState("");
+  const TRACKING_API =
+  (import.meta as any).env?.VITE_TRACKING_API || "http://localhost:5000";
+
   // New state for global search
   const [globalSearchTerm, setGlobalSearchTerm] = useState("");
 const handleBannerClick = async (banner: Banner, e: React.MouseEvent) => {
@@ -275,6 +319,8 @@ const handleBannerClick = async (banner: Banner, e: React.MouseEvent) => {
 
   const currentIndex = clickIndexMap[banner.id] || 0;
   const linkToOpen = links[currentIndex % links.length];
+  await logCustomClick({ banner, linkOpened: linkToOpen, section });
+
 
   // 🚀 Open link
   window.open(linkToOpen, "_blank", "noopener,noreferrer");
@@ -314,12 +360,22 @@ useEffect(() => {
 
   // Function to handle background click
  /* handle background click — open banner's link if present */
-const handleBackgroundClick = () => {
+const handleBackgroundClick = async () => {
   const link = (backgroundBanner as any)?.link_url || (backgroundBanner as any)?.link || "";
   if (link && link !== "#") {
-    window.open(link, "_blank", "noopener,noreferrer");
+  window.open(link, "_blank", "noopener,noreferrer");
+
+  if (backgroundBanner) {
+    await logCustomClick({
+      banner: backgroundBanner as Banner,
+      linkOpened: link,
+      section: "background",
+    });
   }
+}
+
 };
+
 
   // Function to handle network click navigation
   const handleNetworkClick = (networkId: string) => {

@@ -1,0 +1,35 @@
+[
+  {
+    "id": 1757065775588,
+    "banner_id": "b924550e-2d56-471c-8acc-bd6555a6624e",
+    "banner_title": null,
+    "section": "background",
+    "link_url": "Clickable link (optional)",
+    "page": "/",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "ip": "::1",
+    "clicked_at": "2025-09-05T09:49:35.588Z"
+  },
+  {
+    "id": 1757065785209,
+    "banner_id": "58608593-9ec0-4bc3-b288-df75c0ee106d",
+    "banner_title": null,
+    "section": "top",
+    "link_url": "http://pocketoption.com/",
+    "page": "/",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "ip": "::1",
+    "clicked_at": "2025-09-05T09:49:45.209Z"
+  },
+  {
+    "id": 1757066670993,
+    "banner_id": "390831c1-f8f8-4683-aa24-044b56c466d3",
+    "banner_title": null,
+    "section": "sidebar",
+    "link_url": "https://3aadclw3tibrlpz41kywfl0ar9.hop.clickbank.net",
+    "page": "/",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "ip": "::1",
+    "clicked_at": "2025-09-05T10:04:30.993Z"
+  }
+]

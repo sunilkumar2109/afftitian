@@ -17,6 +17,7 @@ import { AffiliateDetails } from "@/components/admin/AffiliateDetails";
 
 import NetworkList from "@/components/admin/NetworkList";
 import OfferList from "@/components/admin/OfferList";
+import { TRACKING_API } from "@/config";
 
 const Admin = () => {
   const { toast } = useToast();
@@ -30,11 +31,14 @@ const Admin = () => {
   const [requests, setRequests] = useState<any[]>([]);
   const [bannerClicks, setBannerClicks] = useState<any[]>([]);
   const [customBannerClicks, setCustomBannerClicks] = useState<any[]>([]);
+  const TRACKING_API =
+  (import.meta as any).env?.VITE_TRACKING_API || "http://localhost:5000";
 
   // ✅ Custom Clicks Loader
   const loadCustomData = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/custom-clicks"); // point to backend server
+      const res = await fetch(`${TRACKING_API}/api/custom-clicks`);
+// point to backend server
       if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
       const data = await res.json();
       console.log("Custom clicks from server:", data); // 👀 debug
