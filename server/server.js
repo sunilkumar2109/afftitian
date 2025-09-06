@@ -181,18 +181,32 @@ if (process.env.OPENAI_API_KEY) {
 
 app.set("trust proxy", true);
 
+const allowedOrigins = [
+  "http://localhost:8080",
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "https://afftitans.com",
+];
+
 app.use(
   cors({
-    origin: [
-      "http://localhost:8080",
-      "http://localhost:5173", 
-      "http://localhost:3000",
-      "https://afftitans.com",
-      /localhost:\d+$/, // Allow any localhost port
-    ],
+    origin: function (origin, callback) {
+      // allow REST tools or server-to-server requests with no origin
+      if (!origin) return callback(null, true);
+
+      // allow if in whitelist OR matches localhost:xxxx
+      if (
+        allowedOrigins.includes(origin) ||
+        /^http:\/\/localhost:\d+$/.test(origin)
+      ) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS: " + origin));
+    },
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Accept", "User-Agent"],
-    credentials: true
+    credentials: true,
   })
 );
 

@@ -87,18 +87,21 @@
     "click_count": 2
   },
   {
-    "id": 1757138847129,
+    "id": "1757140562279_gfi5ifuqj",
     "banner_id": "8b79e8ab-042c-4d71-b859-45a6e1f59ca5",
-    "banner_title": null,
+    "banner_title": "8b79e8ab-042c-4d71-b859-45a6e1f59ca5",
     "section": "top",
     "link_url": "https://www.marketcall.com/",
     "page": "/",
     "browser": "Chrome",
-    "country": "Unknown",
+    "country": "IN",
     "ip": "127.0.0.1",
-    "time_spent_minutes": 0,
-    "time_spent_seconds": 0,
-    "clicked_at": "2025-09-06T06:07:27.129Z"
+    "time_spent_minutes": 9,
+    "time_spent_seconds": 18,
+    "clicked_at": "2025-09-06T06:36:01.595Z",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "first_clicked_at": "2025-09-06T06:07:27.129Z",
+    "click_count": 3
   },
   {
     "id": 1757138963988,
@@ -194,6 +197,23 @@
     "clicked_at": "2025-09-06T06:30:44.560Z",
     "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
     "first_clicked_at": "2025-09-06T06:30:44.560Z",
+    "click_count": 1
+  },
+  {
+    "id": "1757140568535_kh4f94f48",
+    "banner_id": "a04c1a24-e30d-4cb6-b8f8-aecb15eb3849",
+    "banner_title": "a04c1a24-e30d-4cb6-b8f8-aecb15eb3849",
+    "section": "top",
+    "link_url": "http://clickhunts.com",
+    "page": "/",
+    "browser": "Chrome",
+    "country": "IN",
+    "ip": "127.0.0.1",
+    "time_spent_minutes": 9,
+    "time_spent_seconds": 24,
+    "clicked_at": "2025-09-06T06:36:07.842Z",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "first_clicked_at": "2025-09-06T06:36:07.842Z",
     "click_count": 1
   }
 ]
