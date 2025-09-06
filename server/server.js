@@ -329,8 +329,6 @@ app.get("/api/section-ip-stats", (req, res) => {
 // ==============================
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
-   console.log("📂 Data file:", DATA_FILE);
+  console.log("📂 Data file:", DATA_FILE);
 });
-
- 
 
