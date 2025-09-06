@@ -327,7 +327,10 @@ app.get("/api/section-ip-stats", (req, res) => {
 // ==============================
 // 📌 Start Server
 // ==============================
-app.listen(5000, () => {
-  console.log("🚀 Server running on http://localhost:5000");
-  console.log("📂 Data file:", DATA_FILE);
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+   console.log("📂 Data file:", DATA_FILE);
 });
+
+ 
+
