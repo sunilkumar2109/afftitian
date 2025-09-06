@@ -14,10 +14,8 @@ import OfferForm from "@/components/admin/OfferForm";
 import { BannerForm } from "@/components/admin/BannerForm";
 import { BannerList } from "@/components/admin/BannerList";
 import { AffiliateDetails } from "@/components/admin/AffiliateDetails";
-
 import NetworkList from "@/components/admin/NetworkList";
 import OfferList from "@/components/admin/OfferList";
-
 
 const Admin = () => {
   const { toast } = useToast();
@@ -32,44 +30,103 @@ const Admin = () => {
   const [bannerClicks, setBannerClicks] = useState<any[]>([]);
   const [customBannerClicks, setCustomBannerClicks] = useState<any[]>([]);
   const [sectionIpStats, setSectionIpStats] = useState<any[]>([]);
-const TRACKING_API =
-  (import.meta as any).env?.VITE_TRACKING_API || "http://localhost:5000";
+  
+  const TRACKING_API = (import.meta as any).env?.VITE_TRACKING_API || "http://localhost:5000";
 
-  // ✅ Custom Clicks Loader
-// ✅ Custom Clicks Loader
-const loadCustomData = async () => {
-  try {
-    const res = await fetch(`${TRACKING_API}/api/custom-clicks`);
-    if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
+  // Enhanced custom clicks loader with better error handling
+  const loadCustomData = async () => {
+    try {
+      console.log("📡 Fetching custom clicks from:", `${TRACKING_API}/api/custom-clicks`);
+      
+      const res = await fetch(`${TRACKING_API}/api/custom-clicks`, {
+        method: "GET",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        }
+      });
 
-    const data = await res.json(); // <- important
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      }
 
-    const sorted = (data || []).slice().sort((a: any, b: any) =>
-      (b?.time_spent_minutes ?? 0) - (a?.time_spent_minutes ?? 0)
-    );
+      const data = await res.json();
+      console.log("📊 Raw custom clicks data:", data);
 
-    setCustomBannerClicks(sorted);
+      // Ensure data is array and sort properly
+      const clicksArray = Array.isArray(data) ? data : [];
+      
+      // Sort by time spent (minutes first, then seconds)
+      const sorted = clicksArray.slice().sort((a: any, b: any) => {
+        const aMinutes = Number(a?.time_spent_minutes) || 0;
+        const bMinutes = Number(b?.time_spent_minutes) || 0;
+        
+        // First sort by minutes
+        if (bMinutes !== aMinutes) {
+          return bMinutes - aMinutes;
+        }
+        
+        // If minutes are equal, sort by seconds
+        const aSeconds = Number(a?.time_spent_seconds) || 0;
+        const bSeconds = Number(b?.time_spent_seconds) || 0;
+        return bSeconds - aSeconds;
+      });
 
-    console.log("Custom clicks from server:", sorted); // debug
-  } catch (err) {
-    console.error("Failed to load custom clicks", err);
-  }
-};
+      setCustomBannerClicks(sorted);
+      console.log("✅ Custom clicks loaded and sorted:", sorted.length, "items");
+      
+    } catch (err) {
+      console.error("❌ Failed to load custom clicks:", err);
+      toast({
+        title: "Warning",
+        description: "Failed to load custom click data from tracking server",
+        variant: "destructive",
+      });
+    }
+  };
 
-const loadSectionStats = async () => {
-  try {
-    const res = await fetch(`${TRACKING_API}/api/section-ip-stats`);
-    if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
-    const data = await res.json();
+  // Enhanced section stats loader with better error handling  
+  const loadSectionStats = async () => {
+    try {
+      console.log("📡 Fetching section stats from:", `${TRACKING_API}/api/section-ip-stats`);
+      
+      const res = await fetch(`${TRACKING_API}/api/section-ip-stats`, {
+        method: "GET",
+        headers: {
+          "Accept": "application/json", 
+          "Content-Type": "application/json"
+        }
+      });
 
-    // server already sorts but do a safety sort here too
-    const sorted = (data || []).slice().sort((a: any, b: any) => (b.max_time ?? 0) - (a.max_time ?? 0));
-    setSectionIpStats(sorted);
-  } catch (err) {
-    console.error("Failed to load section-ip-stats", err);
-  }
-};
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      }
 
+      const data = await res.json();
+      console.log("📊 Raw section stats data:", data);
+
+      // Ensure data is array and sort properly
+      const statsArray = Array.isArray(data) ? data : [];
+      
+      // Sort by max_time in descending order (highest time first)
+      const sorted = statsArray.slice().sort((a: any, b: any) => {
+        const aTime = Number(a?.max_time) || 0;
+        const bTime = Number(b?.max_time) || 0;
+        return bTime - aTime;
+      });
+
+      setSectionIpStats(sorted);
+      console.log("✅ Section stats loaded and sorted:", sorted.length, "items");
+      
+    } catch (err) {
+      console.error("❌ Failed to load section-ip-stats:", err);
+      toast({
+        title: "Warning", 
+        description: "Failed to load section IP stats from tracking server",
+        variant: "destructive",
+      });
+    }
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -80,7 +137,7 @@ const loadSectionStats = async () => {
       setLoading(false);
       if (user) {
         loadData();
-        loadCustomData(); // ✅ also load custom clicks
+        loadCustomData();
         loadSectionStats();
       }
     };
@@ -92,7 +149,7 @@ const loadSectionStats = async () => {
       setUser(session?.user ?? null);
       if (session?.user) {
         loadData();
-        loadCustomData(); // ✅ reload when auth changes
+        loadCustomData();
         loadSectionStats();
       }
     });
@@ -237,14 +294,39 @@ const loadSectionStats = async () => {
     setBanners([]);
     setMasterData(null);
   };
-// 🔽 Add this above the <h3> Custom Banner Click Details
-const sectionTopIpMap = Object.fromEntries(
-  (sectionIpStats || []).map((r: any) => [
-    r.section || "unknown",
-    { ip: r.ip, formatted_time: r.formatted_time }
-  ])
-);
 
+  // Create a mapping of section -> IP with highest time spent
+  const sectionTopIpMap = Object.fromEntries(
+    (sectionIpStats || []).map((r: any) => [
+      r.section || "unknown",
+      { 
+        ip: r.ip || "unknown", 
+        formatted_time: r.formatted_time || "0s",
+        max_time: r.max_time || 0
+      }
+    ])
+  );
+
+  // Helper function to format time spent display
+  const formatTimeSpent = (minutes: number | null | undefined, seconds: number | null | undefined) => {
+    const mins = Number(minutes) || 0;
+    const secs = Number(seconds) || 0;
+    
+    if (mins > 0) {
+      return `${mins}m`;
+    }
+    if (secs > 0) {
+      return `${secs}s`;
+    }
+    return "0s";
+  };
+
+  // Helper function to get section IP info
+  const getSectionIpInfo = (section: string) => {
+    const info = sectionTopIpMap[section || "unknown"];
+    if (!info) return "—";
+    return `${info.ip} (${info.formatted_time})`;
+  };
 
   if (loading) {
     return (
@@ -312,9 +394,9 @@ const sectionTopIpMap = Object.fromEntries(
                       <thead>
                         <tr>
                           <th className="p-2 border">Banner</th>
-                          <th className="p-2 border">latest Country</th>
-                          <th className="p-2 border">latest IP</th>
-                          <th className="p-2 border">latest Clicked time</th>
+                          <th className="p-2 border">Latest Country</th>
+                          <th className="p-2 border">Latest IP</th>
+                          <th className="p-2 border">Latest Clicked Time</th>
                           <th className="p-2 border">Click Count</th>
                           <th className="p-2 border">First IP</th>
                           <th className="p-2 border">First Clicked At</th>
@@ -360,62 +442,128 @@ const sectionTopIpMap = Object.fromEntries(
             </Card>
           </TabsContent>
 
-          {/* Custom Banner Click Details */}
-<TabsContent value="custom-banner-details">
-  <Card>
-    <CardHeader>
-      <CardTitle>Custom Banner Click Details</CardTitle>
-    </CardHeader>
-    <CardContent>
-      {customBannerClicks.length === 0 ? (
-        <p>No custom clicks found.</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr>
-                <th className="p-2 border">Banner ID</th>
-                <th className="p-2 border">Section</th>
-                <th className="p-2 border">Browser</th>
-                <th className="p-2 border">IP</th>
-                <th className="p-2 border">Country</th>
-                <th className="p-2 border">Time Spent (min)</th>
-                <th className="p-2 border">Clicked At</th>
-                <th className="p-2 border">Section IP (top time)</th>
+          {/* Enhanced Custom Banner Click Details */}
+          <TabsContent value="custom-banner-details">
+            <Card>
+              <CardHeader>
+                <CardTitle>Custom Banner Click Details</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Tracking data from custom server (sorted by time spent - highest first)
+                </p>
+              </CardHeader>
+              <CardContent>
+                {customBannerClicks.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>No custom clicks found.</p>
+                    <p className="text-xs mt-2">
+                      Make sure your tracking server is running at: {TRACKING_API}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <p className="text-sm text-muted-foreground">
+                        Total Records: {customBannerClicks.length}
+                      </p>
+                      <Button
+                        onClick={() => {
+                          loadCustomData();
+                          loadSectionStats();
+                        }}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Refresh Data
+                      </Button>
+                    </div>
+                    
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm border-collapse">
+                        <thead>
+                          <tr>
+                            <th className="p-2 border text-left">Banner ID</th>
+                            <th className="p-2 border text-left">Section</th>
+                            <th className="p-2 border text-left">Browser</th>
+                            <th className="p-2 border text-left">IP</th>
+                            <th className="p-2 border text-left">Country</th>
+                            <th className="p-2 border text-left">Time Spent</th>
+                            <th className="p-2 border text-left">Clicked At</th>
+                            <th className="p-2 border text-left">Section IP (Top Time)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {customBannerClicks.map((click, index) => (
+                            <tr 
+                              key={click.id || index}
+                              className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}
+                            >
+                              <td className="p-2 border font-mono text-xs">
+                                {String(click.banner_id).substring(0, 8)}...
+                              </td>
+                              <td className="p-2 border">
+                                <Badge 
+                                  variant="outline" 
+                                  className="text-xs"
+                                >
+                                  {click.section || "unknown"}
+                                </Badge>
+                              </td>
+                              <td className="p-2 border">{click.browser || "—"}</td>
+                              <td className="p-2 border font-mono text-xs">
+                                {click.ip || "unknown"}
+                              </td>
+                              <td className="p-2 border">
+                                <Badge 
+                                  variant={click.country === "Unknown" ? "secondary" : "default"}
+                                  className="text-xs"
+                                >
+                                  {click.country || "Unknown"}
+                                </Badge>
+                              </td>
+                              <td className="p-2 border">
+                                <span className="font-semibold text-blue-600">
+                                  {formatTimeSpent(click.time_spent_minutes, click.time_spent_seconds)}
+                                </span>
+                              </td>
+                              <td className="p-2 border text-xs">
+                                {click.clicked_at 
+                                  ? new Date(click.clicked_at).toLocaleString()
+                                  : "—"}
+                              </td>
+                              <td className="p-2 border text-xs">
+                                <span className="bg-green-100 text-green-800 px-2 py-1 rounded">
+                                  {getSectionIpInfo(click.section)}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
 
-              </tr>
-            </thead>
-            <tbody>
-              {customBannerClicks.map((c) => (
-                <tr key={c.id}>
-                  <td className="p-2 border">{c.banner_id}</td>
-                  <td className="p-2 border">{c.section || "—"}</td>
-                  <td className="p-2 border">{c.browser || "—"}</td>
-                  <td className="p-2 border">{c.ip}</td>
-                  <td className="p-2 border">{c.country || "—"}</td>
-                  <td className="p-2 border">
-  { (c.time_spent_minutes ?? 0) > 0
-    ? `${c.time_spent_minutes}m`
-    : (c.time_spent_seconds ? `${c.time_spent_seconds}s` : "0") }
-</td>
-
-                  <td className="p-2 border">
-  {sectionTopIpMap[c.section || "unknown"]
-    ? `${sectionTopIpMap[c.section || "unknown"].ip} (${sectionTopIpMap[c.section || "unknown"].formatted_time})`
-    : "—"}
-</td>
-
-
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </CardContent>
-  </Card>
-</TabsContent>
-
+                    {/* Section IP Stats Summary */}
+                    <div className="mt-6">
+                      <h3 className="text-lg font-semibold mb-3">Section IP Statistics (Top Time Spent)</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {sectionIpStats.slice(0, 9).map((stat, index) => (
+                          <div key={`${stat.section}-${stat.ip}`} className="p-3 border rounded-lg bg-gray-50">
+                            <div className="flex items-center justify-between mb-2">
+                              <Badge variant="outline">{stat.section}</Badge>
+                              <span className="text-xs text-muted-foreground">#{index + 1}</span>
+                            </div>
+                            <div className="text-sm">
+                              <p className="font-mono text-xs text-blue-600">{stat.ip}</p>
+                              <p className="font-semibold text-green-600">{stat.formatted_time}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="networks">
             <NetworkList

@@ -9,7 +9,6 @@ import { ChevronDown, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Footer from "@/components/Footer";
 import TopBar from "@/components/TopBar";
-// import { TRACKING_API } from "@/config";
 
 interface Network {
   id: string;
@@ -54,6 +53,7 @@ interface Banner {
   id: string;
   image_url: string;
   link_url?: string;
+  link_urls?: string[];
   section: string[];
   created_at: string;
   title?: string;
@@ -69,11 +69,10 @@ interface BannerRotation {
   expires_at?: string | null;
   created_at?: string;
 }
-// Where your Node server is hosted (local in dev, real URL in prod)
-// 👇 Add this before your component definitions
-const TRACKING_API =
-  (import.meta as any).env?.VITE_TRACKING_API || "http://localhost:5000";
 
+const TRACKING_API = (import.meta as any).env?.VITE_TRACKING_API || "http://localhost:5000";
+
+// Enhanced logging function with better error handling
 async function logCustomClick({
   banner,
   linkOpened,
@@ -84,38 +83,51 @@ async function logCustomClick({
   section: string;
 }) {
   try {
-    await fetch(`${TRACKING_API}/api/custom-click`, {
+    const response = await fetch(`${TRACKING_API}/api/custom-click`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
       body: JSON.stringify({
         banner_id: banner.id,
-        banner_title: (banner as any).title || null,
+        banner_title: (banner as any).title || banner.id,
         section,
         link_url: linkOpened,
         page: window.location.pathname,
+        timestamp: new Date().toISOString(),
+        user_agent: navigator.userAgent
       }),
     });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    console.log("✅ Custom click logged successfully:", result);
+    return result;
   } catch (err) {
-    console.error("Custom click log failed:", err);
+    console.error("❌ Custom click log failed:", err);
   }
 }
 
-
 const logBannerClick = async (bannerId: string) => {
-  console.log("Click detected for banner:", bannerId); // 👈 Add this
+  console.log("Click detected for banner:", bannerId);
 
   try {
     const res = await fetch("https://booohlpwrvqtgvlngzrf.functions.supabase.co/log_click", {
       method: "POST",
-      headers: { "Content-Type": "application/json",
+      headers: { 
+        "Content-Type": "application/json",
         "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-       },
+      },
       body: JSON.stringify({ banner_id: bannerId }),
     });
 
-    console.log("Response status:", res.status); // 👈 Add this
+    console.log("Response status:", res.status);
     const data = await res.json();
-    console.log("Response data:", data); // 👈 Add this
+    console.log("Response data:", data);
   } catch (err) {
     console.error("Failed to log banner click:", err);
   }
@@ -137,8 +149,8 @@ const useRotatingBanners = (banners: Banner[], intervalMs: number = 5000) => {
   return banners.length > 0 ? banners[currentIndex] : null;
 };
 
-const SUPABASE_BANNERS_BASE =
-  "https://booohlpwrvqtgvlngzrf.supabase.co/storage/v1/object/public/images/banners/";
+const SUPABASE_BANNERS_BASE = "https://booohlpwrvqtgvlngzrf.supabase.co/storage/v1/object/public/images/banners/";
+
 const BannerDisplay = ({
   banners,
   section,
@@ -150,11 +162,9 @@ const BannerDisplay = ({
 }) => {
   const currentBanner = useRotatingBanners(banners, intervalMs);
   const [clickIndexMap, setClickIndexMap] = useState<Record<string, number>>({});
-  
 
   if (!currentBanner) return null;
 
-  // ✅ Keep container + image class logic
   let containerClass = "";
   let imageClass = "";
 
@@ -182,37 +192,42 @@ const BannerDisplay = ({
       break;
   }
 
-  // ✅ Full image URL
   const bannerSrc = currentBanner.image_url?.startsWith("http")
     ? currentBanner.image_url
     : SUPABASE_BANNERS_BASE + currentBanner.image_url?.trim();
 
-  // ✅ Cyclic link click handler
- // inside BannerDisplay component in Browse.tsx
-const handleBannerClick = async (banner: Banner, e: React.MouseEvent) => {
-  e.stopPropagation();
+  const handleBannerClick = async (banner: Banner, e: React.MouseEvent) => {
+    e.stopPropagation();
 
-  const links = (banner as any).link_urls || [banner.link_url].filter(Boolean);
-  if (!links || links.length === 0) return;
+    // Handle multiple link URLs properly
+    const links = (banner as any).link_urls || 
+                 (banner.link_url ? [banner.link_url] : []);
+    
+    if (!links || links.length === 0) {
+      console.warn("No links found for banner:", banner.id);
+      return;
+    }
 
-  const currentIndex = clickIndexMap[banner.id] || 0;
-  const linkToOpen = links[currentIndex % links.length];
+    const currentIndex = clickIndexMap[banner.id] || 0;
+    const linkToOpen = links[currentIndex % links.length];
 
-  // ✅ single, full payload log
-  await logCustomClick({ banner, linkOpened: linkToOpen, section });
+    console.log(`Opening link ${currentIndex + 1}/${links.length}: ${linkToOpen}`);
 
-  // open the advertiser link
-  window.open(linkToOpen, "_blank", "noopener,noreferrer");
+    // Log to custom tracking system
+    await logCustomClick({ banner, linkOpened: linkToOpen, section });
 
-  // optional: your Supabase logger
-  await logBannerClick(banner.id);
+    // Open the link
+    window.open(linkToOpen, "_blank", "noopener,noreferrer");
 
-  setClickIndexMap(prev => ({
-    ...prev,
-    [banner.id]: (currentIndex + 1) % links.length,
-  }));
-};
+    // Log to Supabase (existing system)
+    await logBannerClick(banner.id);
 
+    // Update click index for next click
+    setClickIndexMap(prev => ({
+      ...prev,
+      [banner.id]: (currentIndex + 1) % links.length,
+    }));
+  };
 
   return (
     <div className={containerClass}>
@@ -234,25 +249,24 @@ const handleBannerClick = async (banner: Banner, e: React.MouseEvent) => {
   );
 };
 
-
-// Sidebar version
 const SidebarBannerDisplay = ({ banners }: { banners: Banner[] }) => {
   const [clickIndexMap, setClickIndexMap] = useState<Record<string, number>>({});
 
   const handleBannerClick = async (banner: Banner, e: React.MouseEvent) => {
     e.stopPropagation();
-    const links = (banner as any).link_urls || [banner.link_url].filter(Boolean);
+    
+    const links = (banner as any).link_urls || 
+                 (banner.link_url ? [banner.link_url] : []);
+    
     if (!links || links.length === 0) return;
 
     const currentIndex = clickIndexMap[banner.id] || 0;
     const linkToOpen = links[currentIndex % links.length];
-    
 
+    await logCustomClick({ banner, linkOpened: linkToOpen, section: "sidebar" });
 
     window.open(linkToOpen, "_blank", "noopener,noreferrer");
     await logBannerClick(banner.id);
-    await logCustomClick({ banner, linkOpened: linkToOpen, section: "sidebar" });
-
 
     setClickIndexMap((prev) => ({
       ...prev,
@@ -289,11 +303,13 @@ const SidebarBannerDisplay = ({ banners }: { banners: Banner[] }) => {
   );
 };
 
-
 const Browse = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Add missing clickIndexMap state for main component
+  const [clickIndexMap, setClickIndexMap] = useState<Record<string, number>>({});
+  
   const [selectedNetworkFilter, setSelectedNetworkFilter] = useState<string | null>(null);
   const [selectedGeo, setSelectedGeo] = useState<string | null>(null);
   const [selectedVertical, setSelectedVertical] = useState<string | null>(null);
@@ -308,81 +324,38 @@ const Browse = () => {
   const [loadingBanners, setLoadingBanners] = useState(true);
   const [allRotations, setAllRotations] = useState<BannerRotation[]>([]);
   const [loadingRotations, setLoadingRotations] = useState(true);
-  const [selectedBannerIds, setSelectedBannerIds] = useState<string[]>([]);
   const [networkSearchTerm, setNetworkSearchTerm] = useState("");
-  // New state for offer search
   const [offerSearchTerm, setOfferSearchTerm] = useState("");
-  const TRACKING_API =
-  (import.meta as any).env?.VITE_TRACKING_API || "http://localhost:5000";
-
-  // New state for global search
   const [globalSearchTerm, setGlobalSearchTerm] = useState("");
-const handleBannerClick = async (banner: Banner, e: React.MouseEvent) => {
-  e.stopPropagation();
-  const links = (banner as any).link_urls || [banner.link_url].filter(Boolean);
-  if (!links || links.length === 0) return;
 
-  const currentIndex = clickIndexMap[banner.id] || 0;
-  const linkToOpen = links[currentIndex % links.length];
-  await logCustomClick({ banner, linkOpened: linkToOpen, section });
+  // Function to handle background click with proper tracking
+  const handleBackgroundClick = async () => {
+    if (!backgroundBanner) return;
+    
+    const links = (backgroundBanner as any).link_urls || 
+                 (backgroundBanner.link_url ? [backgroundBanner.link_url] : []);
+    
+    if (!links || links.length === 0) return;
 
+    const currentIndex = clickIndexMap[backgroundBanner.id] || 0;
+    const linkToOpen = links[currentIndex % links.length];
+    
+    if (linkToOpen && linkToOpen !== "#") {
+      await logCustomClick({
+        banner: backgroundBanner as Banner,
+        linkOpened: linkToOpen,
+        section: "background",
+      });
 
-  // 🚀 Open link
-  window.open(linkToOpen, "_blank", "noopener,noreferrer");
+      window.open(linkToOpen, "_blank", "noopener,noreferrer");
+      
+      setClickIndexMap(prev => ({
+        ...prev,
+        [backgroundBanner.id]: (currentIndex + 1) % links.length,
+      }));
+    }
+  };
 
-  // 🚀 Log to Supabase (your existing system)
-  await logBannerClick(banner.id);
-
-  // 🚀 Log to Custom Server
-  // try {
-  //   const res = await fetch("http://localhost:5000/api/custom-click", {
-  //     method: "POST",
-  //     headers: { "Content-Type": "application/json" },
-  //     body: JSON.stringify({
-  //       banner_id: banner.id,
-  //       user_agent: navigator.userAgent,
-  //     }),
-  //   });
-
-  //   const data = await res.json();
-  //   console.log("✅ Custom click logged:", data);
-  // } catch (err) {
-  //   console.error("❌ Failed to log custom click:", err);
-  // }
-
-  // 🚀 Rotate link index
-  setClickIndexMap((prev) => ({
-    ...prev,
-    [banner.id]: (currentIndex + 1) % links.length,
-  }));
-};
-
-
-useEffect(() => {
-  console.log("All banners from DB:", allBanners);
-}, [allBanners]);
-
-
-  // Function to handle background click
- /* handle background click — open banner's link if present */
-const handleBackgroundClick = async () => {
-  const link = (backgroundBanner as any)?.link_url || (backgroundBanner as any)?.link || "";
-  if (link && link !== "#") {
-  window.open(link, "_blank", "noopener,noreferrer");
-
-  if (backgroundBanner) {
-    await logCustomClick({
-      banner: backgroundBanner as Banner,
-      linkOpened: link,
-      section: "background",
-    });
-  }
-}
-
-};
-
-
-  // Function to handle network click navigation
   const handleNetworkClick = (networkId: string) => {
     navigate(`/network/${networkId}`);
   };
@@ -468,29 +441,28 @@ const handleBackgroundClick = async () => {
   }, [toast]);
 
   useEffect(() => {
-   const fetchBanners = async () => {
-  setLoadingBanners(true);
-  try {
-    const { data, error } = await supabase
-      .from("banners")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const fetchBanners = async () => {
+      setLoadingBanners(true);
+      try {
+        const { data, error } = await supabase
+          .from("banners")
+          .select("*")
+          .order("created_at", { ascending: false });
 
-    if (error) throw error;
-    setAllBanners(data || []);
-  } catch (err: any) {
-    console.error("Error fetching banners:", err.message || err);
-    toast({
-      title: "Error",
-      description: "Failed to load banners.",
-      variant: "destructive",
-    });
-  } finally {
-    setLoadingBanners(false);
-  }
-};
-fetchBanners();
-
+        if (error) throw error;
+        setAllBanners(data || []);
+      } catch (err: any) {
+        console.error("Error fetching banners:", err.message || err);
+        toast({
+          title: "Error",
+          description: "Failed to load banners.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoadingBanners(false);
+      }
+    };
+    fetchBanners();
   }, [toast]);
 
   const isPlaceholder = (value: any): boolean => {
@@ -722,43 +694,37 @@ fetchBanners();
 
     return filtered;
   };
-// near top of component, after states are declared and after allBanners is available:
-/* BACKGROUND BANNER — robust handling for different DB shapes */
-const defaultBg = "https://i.pinimg.com/736x/cf/3a/c8/cf3ac842dcb713c45973de67c44d5e78.jpg";
 
-/* helper: convert section field to array of strings (re-uses your toStringArray) */
-const bannerHasSection = (b: Banner, sec: string) => {
-  try {
-    const sections = toStringArray((b as any).section || b.section, false).map(s => s.toLowerCase());
-    return sections.includes(sec.toLowerCase());
-  } catch {
-    return false;
-  }
-};
+  // Background banner logic
+  const defaultBg = "https://i.pinimg.com/736x/cf/3a/c8/cf3ac842dcb713c45973de67c44d5e78.jpg";
 
-/* helper: accept image_url or image_path or plain filename and return full URL */
-const getBannerImageUrl = (b: Banner) => {
-  const path = (b as any).image_url || (b as any).image_path || (b as any).image || "";
-  if (!path) return "";
-  const src = String(path).trim();
-  return src.startsWith("http") ? src : SUPABASE_BANNERS_BASE + src;
-};
+  const bannerHasSection = (b: Banner, sec: string) => {
+    try {
+      const sections = toStringArray((b as any).section || b.section, false).map(s => s.toLowerCase());
+      return sections.includes(sec.toLowerCase());
+    } catch {
+      return false;
+    }
+  };
 
-/* helper: tiny cache-bust so admin updates show immediately */
-const cacheBusted = (src: string, id?: string) => {
-  if (!src) return src;
-  const sep = src.includes("?") ? "&" : "?";
-  return `${src}${sep}v=${encodeURIComponent(String(id || Date.now()))}`;
-};
+  const getBannerImageUrl = (b: Banner) => {
+    const path = (b as any).image_url || (b as any).image_path || (b as any).image || "";
+    if (!path) return "";
+    const src = String(path).trim();
+    return src.startsWith("http") ? src : SUPABASE_BANNERS_BASE + src;
+  };
 
-const backgroundBanner = allBanners.find(b => bannerHasSection(b, "background"));
+  const cacheBusted = (src: string, id?: string) => {
+    if (!src) return src;
+    const sep = src.includes("?") ? "&" : "?";
+    return `${src}${sep}v=${encodeURIComponent(String(id || Date.now()))}`;
+  };
 
-// final URL (use cacheBusted so changing the banner in admin shows up for users immediately)
-const backgroundUrl =
-  backgroundBanner ? cacheBusted(getBannerImageUrl(backgroundBanner), backgroundBanner.id) : defaultBg;
+  const backgroundBanner = allBanners.find(b => bannerHasSection(b, "background"));
+  const backgroundUrl = backgroundBanner ? cacheBusted(getBannerImageUrl(backgroundBanner), backgroundBanner.id) : defaultBg;
 
-const offersToDisplay = getFilteredOffers();
-const networksToDisplay = getFilteredNetworks();
+  const offersToDisplay = getFilteredOffers();
+  const networksToDisplay = getFilteredNetworks();
 
   const activeRotations = allRotations.filter(r => !r.expires_at || new Date(r.expires_at) > new Date());
 
@@ -833,20 +799,17 @@ const networksToDisplay = getFilteredNetworks();
     );
   };
   
-    return (
+  return (
     <div
-  className="min-h-screen text-white bg-cover bg-center cursor-pointer"
-  style={{ backgroundImage: `url('${backgroundUrl}')` }}
-  onClick={handleBackgroundClick}
->
-
-
+      className="min-h-screen text-white bg-cover bg-center cursor-pointer"
+      style={{ backgroundImage: `url('${backgroundUrl}')` }}
+      onClick={handleBackgroundClick}
+    >
       {/* TopBar with Logo */}
-  <div
-  className="relative"
-  onClick={(e) => e.stopPropagation()}
->
-
+      <div
+        className="relative"
+        onClick={(e) => e.stopPropagation()}
+      >
         <TopBar />
         {/* Logo positioned in top left corner */}
         <div className="absolute top-20 left-10 z-50">
@@ -935,13 +898,11 @@ const networksToDisplay = getFilteredNetworks();
                 <div className="text-center py-4 text-gray-400">No networks found.</div>
               ) : (
                 networksToDisplay.map((network) => (
-                 <Card
-  key={network.id}
-  className="p-2 hover:shadow-md transition-shadow bg-gray-900 border-gray-800 max-w-[50%] mx-auto"
-  onClick={(e) => e.stopPropagation()}
->
-
-                
+                  <Card
+                    key={network.id}
+                    className="p-2 hover:shadow-md transition-shadow bg-gray-900 border-gray-800 max-w-[50%] mx-auto"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <div className="flex gap-2 items-center">
                       {/* Network Logo - Smaller */}
                       <img
@@ -1271,8 +1232,8 @@ const networksToDisplay = getFilteredNetworks();
       <div>
         <Footer />
       </div>
-  </div> 
-);
+    </div> 
+  );
 };
 
 export default Browse;
