@@ -22,6 +22,18 @@ const DATA_FILE = path.join(__dirname, "custom_clicks.json");
 // ==============================
 // 📌 Helpers
 // ==============================
+function formatDuration(minutes, seconds) {
+  if (minutes >= 60) {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  }
+  if (minutes > 0) return `${minutes}m`;
+  if (seconds > 0) return `${seconds}s`;
+  return "0s";
+}
+
+
 function readData() {
   if (!fs.existsSync(DATA_FILE)) {
     console.log("ℹ️ No data file yet, returning []");
@@ -280,49 +292,36 @@ app.get("/api/custom-clicks", (req, res) => {
   console.log("📤 Returning", data.length, "custom clicks");
   res.json(data);
 });
+;
+}
 
-// 🚀 Aggregated: Top IPs by section (descending by max time)
 app.get("/api/section-ip-stats", (req, res) => {
   const data = readData();
-
-  const map = new Map(); // key = `${section}|${ip}`
+  const map = new Map();
 
   for (const c of data) {
     const section = c.section || "unknown";
     const ip = c.ip || "unknown";
     const key = `${section}|${ip}`;
+
     const current =
-      map.get(key) || {
-        section,
-        ip,
-        max_time: 0,
-        max_time_seconds: 0,
-        last_clicked_at: null,
-      };
+      map.get(key) || { section, ip, max_time: 0, max_time_seconds: 0 };
 
-    const tMin = Number.isFinite(c.time_spent_minutes)
-      ? c.time_spent_minutes
-      : 0;
-    const tSec = Number.isFinite(c.time_spent_seconds)
-      ? c.time_spent_seconds
-      : 0;
+    const tMin = Number.isFinite(c.time_spent_minutes) ? c.time_spent_minutes : 0;
+    const tSec = Number.isFinite(c.time_spent_seconds) ? c.time_spent_seconds : 0;
 
-    if (tMin > current.max_time) {
-      current.max_time = tMin;
-      current.last_clicked_at = c.clicked_at || current.last_clicked_at;
-    }
-    if (tSec > current.max_time_seconds) {
-      current.max_time_seconds = tSec;
-    }
+    if (tMin > current.max_time) current.max_time = tMin;
+    if (tSec > current.max_time_seconds) current.max_time_seconds = tSec;
 
     map.set(key, current);
   }
 
-  const list = Array.from(map.values()).sort(
-    (a, b) => b.max_time - a.max_time
-  );
+  const list = Array.from(map.values()).map(item => ({
+    ...item,
+    formatted_time: formatDuration(item.max_time, item.max_time_seconds),
+  }));
 
-  res.json(list);
+  res.json(list.sort((a, b) => b.max_time - a.max_time));
 });
 
 // ==============================

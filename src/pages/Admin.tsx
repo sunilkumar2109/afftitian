@@ -32,8 +32,7 @@ const Admin = () => {
   const [bannerClicks, setBannerClicks] = useState<any[]>([]);
   const [customBannerClicks, setCustomBannerClicks] = useState<any[]>([]);
   const [sectionIpStats, setSectionIpStats] = useState<any[]>([]);
-
-  const TRACKING_API =
+const TRACKING_API =
   (import.meta as any).env?.VITE_TRACKING_API || "http://localhost:5000";
 
   // ✅ Custom Clicks Loader
@@ -242,9 +241,10 @@ const loadSectionStats = async () => {
 const sectionTopIpMap = Object.fromEntries(
   (sectionIpStats || []).map((r: any) => [
     r.section || "unknown",
-    `${r.ip} (${r.max_time}m)`
+    { ip: r.ip, formatted_time: r.formatted_time }
   ])
 );
+
 
   if (loading) {
     return (
@@ -400,13 +400,11 @@ const sectionTopIpMap = Object.fromEntries(
 </td>
 
                   <td className="p-2 border">
-                    {c.clicked_at
-                      ? new Date(c.clicked_at).toLocaleString()
-                      : "—"}
-                  </td>
-                  <td className="p-2 border">
-  {sectionTopIpMap[c.section || "unknown"] || "—"}
+  {sectionTopIpMap[c.section || "unknown"]
+    ? `${sectionTopIpMap[c.section || "unknown"].ip} (${sectionTopIpMap[c.section || "unknown"].formatted_time})`
+    : "—"}
 </td>
+
 
                 </tr>
               ))}

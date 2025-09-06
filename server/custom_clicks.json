@@ -23,8 +23,50 @@
     "browser": "Chrome",
     "country": "IN",
     "ip": "127.0.0.1",
-    "time_spent_minutes": 3,
-    "time_spent_seconds": 218,
-    "clicked_at": "2025-09-05T13:43:21.024Z"
+    "time_spent_minutes": 10,
+    "time_spent_seconds": 653,
+    "clicked_at": "2025-09-05T13:50:36.478Z"
+  },
+  {
+    "id": 1757080599653,
+    "banner_id": "58608593-9ec0-4bc3-b288-df75c0ee106d",
+    "banner_title": null,
+    "section": "top",
+    "link_url": "http://pocketoption.com/",
+    "page": "/",
+    "browser": "Chrome",
+    "country": "IN",
+    "ip": "127.0.0.1",
+    "time_spent_minutes": 16,
+    "time_spent_seconds": 1016,
+    "clicked_at": "2025-09-05T13:56:39.653Z"
+  },
+  {
+    "id": 1757080850991,
+    "banner_id": "0897cb6e-7ce8-4989-bb3a-38691c90483d",
+    "banner_title": null,
+    "section": "sidebar",
+    "link_url": "https://binom.org/",
+    "page": "/",
+    "browser": "Chrome",
+    "country": "IN",
+    "ip": "127.0.0.1",
+    "time_spent_minutes": 21,
+    "time_spent_seconds": 1268,
+    "clicked_at": "2025-09-05T14:00:50.991Z"
+  },
+  {
+    "id": 1757081721607,
+    "banner_id": "390831c1-f8f8-4683-aa24-044b56c466d3",
+    "banner_title": null,
+    "section": "sidebar",
+    "link_url": "https://3aadclw3tibrlpz41kywfl0ar9.hop.clickbank.net",
+    "page": "/",
+    "browser": "Edge",
+    "country": "IN",
+    "ip": "127.0.0.1",
+    "time_spent_minutes": 35,
+    "time_spent_seconds": 2138,
+    "clicked_at": "2025-09-05T14:15:21.607Z"
   }
 ]
