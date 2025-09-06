@@ -285,16 +285,14 @@ writeData(data);
 
   res.json({ ok: true });
 });
-
 // 🚀 Fetch all custom banner clicks
 app.get("/api/custom-clicks", (req, res) => {
   const data = readData();
   console.log("📤 Returning", data.length, "custom clicks");
   res.json(data);
 });
-;
-}
 
+// 🚀 Aggregated IP stats
 app.get("/api/section-ip-stats", (req, res) => {
   const data = readData();
   const map = new Map();
@@ -307,8 +305,12 @@ app.get("/api/section-ip-stats", (req, res) => {
     const current =
       map.get(key) || { section, ip, max_time: 0, max_time_seconds: 0 };
 
-    const tMin = Number.isFinite(c.time_spent_minutes) ? c.time_spent_minutes : 0;
-    const tSec = Number.isFinite(c.time_spent_seconds) ? c.time_spent_seconds : 0;
+    const tMin = Number.isFinite(c.time_spent_minutes)
+      ? c.time_spent_minutes
+      : 0;
+    const tSec = Number.isFinite(c.time_spent_seconds)
+      ? c.time_spent_seconds
+      : 0;
 
     if (tMin > current.max_time) current.max_time = tMin;
     if (tSec > current.max_time_seconds) current.max_time_seconds = tSec;
@@ -316,7 +318,7 @@ app.get("/api/section-ip-stats", (req, res) => {
     map.set(key, current);
   }
 
-  const list = Array.from(map.values()).map(item => ({
+  const list = Array.from(map.values()).map((item) => ({
     ...item,
     formatted_time: formatDuration(item.max_time, item.max_time_seconds),
   }));
@@ -333,4 +335,3 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log("📂 Data file:", DATA_FILE);
 });
-
