@@ -180,7 +180,7 @@ if (process.env.OPENAI_API_KEY) {
 }
 
 app.set("trust proxy", true);
-const cors = require("cors");
+
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:5173",
