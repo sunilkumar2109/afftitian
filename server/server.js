@@ -10,7 +10,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import fetch from "node-fetch";
 
-import path from "path";
+
 // ==============================
 // 🔌 File setup
 // ==============================
