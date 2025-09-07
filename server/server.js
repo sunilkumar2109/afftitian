@@ -618,7 +618,6 @@ app.get("/api/section-ip-stats", (req, res) => {
     });
   }
 });
-
 // Health check endpoint
 app.get("/api/health", (req, res) => {
   const data = readData();
@@ -635,6 +634,9 @@ app.get("/api/health", (req, res) => {
 // Clear data endpoint (for development/testing)
 app.post("/api/clear-data", (req, res) => {
   try {
+    if (process.env.NODE_ENV !== "development") {
+      return res.status(403).json({ error: "Not allowed in production" });
+    }
     writeData([]);
     sessions.clear();
     console.log("🗑️ Cleared all tracking data");
@@ -648,6 +650,15 @@ app.post("/api/clear-data", (req, res) => {
   }
 });
 
+// Root and favicon routes (must come before 404 handler)
+app.get("/", (req, res) => {
+  res.send("Affiliate Tracking Server is running ✅");
+});
+
+app.get("/favicon.ico", (req, res) => {
+  res.status(204).end(); // no favicon file, just return empty
+});
+
 // Error handling middleware
 app.use((error, req, res, next) => {
   console.error("💥 Unhandled error:", error);
@@ -657,19 +668,14 @@ app.use((error, req, res, next) => {
   });
 });
 
-// 404 handler
+// 404 handler (must be last)
 app.use((req, res) => {
   res.status(404).json({
     error: "Not found",
     message: `Route ${req.method} ${req.path} not found`
   });
 });
-app.get("/", (req, res) => {
-  res.send("Affiliate Tracking Server is running ✅");
-});
-app.get("/favicon.ico", (req, res) => {
-  res.sendFile(path.join(__dirname, "favicon.ico"));
-});
+
 // ==============================
 // 🔌 Start Server
 // ==============================
