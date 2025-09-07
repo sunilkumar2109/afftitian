@@ -191,7 +191,10 @@ app.set("trust proxy", true);
 // 🔧 FIXED CORS CONFIGURATION (REPLACEMENT)
 // ==============================
 
-// Allowed origins - add any production domains you use here
+// ==============================
+// 🔧 CORS CONFIGURATION
+// ==============================
+
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:5173",
@@ -202,54 +205,30 @@ const allowedOrigins = [
   "http://www.afftitans.com"
 ];
 
-// Helper to normalize incoming origin header
-function cleanOrigin(origin) {
-  if (!origin) return "";
-  return String(origin).replace(/\/$/, "").toLowerCase();
-}
-
 const corsOptions = {
   origin: function (origin, callback) {
-    // allow requests with no origin (curl/postman/server-to-server)
-    if (!origin) {
-      console.log("🔄 Allowing request with no origin (server / CLI request)");
-      return callback(null, true);
-    }
+    if (!origin) return callback(null, true); // allow server-to-server or CLI
+    const normalized = origin.replace(/\/$/, "").toLowerCase();
 
-    const normalized = cleanOrigin(origin);
-
-    // allow exact matches or any subdomain of afftitans.com
-    const isAllowed =
+    if (
       allowedOrigins.includes(normalized) ||
       normalized.endsWith(".afftitans.com") ||
-      /^http:\/\/localhost:\d+$/.test(normalized);
-
-    if (isAllowed) {
-      console.log("✅ Allowing origin:", normalized);
+      /^http:\/\/localhost:\d+$/.test(normalized)
+    ) {
       return callback(null, true);
     }
-
-    // Do NOT throw an exception here. Return false so cors doesn't crash preflight.
-    console.log("❌ Blocking origin:", normalized);
-    return callback(null, false);
+    return callback(new Error("CORS not allowed for origin: " + origin));
   },
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-  allowedHeaders: [
-    "Content-Type",
-    "Authorization",
-    "Accept",
-    "User-Agent",
-    "X-Requested-With",
-    "Origin",
-    "Access-Control-Request-Method",
-    "Access-Control-Request-Headers"
-  ],
   credentials: true,
-  optionsSuccessStatus: 200,
-  preflightContinue: false,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization", "Accept", "User-Agent", "X-Requested-With", "Origin"],
 };
 
+// Apply CORS globally before any routes
 app.use(cors(corsOptions));
+
+// Handle preflight requests for all routes
+app.options("*", cors(corsOptions));
 
 // Explicit preflight handler: echo origin back to client if present
 app.options("*", (req, res) => {
