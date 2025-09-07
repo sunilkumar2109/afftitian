@@ -50,7 +50,7 @@ function readData() {
     return Array.isArray(data) ? data : [];
   } catch (err) {
     console.error("❌ Failed to read JSON:", err);
-    console.log("📝 Creating new empty data file");
+    console.log("🔧 Creating new empty data file");
     const emptyData = [];
     writeData(emptyData);
     return emptyData;
@@ -114,7 +114,7 @@ async function lookupCountry(ip) {
         const myIpRes = await fetch("https://api.ipify.org?format=json", { timeout: 5000 });
         const myIpData = await myIpRes.json();
         ip = myIpData.ip;
-        console.log("🌍 Using public IP for localhost:", ip);
+        console.log("🌐 Using public IP for localhost:", ip);
       } catch (err) {
         console.log("⚠️ Could not get public IP, using Unknown country");
         return "Unknown";
@@ -139,7 +139,7 @@ async function lookupCountry(ip) {
     }
     
     const data = await res.json();
-    console.log("🌍 IPInfo Response for", ip, ":", data);
+    console.log("🌐 IPInfo Response for", ip, ":", data);
 
     return data.country || "Unknown";
   } catch (err) {
@@ -179,40 +179,118 @@ if (process.env.OPENAI_API_KEY) {
   console.log("⚠️ No OpenAI API key found");
 }
 
+// Trust proxy settings for proper IP detection
 app.set("trust proxy", true);
 
+// ==============================
+// 🔧 FIXED CORS CONFIGURATION
+// ==============================
+
+// ==============================
+// 🔧 FIXED CORS CONFIGURATION (REPLACEMENT)
+// ==============================
+
+// Allowed origins - add any production domains you use here
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:5173",
   "http://localhost:8080",
   "https://afftitans.com",
+  "http://afftitans.com",
+  "https://www.afftitans.com",
+  "http://www.afftitans.com"
 ];
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true); // allow server-to-server
-      if (
-        allowedOrigins.includes(origin) ||
-        /^http:\/\/localhost:\d+$/.test(origin)
-      ) {
-        return callback(null, true);
-      }
-      return callback(new Error("Not allowed by CORS: " + origin));
-    },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "Accept", "User-Agent"],
-    credentials: true,
-  })
-);
-app.options("*", cors()); 
+// Helper to normalize incoming origin header
+function cleanOrigin(origin) {
+  if (!origin) return "";
+  return String(origin).replace(/\/$/, "").toLowerCase();
+}
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // allow requests with no origin (curl/postman/server-to-server)
+    if (!origin) {
+      console.log("🔄 Allowing request with no origin (server / CLI request)");
+      return callback(null, true);
+    }
+
+    const normalized = cleanOrigin(origin);
+
+    // allow exact matches or any subdomain of afftitans.com
+    const isAllowed =
+      allowedOrigins.includes(normalized) ||
+      normalized.endsWith(".afftitans.com") ||
+      /^http:\/\/localhost:\d+$/.test(normalized);
+
+    if (isAllowed) {
+      console.log("✅ Allowing origin:", normalized);
+      return callback(null, true);
+    }
+
+    // Do NOT throw an exception here. Return false so cors doesn't crash preflight.
+    console.log("❌ Blocking origin:", normalized);
+    return callback(null, false);
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "Accept",
+    "User-Agent",
+    "X-Requested-With",
+    "Origin",
+    "Access-Control-Request-Method",
+    "Access-Control-Request-Headers"
+  ],
+  credentials: true,
+  optionsSuccessStatus: 200,
+  preflightContinue: false,
+};
+
+app.use(cors(corsOptions));
+
+// Explicit preflight handler: echo origin back to client if present
+app.options("*", (req, res) => {
+  const origin = cleanOrigin(req.headers.origin) || "";
+  // If origin exists echo it back, otherwise allow any origin for non-browser tools
+  res.header("Access-Control-Allow-Origin", origin || "*");
+  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS,PATCH");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Content-Type,Authorization,Accept,User-Agent,X-Requested-With,Origin,Access-Control-Request-Method,Access-Control-Request-Headers"
+  );
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header("Access-Control-Max-Age", "86400");
+  res.sendStatus(200);
+});
+
+// Fallback middleware to ensure normal responses also echo origin when available
+app.use((req, res, next) => {
+  const origin = cleanOrigin(req.headers.origin) || "";
+  if (origin) {
+    res.header("Access-Control-Allow-Origin", origin);
+  } else {
+    // for server→server requests, keep wildcard
+    res.header("Access-Control-Allow-Origin", "*");
+  }
+  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS,PATCH");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Content-Type,Authorization,Accept,User-Agent,X-Requested-With,Origin,Access-Control-Request-Method,Access-Control-Request-Headers"
+  );
+  res.header("Access-Control-Allow-Credentials", "true");
+  next();
+});
 
 
+// Body parser middleware
 app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Add request logging middleware
 app.use((req, res, next) => {
-  console.log(`📡 ${req.method} ${req.path} from ${getClientIp(req)}`);
+  console.log(`📡 ${req.method} ${req.path} from ${getClientIp(req)} (Origin: ${req.headers.origin || 'none'})`);
   next();
 });
 
@@ -229,7 +307,7 @@ app.post("/api/parse-network-text", async (req, res) => {
     }
 
     const { text } = req.body;
-    console.log("📝 Processing network text:", text?.substring(0, 100) + "...");
+    console.log("🔍 Processing network text:", text?.substring(0, 100) + "...");
 
     if (!text) {
       return res.status(400).json({ error: "No text provided" });
@@ -548,7 +626,8 @@ app.get("/api/health", (req, res) => {
     timestamp: new Date().toISOString(),
     total_clicks: data.length,
     active_sessions: sessions.size,
-    data_file: DATA_FILE
+    data_file: DATA_FILE,
+    cors_origins: allowedOrigins
   });
 });
 
@@ -594,6 +673,7 @@ app.listen(PORT, () => {
   console.log(`🚀 Banner Tracking Server running on http://localhost:${PORT}`);
   console.log(`📂 Data file: ${DATA_FILE}`);
   console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🌐 Allowed CORS origins:`, allowedOrigins);
   
   // Log available endpoints
   console.log("\n📡 Available endpoints:");
