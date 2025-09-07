@@ -10,6 +10,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import fetch from "node-fetch";
 
+import path from "path";
 // ==============================
 // 🔌 File setup
 // ==============================
@@ -663,7 +664,12 @@ app.use((req, res) => {
     message: `Route ${req.method} ${req.path} not found`
   });
 });
-
+app.get("/", (req, res) => {
+  res.send("Affiliate Tracking Server is running ✅");
+});
+app.get("/favicon.ico", (req, res) => {
+  res.sendFile(path.join(__dirname, "favicon.ico"));
+});
 // ==============================
 // 🔌 Start Server
 // ==============================
