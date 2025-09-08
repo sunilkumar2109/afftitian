@@ -31,7 +31,14 @@ const Admin = () => {
   const [customBannerClicks, setCustomBannerClicks] = useState<any[]>([]);
   const [sectionIpStats, setSectionIpStats] = useState<any[]>([]);
   
-  const TRACKING_API = (import.meta as any).env?.VITE_TRACKING_API || "http://localhost:5000";
+  // handles: dev proxy (/api), or production full URL (https://...)
+const RAW_TRACKING = (import.meta as any).env?.VITE_TRACKING_API;
+const TRACKING_API =
+  RAW_TRACKING && RAW_TRACKING !== "/api" ? RAW_TRACKING.replace(/\/$/, "") : "";
+
+// use like: fetch(`${TRACKING_API}/api/custom-clicks`)
+// if TRACKING_API === "" the fetch becomes "/api/custom-clicks" (works with dev proxy)
+
 
   // Enhanced custom clicks loader with better error handling
   const loadCustomData = async () => {

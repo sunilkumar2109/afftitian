@@ -70,7 +70,7 @@
     "clicked_at": "2025-09-05T14:15:21.607Z"
   },
   {
-    "id": "1757140004240_tu1cryaoo",
+    "id": "1757325496034_4qh89fk4d",
     "banner_id": "cd9e78cf-9835-43de-b8bf-8faac5683601",
     "banner_title": "cd9e78cf-9835-43de-b8bf-8faac5683601",
     "section": "top",
@@ -81,10 +81,10 @@
     "ip": "127.0.0.1",
     "time_spent_minutes": 0,
     "time_spent_seconds": 0,
-    "clicked_at": "2025-09-06T06:26:43.632Z",
+    "clicked_at": "2025-09-08T09:58:14.845Z",
     "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
     "first_clicked_at": "2025-09-06T05:59:31.136Z",
-    "click_count": 2
+    "click_count": 3
   },
   {
     "id": "1757140562279_gfi5ifuqj",
@@ -104,18 +104,21 @@
     "click_count": 3
   },
   {
-    "id": 1757138963988,
+    "id": "1757325495805_yn63lox1f",
     "banner_id": "64747668-9cde-47de-8bb9-1e328275e973",
-    "banner_title": null,
+    "banner_title": "64747668-9cde-47de-8bb9-1e328275e973",
     "section": "sidebar",
     "link_url": "https://theinterwebs.space/c/p/32592/c/245606/pb/402Hingariya",
     "page": "/",
     "browser": "Chrome",
-    "country": "Unknown",
+    "country": "IN",
     "ip": "127.0.0.1",
-    "time_spent_minutes": 1,
-    "time_spent_seconds": 116,
-    "clicked_at": "2025-09-06T06:09:23.988Z"
+    "time_spent_minutes": 0,
+    "time_spent_seconds": 0,
+    "clicked_at": "2025-09-08T09:58:12.639Z",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "first_clicked_at": "2025-09-06T06:09:23.988Z",
+    "click_count": 4
   },
   {
     "id": 1757139014776,
@@ -183,7 +186,7 @@
     "click_count": 1
   },
   {
-    "id": "1757140245357_00qw5pnje",
+    "id": "1757325507025_bck3pgksn",
     "banner_id": "3d61f1db-0848-4026-98a6-854c74a3dca5",
     "banner_title": "3d61f1db-0848-4026-98a6-854c74a3dca5",
     "section": "sidebar",
@@ -192,12 +195,12 @@
     "browser": "Chrome",
     "country": "IN",
     "ip": "127.0.0.1",
-    "time_spent_minutes": 4,
-    "time_spent_seconds": 55,
-    "clicked_at": "2025-09-06T06:30:44.560Z",
+    "time_spent_minutes": 0,
+    "time_spent_seconds": 12,
+    "clicked_at": "2025-09-08T09:58:25.078Z",
     "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
     "first_clicked_at": "2025-09-06T06:30:44.560Z",
-    "click_count": 1
+    "click_count": 5
   },
   {
     "id": "1757140568535_kh4f94f48",
@@ -214,6 +217,23 @@
     "clicked_at": "2025-09-06T06:36:07.842Z",
     "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
     "first_clicked_at": "2025-09-06T06:36:07.842Z",
+    "click_count": 1
+  },
+  {
+    "id": "1757325511909_t11qen3hz",
+    "banner_id": "9eb8cfa1-cc84-415a-8e70-d87d2013757b",
+    "banner_title": "9eb8cfa1-cc84-415a-8e70-d87d2013757b",
+    "section": "sidebar",
+    "link_url": "https://8f47epp6-w8pxomtva76jg-d8t.hop.clickbank.net",
+    "page": "/",
+    "browser": "Chrome",
+    "country": "IN",
+    "ip": "127.0.0.1",
+    "time_spent_minutes": 0,
+    "time_spent_seconds": 16,
+    "clicked_at": "2025-09-08T09:58:31.134Z",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "first_clicked_at": "2025-09-08T09:58:31.134Z",
     "click_count": 1
   }
 ]

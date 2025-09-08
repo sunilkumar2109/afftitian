@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
+import { Banner } from "@/types/admin";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,8 +46,8 @@ interface BannerPreview {
 interface BannerFormProps {
   onSuccess: () => void;
   onCancel: () => void;
+  initialData?: Banner | null; // <-- NEW: banner to edit
 }
-
 // Background upload function - integrated from your provided block
 // BannerForm.tsx — replace existing uploadAndSaveBackground
 async function uploadAndSaveBackground(file: File) {
@@ -72,7 +73,8 @@ async function uploadAndSaveBackground(file: File) {
 
 
 
-export const BannerForm = ({ onSuccess, onCancel }: BannerFormProps) => {
+export const BannerForm = ({ onSuccess, onCancel, initialData }: BannerFormProps) => {
+
   const [isLoading, setIsLoading] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string>("");
   const [previewImage, setPreviewImage] = useState<string>("");
@@ -84,9 +86,47 @@ export const BannerForm = ({ onSuccess, onCancel }: BannerFormProps) => {
   const [expiryOption, setExpiryOption] = useState<"2h"|"1d"|"5d"|"custom">("1d");
   const [customExpiry, setCustomExpiry] = useState<string>(""); // for datetime-local
   const [bannerExpiry, setBannerExpiry] = useState("30d");
-  
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   
+ const [formData, setFormData] = useState<BannerFormData>({
+    image_url: bannerToEdit?.image_url || "",
+    link_urls: bannerToEdit?.link_urls || [],
+    section: bannerToEdit?.section || [],
+    rotation_duration_ms: bannerToEdit?.rotation_duration_ms || 5000,
+  });
+  useEffect(() => {
+  if (initialData) {
+    // map DB banner to form fields
+    reset({
+      image_url: initialData.image_url ?? "",
+      link_urls: (initialData.link_urls && initialData.link_urls.length) ? initialData.link_urls : (initialData.link_url ? [initialData.link_url] : [""]),
+      section: Array.isArray(initialData.section) ? initialData.section : (initialData.section ? [initialData.section] : ["top"]),
+      size: initialData.size ?? "",
+      rotation_enabled: !!initialData.rotation_enabled,
+      rotation_group: initialData.rotation_group ?? "",
+      rotation_duration_ms: initialData.rotation_duration_ms ?? 5000,
+      is_background: !!initialData.is_background,
+    });
+    setPreviewImage(initialData.image_url ?? "");
+    setUploadedImageUrl(initialData.image_url ?? "");
+  } else {
+    // creating new — reset to defaults
+    reset({
+      image_url: "",
+      link_urls: [""],
+      section: ["top"],
+      size: "",
+      rotation_enabled: false,
+      rotation_group: "",
+      rotation_duration_ms: 5000,
+      is_background: false,
+    });
+    setPreviewImage("");
+    setUploadedImageUrl("");
+  }
+}, [initialData, reset]);
+
  useEffect(() => {
   const fetchExisting = async () => {
     try {
@@ -115,7 +155,8 @@ const {
   formState: { errors },
   setValue,
   watch,
-  control,   // <-- add this
+  control, 
+  reset,  // <-- add this
 } = useForm<BannerFormData>({
   defaultValues: {
     section: ["top"],
@@ -128,6 +169,17 @@ const {
     is_background: false, // Default value for background switch
   },
 });
+useEffect(() => {
+  if (bannerToEdit) {
+    setValue("image_url", bannerToEdit.image_url || "");
+    setValue("link_urls", bannerToEdit.link_urls || [""]);
+    setValue("section", Array.isArray(bannerToEdit.section) ? bannerToEdit.section : [bannerToEdit.section || "top"]);
+    setUploadedImageUrl(bannerToEdit.image_url || "");
+    setPreviewImage(bannerToEdit.image_url || "");
+    setValue("is_background", bannerToEdit.is_background || false);
+    // If the banner has rotation info, you can set rotationEnabled and other rotation fields here
+  }
+}, [bannerToEdit, setValue]);
 
 const { fields, append, remove } = useFieldArray({
   control,
@@ -238,17 +290,23 @@ const { fields, append, remove } = useFieldArray({
     }
   };
 
-  const clearUploadedImage = () => {
-    setUploadedImageUrl("");
-    setPreviewImage("");
-    setValue("image_url", "");
-  };
+ const clearUploadedImage = () => {
+  if (previewImage && previewImage.startsWith("blob:")) {
+    URL.revokeObjectURL(previewImage);
+  }
+  setUploadedImageUrl("");
+  setPreviewImage("");
+  setValue("image_url", "");
+};
+const normalize = (row) => ({
+  ...row,
+  link_urls: row.link_urls ?? (row.link_url ? [row.link_url] : []),
+});
+setBanners(data.map(normalize));
 
-// ✅ Submit (supports both single banner and rotation)
 const onSubmit = async (data: BannerFormData) => {
   const { size, ...bannerData } = data;
 
-  // ❗ Validation for single banner (must have image)
   if (!rotationEnabled && !bannerData.image_url && !uploadedImageUrl) {
     toast({
       title: "Error",
@@ -259,6 +317,7 @@ const onSubmit = async (data: BannerFormData) => {
   }
 
   setIsLoading(true);
+
   try {
     // === ROTATION CREATION ===
     if (rotationEnabled) {
@@ -272,7 +331,6 @@ const onSubmit = async (data: BannerFormData) => {
         return;
       }
 
-      // calculate expiry date
       const now = new Date();
       let expiresAt: string | null = null;
       if (expiryOption === "2h") expiresAt = new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString();
@@ -293,29 +351,43 @@ const onSubmit = async (data: BannerFormData) => {
 
       toast({ title: "Success", description: "Rotation created successfully" });
       onSuccess();
-      return; // stop here
+      return;
     }
 
-    // === SINGLE BANNER CREATION ===
-// === SINGLE BANNER CREATION ===
-const sectionToSave =
-  (bannerData.section && bannerData.section.length > 0)
-    ? bannerData.section
-    : (isBackground ? ["background"] : []);
+    // === SINGLE BANNER CREATION OR UPDATE ===
+    const sectionToSave =
+      bannerData.section && bannerData.section.length > 0
+        ? bannerData.section
+        : isBackground
+        ? ["background"]
+        : [];
 
-const finalBannerData = {
-  image_url: uploadedImageUrl || bannerData.image_url,
-  link_urls: bannerData.link_urls?.filter((u) => u && u.trim() !== ""),
-  section: sectionToSave,
-  expires_at: isBackground
-    ? null
-    : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-  is_background: isBackground,   // ✅ use state, not bannerData
-  is_active: true,
-  rotation_duration_ms: bannerData.rotation_duration_ms ?? null,
-};
+    const finalBannerData = {
+      image_url: uploadedImageUrl || bannerData.image_url,
+      link_urls: bannerData.link_urls?.filter((u) => u && u.trim() !== ""),
+      section: sectionToSave,
+      expires_at: isBackground
+        ? null
+        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      is_background: isBackground,
+      is_active: true,
+      rotation_duration_ms: bannerData.rotation_duration_ms ?? null,
+    };
 
+   if (initialData && (initialData as any).id) {
+  // UPDATE
+  const { error: updateError } = await supabase
+    .from("banners")
+    .update(finalBannerData)
+    .eq("id", (initialData as any).id);
+  if (updateError) throw updateError;
 
+  toast({ title: "Success", description: "Banner updated successfully" });
+  onSuccess();
+  return;
+}
+
+// otherwise existing insert (keep what you already had)
 const { error } = await supabase.from("banners").insert([finalBannerData]);
 if (error) throw error;
 
@@ -323,16 +395,17 @@ toast({ title: "Success", description: "Banner created successfully" });
 onSuccess();
 
   } catch (error) {
-    console.error("Error creating banner/rotation:", error);
+    console.error("Error creating/updating banner/rotation:", error);
     toast({
       title: "Error",
-      description: "Failed to create banner/rotation",
+      description: "Failed to create/update banner/rotation",
       variant: "destructive",
     });
   } finally {
     setIsLoading(false);
   }
 };
+
 
 
   // Function to handle multi-select checkbox changes
@@ -467,12 +540,17 @@ onSuccess();
               <Input
                 id="size"
                 {...register("size", {
-                  required: "Size is required",
-                  pattern: {
-                    value: /^\d+x\d+$/,
-                    message: "Format must be 'widthxheight' (e.g., 400x400)",
-                  },
-                })}
+  validate: (v) => {
+    // if none of the auto-set sections selected, require a size
+    if (!sections.includes("sidebar") && !sections.includes("fixed-top") && !sections.includes("fixed-bottom") && !sections.includes("background")) {
+      if (!v || !v.trim()) return "Size is required";
+      if (!/^\d+x\d+$/.test(v)) return "Format must be 'widthxheight' (e.g., 400x400)";
+    }
+    // otherwise OK
+    return true;
+  },
+})}
+
                 placeholder="e.g., 800x200"
                 disabled={sections.includes("sidebar") || sections.includes("fixed-top") || sections.includes("fixed-bottom") || sections.includes("background")}
               />
@@ -517,12 +595,12 @@ onSuccess();
                 </Label>
                 <div className="mt-2">
                   <input
-                    id="file-upload"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                  />
+  ref={fileInputRef}
+  type="file"
+  accept="image/*"
+  onChange={handleFileUpload}
+  className="hidden"
+/>
                   <Button
                     type="button"
                     variant="outline"
@@ -604,40 +682,40 @@ onSuccess();
           )}
 
           {/* Multiple Link URLs - Hide for background uploads */}
-          {!sections.includes("background") && !isBackground && (
-            <div>
-              <Label>Link URLs (Optional)</Label>
+          {/* Multiple Link URLs (works for all banners including background) */}
+<div>
+  <Label>Link URLs (Optional)</Label>
 
-              {fields.map((field, index) => (
-                <div key={field.id} className="flex items-center gap-2 mt-2">
-                  <Input
-                    {...register(`link_urls.${index}` as const)}
-                    defaultValue={(field as any).value ?? ""} // field.value may not exist for older RHF versions
-                    placeholder="https://example.com/target-page"
-                  />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => remove(index)}
-                    disabled={fields.length === 1} // keep at least one (optional)
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
+  {fields.map((field, index) => (
+    <div key={field.id} className="flex items-center gap-2 mt-2">
+      <Input
+        {...register(`link_urls.${index}` as const)}
+        defaultValue={(field as any).value ?? ""}
+        placeholder="https://example.com/target-page"
+      />
+      <Button
+        type="button"
+        variant="destructive"
+        size="sm"
+        onClick={() => remove(index)}
+        disabled={fields.length === 1}
+      >
+        <X className="h-4 w-4" />
+      </Button>
+    </div>
+  ))}
 
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="mt-2"
-                onClick={() => append("")}
-              >
-                <Plus className="h-4 w-4 mr-1" /> Add Link
-              </Button>
-            </div>
-          )}
+  <Button
+    type="button"
+    variant="outline"
+    size="sm"
+    className="mt-2"
+    onClick={() => append("")}
+  >
+    <Plus className="h-4 w-4 mr-1" /> Add Link
+  </Button>
+</div>
+
 
           {/* Banner Expiry - Hide for background uploads */}
           {!sections.includes("background") && !isBackground && (
