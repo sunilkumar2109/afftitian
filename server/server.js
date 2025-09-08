@@ -193,7 +193,7 @@ app.set("trust proxy", true);
 // ==============================
 // 🔧 SIMPLE & ROBUST CORS CONFIG
 // ==============================
-const ALLOWED_ORIGINS = [
+const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:5173",
   "http://localhost:8080",
@@ -204,15 +204,12 @@ const ALLOWED_ORIGINS = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      // allow requests with no origin (curl, mobile clients, Postman)
-      if (!origin) return callback(null, true);
-
-      const originNormalized = origin.replace(/\/$/, "").toLowerCase();
-      if (ALLOWED_ORIGINS.includes(originNormalized)) {
+      if (!origin) return callback(null, true); // allow curl/postman
+      const normalized = origin.replace(/\/$/, "").toLowerCase();
+      if (allowedOrigins.includes(normalized)) {
         return callback(null, true);
       }
-
-      console.warn("Blocked CORS origin:", origin);
+      console.warn("❌ Blocked CORS origin:", origin);
       return callback(new Error("Not allowed by CORS"), false);
     },
     credentials: true,
@@ -231,6 +228,7 @@ app.use(
 
 // Ensure OPTIONS preflight responses are handled
 app.options("*", cors());
+
 
 // Body parser middleware
 app.use(express.json({ limit: '10mb' }));
