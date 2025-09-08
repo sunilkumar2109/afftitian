@@ -1,17 +1,28 @@
+// ==============================
+// 🔌 Imports
+// ==============================
 import express from "express";
+import dotenv from "dotenv";
 import cors from "cors";
+import OpenAI from "openai";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import fetch from "node-fetch";
 
-// File setup
+// ==============================
+// 🔌 File setup
+// ==============================
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Path to JSON file for storing custom clicks
 const DATA_FILE = path.join(__dirname, "custom_clicks.json");
 
-console.log("🔧 Starting server initialization...");
+// ==============================
+// 🔌 Enhanced Helpers
+// ==============================
 
-// Helper functions
 function formatDuration(minutes, seconds) {
   const mins = Number(minutes) || 0;
   const secs = Number(seconds) || 0;
@@ -27,18 +38,19 @@ function formatDuration(minutes, seconds) {
 }
 
 function readData() {
+  if (!fs.existsSync(DATA_FILE)) {
+    console.log("ℹ️ No data file yet, creating empty array");
+    const emptyData = [];
+    writeData(emptyData);
+    return emptyData;
+  }
   try {
-    if (!fs.existsSync(DATA_FILE)) {
-      console.log("ℹ️ No data file yet, creating empty array");
-      const emptyData = [];
-      writeData(emptyData);
-      return emptyData;
-    }
     const fileContent = fs.readFileSync(DATA_FILE, "utf-8");
     const data = JSON.parse(fileContent);
     return Array.isArray(data) ? data : [];
   } catch (err) {
-    console.error("❌ Failed to read JSON:", err.message);
+    console.error("❌ Failed to read JSON:", err);
+    console.log("🔧 Creating new empty data file");
     const emptyData = [];
     writeData(emptyData);
     return emptyData;
@@ -49,9 +61,9 @@ function writeData(data) {
   try {
     const dataToWrite = Array.isArray(data) ? data : [];
     fs.writeFileSync(DATA_FILE, JSON.stringify(dataToWrite, null, 2));
-    console.log("✅ Saved", dataToWrite.length, "clicks to file");
+    console.log("✅ Saved", dataToWrite.length, "clicks to file:", DATA_FILE);
   } catch (err) {
-    console.error("❌ Failed to save JSON:", err.message);
+    console.error("❌ Failed to save JSON:", err);
   }
 }
 
@@ -62,8 +74,10 @@ function normalizeIp(ip) {
   return String(ip).trim();
 }
 
+// Enhanced browser parsing
 function parseBrowser(userAgent = "") {
   if (!userAgent) return "Unknown";
+  
   const ua = userAgent.toLowerCase();
   if (ua.includes("edg/") || ua.includes("edge/")) return "Edge";
   if (ua.includes("chrome/") && !ua.includes("edg")) return "Chrome";
@@ -73,7 +87,9 @@ function parseBrowser(userAgent = "") {
   return "Other";
 }
 
+// Enhanced IP extraction
 function getClientIp(req) {
+  // Try multiple headers for IP extraction
   const possibleIps = [
     req.headers["x-forwarded-for"]?.split(",")[0]?.trim(),
     req.headers["x-real-ip"],
@@ -83,17 +99,61 @@ function getClientIp(req) {
     req.socket?.remoteAddress,
     req.ip
   ].filter(Boolean);
-  
+
   let ip = possibleIps[0] || "unknown";
+  
   return normalizeIp(ip);
 }
 
-// Simple country lookup (removed complex fetch logic to avoid potential issues)
-function getCountry() {
-  return "Unknown"; // Simplified for now - you can add ipinfo.io later if needed
+function cleanOrigin(origin) {
+  if (!origin) return "";
+  return origin.replace(/\/$/, "").toLowerCase();
 }
 
-// Session management
+// Enhanced country lookup with better error handling
+async function lookupCountry(ip) {
+  try {
+    // If localhost, try to get public IP
+    if (ip === "127.0.0.1" || ip === "unknown" || ip === "::1") {
+      try {
+        const myIpRes = await fetch("https://api.ipify.org?format=json", { timeout: 5000 });
+        const myIpData = await myIpRes.json();
+        ip = myIpData.ip;
+        console.log("🌍 Using public IP for localhost:", ip);
+      } catch (err) {
+        console.log("⚠️ Could not get public IP, using Unknown country");
+        return "Unknown";
+      }
+    }
+
+    // Use ipinfo.io for geolocation
+    const token = process.env.IPINFO_TOKEN;
+    const url = token 
+      ? `https://ipinfo.io/${ip}/json?token=${token}`
+      : `https://ipinfo.io/${ip}/json`;
+    
+    const res = await fetch(url, { 
+      timeout: 5000,
+      headers: {
+        'User-Agent': 'BannerTracker/1.0'
+      }
+    });
+    
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+    
+    const data = await res.json();
+    console.log("🌍 IPInfo Response for", ip, ":", data);
+
+    return data.country || "Unknown";
+  } catch (err) {
+    console.error("❌ Country lookup failed for", ip, ":", err.message);
+    return "Unknown";
+  }
+}
+
+// Enhanced session management with better time tracking
 const sessions = new Map();
 const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
 
@@ -106,71 +166,165 @@ function cleanupOldSessions() {
   }
 }
 
+// Clean up sessions every 10 minutes
 setInterval(cleanupOldSessions, 10 * 60 * 1000);
 
-// Initialize Express app
+// ==============================
+// 🔌 App + Middleware
+// ==============================
+dotenv.config();
 const app = express();
 
-// Trust proxy for proper IP detection
+// Initialize OpenAI if API key is provided
+let client = null;
+if (process.env.OPENAI_API_KEY) {
+  client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  console.log("✅ OpenAI client initialized");
+} else {
+  console.log("⚠️ No OpenAI API key found");
+}
+
+// Trust proxy settings for proper IP detection
 app.set("trust proxy", true);
 
-// CORS Configuration - Very permissive for debugging
-app.use(cors({
-  origin: true, // Allow all origins
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
-  allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization", "Cache-Control", "Pragma"]
-}));
+// ==============================
+// 🔧 FIXED CORS CONFIGURATION
+// ==============================
+// ==============================
+// 🔧 SIMPLE & ROBUST CORS CONFIG
+// ==============================
+const ALLOWED_ORIGINS = [
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "http://localhost:8080",
+  "https://afftitans.com",
+  "https://www.afftitans.com"
+].map((o) => o.replace(/\/$/, "").toLowerCase()); // normalized list
 
-// Additional CORS middleware
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma");
-  res.header("Access-Control-Allow-Credentials", "true");
-  
-  if (req.method === "OPTIONS") {
-    console.log("✅ CORS preflight handled for", req.path);
-    return res.status(200).end();
-  }
-  
-  next();
-});
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // allow requests with no origin (curl, mobile clients, Postman)
+      if (!origin) return callback(null, true);
+
+      const originNormalized = origin.replace(/\/$/, "").toLowerCase();
+      if (ALLOWED_ORIGINS.includes(originNormalized)) {
+        return callback(null, true);
+      }
+
+      console.warn("Blocked CORS origin:", origin);
+      return callback(new Error("Not allowed by CORS"), false);
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "Accept",
+      "User-Agent",
+      "X-Requested-With",
+      "Origin",
+    ],
+    optionsSuccessStatus: 200,
+  })
+);
+
+// Ensure OPTIONS preflight responses are handled
+app.options("*", cors());
 
 // Body parser middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Request logging
+// Add request logging middleware
 app.use((req, res, next) => {
-  console.log(`📡 ${req.method} ${req.path} from ${getClientIp(req)}`);
+  console.log(`📡 ${req.method} ${req.path} from ${getClientIp(req)} (Origin: ${req.headers.origin || 'none'})`);
   next();
 });
 
-// Routes
-app.get("/", (req, res) => {
-  res.json({ 
-    message: "Affiliate Tracking Server is running ✅",
-    timestamp: new Date().toISOString(),
-    endpoints: [
-      "GET /api/health",
-      "GET /api/custom-clicks", 
-      "GET /api/section-ip-stats",
-      "POST /api/custom-click"
-    ]
-  });
+// ==============================
+// 🔌 OpenAI Endpoint
+// ==============================
+app.post("/api/parse-network-text", async (req, res) => {
+  try {
+    if (!client) {
+      return res.status(503).json({ 
+        error: "OpenAI service not available",
+        details: "No API key configured" 
+      });
+    }
+
+    const { text } = req.body;
+    console.log("🔍 Processing network text:", text?.substring(0, 100) + "...");
+
+    if (!text) {
+      return res.status(400).json({ error: "No text provided" });
+    }
+
+    const prompt = `
+    Extract these fields into a JSON object from the following text:
+    - network_name
+    - network_type
+    - website_link
+    - website_email
+    - skype_id
+    - telegram
+    - payment_frequency
+    - payment_methods
+    - categories
+    - number_of_offers
+    - type_of_commission
+    - minimum_withdrawal
+    - tracking_software
+    - phone_number
+    - linkedin_id
+    - teams
+    - referral_commission
+    - logo_url
+    - description
+
+    Return ONLY valid JSON. If data is missing, use an empty string or empty array as appropriate.
+
+    Text to parse:
+    """${text}"""
+    `;
+
+    const response = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0,
+    });
+
+    let content = response.choices[0].message?.content?.trim() || "{}";
+    console.log("🤖 Raw OpenAI Response:", content);
+
+    // Clean up markdown formatting
+    content = content.replace(/```json|```/g, "").trim();
+
+    let parsed;
+    try {
+      parsed = JSON.parse(content);
+    } catch (err) {
+      console.error("❌ Parse Error:", err);
+      return res.status(500).json({
+        error: "Invalid JSON from OpenAI",
+        raw: content,
+      });
+    }
+
+    res.json(parsed);
+  } catch (error) {
+    console.error("❌ Server Error:", error);
+    res.status(500).json({
+      error: "Failed to process request",
+      details: error.message,
+    });
+  }
 });
 
-app.get("/api/health", (req, res) => {
-  const data = readData();
-  res.json({
-    status: "healthy",
-    timestamp: new Date().toISOString(),
-    total_clicks: data.length,
-    active_sessions: sessions.size,
-    data_file: DATA_FILE
-  });
-});
+// ==============================
+// 🔌 Enhanced Custom Banner Tracking
+// ==============================
 
 app.post("/api/custom-click", async (req, res) => {
   try {
@@ -196,13 +350,18 @@ app.post("/api/custom-click", async (req, res) => {
 
     const ua = user_agent || req.headers["user-agent"] || "";
     const ip = getClientIp(req);
+    
+    // Enhanced browser detection
     const browser = parseBrowser(ua);
-    const country = getCountry(); // Simplified
+    
+    // Get country with better error handling
+    const country = await lookupCountry(ip);
 
-    // Time tracking
+    // Enhanced time tracking
     const now = Date.now();
     const sessionKey = `${ip}_${section}`;
     
+    // Clean up old sessions periodically
     cleanupOldSessions();
     
     if (!sessions.has(sessionKey)) {
@@ -227,27 +386,39 @@ app.post("/api/custom-click", async (req, res) => {
       time_spent_minutes: Math.max(0, timeSpentMinutes),
       time_spent_seconds: Math.max(0, timeSpentSeconds),
       clicked_at: timestamp || new Date().toISOString(),
-      user_agent: ua.substring(0, 500),
+      user_agent: ua.substring(0, 500), // Limit UA length
     };
+
+    console.log("📊 Click data prepared:", {
+      banner_id: clickData.banner_id.substring(0, 8) + "...",
+      section: clickData.section,
+      browser: clickData.browser,
+      country: clickData.country,
+      ip: clickData.ip,
+      time_spent: `${clickData.time_spent_minutes}m ${clickData.time_spent_seconds}s`
+    });
 
     let data = readData();
 
-    // Deduplication
+    // Enhanced deduplication logic
     const uniqueKey = `${banner_id}|${section}|${ip}`;
     const existingIndex = data.findIndex(
       (c) => `${c.banner_id}|${c.section}|${c.ip}` === uniqueKey
     );
 
     if (existingIndex >= 0) {
+      // Update existing record with latest data
       data[existingIndex] = {
         ...data[existingIndex],
         ...clickData,
+        // Keep the original clicked_at for first visit tracking
         first_clicked_at: data[existingIndex].first_clicked_at || data[existingIndex].clicked_at,
-        clicked_at: clickData.clicked_at,
+        clicked_at: clickData.clicked_at, // Update to latest click
         click_count: (data[existingIndex].click_count || 1) + 1
       };
       console.log("🔄 Updated existing click record");
     } else {
+      // Add new record
       data.push({
         ...clickData,
         first_clicked_at: clickData.clicked_at,
@@ -256,9 +427,10 @@ app.post("/api/custom-click", async (req, res) => {
       console.log("✨ Added new click record");
     }
 
-    // Keep only recent records
+    // Keep only the most recent 10,000 records to prevent file from getting too large
     if (data.length > 10000) {
       data = data.slice(-10000);
+      console.log("🗂️ Trimmed data to 10,000 most recent records");
     }
 
     writeData(data);
@@ -275,7 +447,7 @@ app.post("/api/custom-click", async (req, res) => {
     });
 
   } catch (error) {
-    console.error("❌ Error processing banner click:", error.message);
+    console.error("❌ Error processing banner click:", error);
     res.status(500).json({ 
       error: "Failed to track click", 
       details: error.message 
@@ -283,27 +455,32 @@ app.post("/api/custom-click", async (req, res) => {
   }
 });
 
+// Enhanced endpoint to fetch all custom banner clicks
 app.get("/api/custom-clicks", (req, res) => {
   try {
     const data = readData();
     
+    // Sort by time spent (minutes first, then seconds) in descending order
     const sorted = data.slice().sort((a, b) => {
       const aMinutes = Number(a.time_spent_minutes) || 0;
       const bMinutes = Number(b.time_spent_minutes) || 0;
       
+      // First compare minutes
       if (bMinutes !== aMinutes) {
         return bMinutes - aMinutes;
       }
       
+      // If minutes are equal, compare seconds
       const aSeconds = Number(a.time_spent_seconds) || 0;
       const bSeconds = Number(b.time_spent_seconds) || 0;
       return bSeconds - aSeconds;
     });
 
-    console.log("📤 Returning", sorted.length, "custom clicks");
+    console.log("📤 Returning", sorted.length, "custom clicks (sorted by time spent)");
+    
     res.json(sorted);
   } catch (error) {
-    console.error("❌ Error fetching custom clicks:", error.message);
+    console.error("❌ Error fetching custom clicks:", error);
     res.status(500).json({ 
       error: "Failed to fetch clicks", 
       details: error.message 
@@ -311,11 +488,13 @@ app.get("/api/custom-clicks", (req, res) => {
   }
 });
 
+// Enhanced aggregated IP stats endpoint
 app.get("/api/section-ip-stats", (req, res) => {
   try {
     const data = readData();
     const statsMap = new Map();
 
+    // Process each click record
     for (const click of data) {
       const section = click.section || "unknown";
       const ip = click.ip || "unknown";
@@ -334,12 +513,14 @@ app.get("/api/section-ip-stats", (req, res) => {
         last_seen: click.clicked_at
       };
 
+      // Update maximums
       if (minutes > current.max_time || 
           (minutes === current.max_time && seconds > current.max_time_seconds)) {
         current.max_time = minutes;
         current.max_time_seconds = seconds;
       }
 
+      // Update metadata
       current.total_clicks += (click.click_count || 1);
       
       if (click.first_clicked_at && click.first_clicked_at < current.first_seen) {
@@ -353,6 +534,7 @@ app.get("/api/section-ip-stats", (req, res) => {
       statsMap.set(key, current);
     }
 
+    // Convert to array and sort by max_time (descending)
     const sortedStats = Array.from(statsMap.values())
       .map((item) => ({
         section: item.section,
@@ -365,16 +547,18 @@ app.get("/api/section-ip-stats", (req, res) => {
         last_seen: item.last_seen
       }))
       .sort((a, b) => {
+        // Sort by max_time first, then max_time_seconds
         if (b.max_time !== a.max_time) {
           return b.max_time - a.max_time;
         }
         return b.max_time_seconds - a.max_time_seconds;
       });
 
-    console.log("📊 Returning", sortedStats.length, "section-IP stats");
+    console.log("📊 Returning", sortedStats.length, "section-IP stats (sorted by max time)");
+    
     res.json(sortedStats);
   } catch (error) {
-    console.error("❌ Error generating section stats:", error.message);
+    console.error("❌ Error generating section stats:", error);
     res.status(500).json({ 
       error: "Failed to generate stats", 
       details: error.message 
@@ -382,7 +566,57 @@ app.get("/api/section-ip-stats", (req, res) => {
   }
 });
 
-// 404 handler
+// Health check endpoint
+app.get("/api/health", (req, res) => {
+  const data = readData();
+  res.json({
+    status: "healthy",
+    timestamp: new Date().toISOString(),
+    total_clicks: data.length,
+    active_sessions: sessions.size,
+    data_file: DATA_FILE,
+    cors_origins: allowedOrigins
+  });
+});
+
+// Clear data endpoint (for development/testing)
+app.post("/api/clear-data", (req, res) => {
+  try {
+    if (process.env.NODE_ENV !== "development") {
+      return res.status(403).json({ error: "Not allowed in production" });
+    }
+    writeData([]);
+    sessions.clear();
+    console.log("🗑️ Cleared all tracking data");
+    res.json({ success: true, message: "All data cleared" });
+  } catch (error) {
+    console.error("❌ Error clearing data:", error);
+    res.status(500).json({ 
+      error: "Failed to clear data", 
+      details: error.message 
+    });
+  }
+});
+
+// Root and favicon routes (must come before 404 handler)
+app.get("/", (req, res) => {
+  res.send("Affiliate Tracking Server is running ✅");
+});
+
+app.get("/favicon.ico", (req, res) => {
+  res.status(204).end(); // no favicon file, just return empty
+});
+
+// Error handling middleware
+app.use((error, req, res, next) => {
+  console.error("💥 Unhandled error:", error);
+  res.status(500).json({
+    error: "Internal server error",
+    details: process.env.NODE_ENV === "development" ? error.message : "Something went wrong"
+  });
+});
+
+// 404 handler (must be last)
 app.use((req, res) => {
   res.status(404).json({
     error: "Not found",
@@ -390,31 +624,27 @@ app.use((req, res) => {
   });
 });
 
-// Error handler
-app.use((error, req, res, next) => {
-  console.error("💥 Unhandled error:", error.message);
-  res.status(500).json({
-    error: "Internal server error",
-    details: error.message
-  });
-});
-
-// Start server
-const PORT = process.env.PORT || 10000;
+// ==============================
+// 🔌 Start Server
+// ==============================
+const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`🚀 Affiliate Tracking Server running on port ${PORT}`);
+  console.log(`🚀 Banner Tracking Server running on http://localhost:${PORT}`);
   console.log(`📂 Data file: ${DATA_FILE}`);
   console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🌐 CORS: Open for all origins`);
+  console.log(`🌐 CORS: Fully open (allows all origins)`);
   
-  const initialData = readData();
-  console.log(`📊 Loaded ${initialData.length} existing click records`);
-  
+  // Log available endpoints
   console.log("\n📡 Available endpoints:");
-  console.log("  GET  /                       - Server info");
-  console.log("  GET  /api/health             - Health check");
   console.log("  POST /api/custom-click       - Track banner clicks");
   console.log("  GET  /api/custom-clicks      - Get all tracked clicks");
   console.log("  GET  /api/section-ip-stats   - Get section-IP statistics");
+  console.log("  GET  /api/health             - Health check");
+  console.log("  POST /api/clear-data         - Clear all tracking data");
+  console.log("  POST /api/parse-network-text - Parse network text with OpenAI");
+  
+  // Initialize data file if it doesn't exist
+  const initialData = readData();
+  console.log(`📊 Loaded ${initialData.length} existing click records`);
 });
