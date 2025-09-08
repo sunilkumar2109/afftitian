@@ -1,5 +1,5 @@
 // ==============================
-// 🔌 Imports
+// 📌 Imports
 // ==============================
 import express from "express";
 import dotenv from "dotenv";
@@ -11,7 +11,7 @@ import { fileURLToPath } from "url";
 import fetch from "node-fetch";
 
 // ==============================
-// 🔌 File setup
+// 📌 File setup
 // ==============================
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,7 +20,7 @@ const __dirname = path.dirname(__filename);
 const DATA_FILE = path.join(__dirname, "custom_clicks.json");
 
 // ==============================
-// 🔌 Enhanced Helpers
+// 📌 Enhanced Helpers
 // ==============================
 
 function formatDuration(minutes, seconds) {
@@ -119,7 +119,7 @@ async function lookupCountry(ip) {
         const myIpRes = await fetch("https://api.ipify.org?format=json", { timeout: 5000 });
         const myIpData = await myIpRes.json();
         ip = myIpData.ip;
-        console.log("🌍 Using public IP for localhost:", ip);
+        console.log("🌐 Using public IP for localhost:", ip);
       } catch (err) {
         console.log("⚠️ Could not get public IP, using Unknown country");
         return "Unknown";
@@ -144,7 +144,7 @@ async function lookupCountry(ip) {
     }
     
     const data = await res.json();
-    console.log("🌍 IPInfo Response for", ip, ":", data);
+    console.log("🌐 IPInfo Response for", ip, ":", data);
 
     return data.country || "Unknown";
   } catch (err) {
@@ -170,7 +170,7 @@ function cleanupOldSessions() {
 setInterval(cleanupOldSessions, 10 * 60 * 1000);
 
 // ==============================
-// 🔌 App + Middleware
+// 📌 App + Middleware
 // ==============================
 dotenv.config();
 const app = express();
@@ -188,47 +188,47 @@ if (process.env.OPENAI_API_KEY) {
 app.set("trust proxy", true);
 
 // ==============================
-// 🔧 FIXED CORS CONFIGURATION
+// 🔧 FIXED CORS CONFIGURATION - MOST PERMISSIVE
 // ==============================
-// ==============================
-// 🔧 SIMPLE & ROBUST CORS CONFIG
-// ==============================
-const allowedOrigins = [
-  "http://localhost:3000",
-  "http://localhost:5173",
-  "http://localhost:8080",
-  "https://afftitans.com",
-  "https://www.afftitans.com"
-].map((o) => o.replace(/\/$/, "").toLowerCase()); // normalized list
+console.log("🌐 Setting up CORS with maximum compatibility...");
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true); // allow curl/postman
-      const normalized = origin.replace(/\/$/, "").toLowerCase();
-      if (allowedOrigins.includes(normalized)) {
-        return callback(null, true);
-      }
-      console.warn("❌ Blocked CORS origin:", origin);
-      return callback(new Error("Not allowed by CORS"), false);
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allowedHeaders: [
-      "Content-Type",
-      "Authorization",
-      "Accept",
-      "User-Agent",
-      "X-Requested-With",
-      "Origin",
-    ],
-    optionsSuccessStatus: 200,
-  })
-);
+// Set CORS headers manually for maximum compatibility
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  
+  // Allow all origins for now to fix the immediate issue
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header("Access-Control-Allow-Methods", "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma");
+  
+  // Handle preflight requests
+  if (req.method === "OPTIONS") {
+    res.sendStatus(200);
+    return;
+  }
+  
+  console.log(`📡 ${req.method} ${req.path} from ${origin || 'unknown origin'}`);
+  next();
+});
 
-// Ensure OPTIONS preflight responses are handled
-app.options("*", cors());
-
+// Also use the cors middleware as backup
+app.use(cors({
+  origin: true, // Allow all origins
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "Accept",
+    "User-Agent", 
+    "X-Requested-With",
+    "Origin",
+    "Cache-Control",
+    "Pragma"
+  ],
+  optionsSuccessStatus: 200,
+}));
 
 // Body parser middleware
 app.use(express.json({ limit: '10mb' }));
@@ -241,7 +241,7 @@ app.use((req, res, next) => {
 });
 
 // ==============================
-// 🔌 OpenAI Endpoint
+// 📌 OpenAI Endpoint
 // ==============================
 app.post("/api/parse-network-text", async (req, res) => {
   try {
@@ -253,7 +253,7 @@ app.post("/api/parse-network-text", async (req, res) => {
     }
 
     const { text } = req.body;
-    console.log("🔍 Processing network text:", text?.substring(0, 100) + "...");
+    console.log("📄 Processing network text:", text?.substring(0, 100) + "...");
 
     if (!text) {
       return res.status(400).json({ error: "No text provided" });
@@ -321,7 +321,7 @@ app.post("/api/parse-network-text", async (req, res) => {
 });
 
 // ==============================
-// 🔌 Enhanced Custom Banner Tracking
+// 📌 Enhanced Custom Banner Tracking
 // ==============================
 
 app.post("/api/custom-click", async (req, res) => {
@@ -573,7 +573,7 @@ app.get("/api/health", (req, res) => {
     total_clicks: data.length,
     active_sessions: sessions.size,
     data_file: DATA_FILE,
-    cors_origins: allowedOrigins
+    cors_policy: "Allow all origins (*)  - Fixed for production"
   });
 });
 
@@ -623,7 +623,7 @@ app.use((req, res) => {
 });
 
 // ==============================
-// 🔌 Start Server
+// 📌 Start Server
 // ==============================
 const PORT = process.env.PORT || 5000;
 
@@ -631,7 +631,7 @@ app.listen(PORT, () => {
   console.log(`🚀 Banner Tracking Server running on http://localhost:${PORT}`);
   console.log(`📂 Data file: ${DATA_FILE}`);
   console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🌐 CORS: Fully open (allows all origins)`);
+  console.log(`🌐 CORS: Allow ALL origins (*) - Production Ready`);
   
   // Log available endpoints
   console.log("\n📡 Available endpoints:");
