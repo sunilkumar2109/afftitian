@@ -595,7 +595,7 @@ app.post("/api/clear-data", (req, res) => {
     });
   }
 });
-
+// m
 // Root and favicon routes (must come before 404 handler)
 app.get("/", (req, res) => {
   res.send("Affiliate Tracking Server is running ✅");
