@@ -169,11 +169,7 @@ const BannerRow = ({
 
       <TableCell>
         <div className="flex space-x-2">
-          {!banner.is_rotation && (
-            <Button variant="outline" size="sm" onClick={() => onEdit(banner)}>
-              <Edit className="h-4 w-4" />
-            </Button>
-          )}
+          
           <Button variant="outline" size="sm" onClick={() => onDelete(banner)}>
             <Trash2 className="h-4 w-4" />
           </Button>
