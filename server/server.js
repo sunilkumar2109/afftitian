@@ -579,6 +579,7 @@ app.use((req, res) => {
     message: `Route ${req.method} ${req.path} not found`
   });
 });
+app.get('/favicon.ico', (req, res) => res.status(204));
 
 // ==============================
 // 🔌 Start Server

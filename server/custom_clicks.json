@@ -186,7 +186,7 @@
     "click_count": 1
   },
   {
-    "id": "1757325507025_bck3pgksn",
+    "id": "1757387306526_3zj6qy75t",
     "banner_id": "3d61f1db-0848-4026-98a6-854c74a3dca5",
     "banner_title": "3d61f1db-0848-4026-98a6-854c74a3dca5",
     "section": "sidebar",
@@ -196,11 +196,11 @@
     "country": "IN",
     "ip": "127.0.0.1",
     "time_spent_minutes": 0,
-    "time_spent_seconds": 12,
-    "clicked_at": "2025-09-08T09:58:25.078Z",
+    "time_spent_seconds": 0,
+    "clicked_at": "2025-09-09T03:08:25.342Z",
     "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
     "first_clicked_at": "2025-09-06T06:30:44.560Z",
-    "click_count": 5
+    "click_count": 6
   },
   {
     "id": "1757140568535_kh4f94f48",
