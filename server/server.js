@@ -580,6 +580,9 @@ app.use((req, res) => {
   });
 });
 app.get('/favicon.ico', (req, res) => res.status(204));
+app.get("/", (req, res) => {
+  res.send("Backend is running 🚀");
+});
 
 // ==============================
 // 🔌 Start Server
