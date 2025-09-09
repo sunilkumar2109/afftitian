@@ -571,7 +571,9 @@ app.use((error, req, res, next) => {
     details: process.env.NODE_ENV === "development" ? error.message : "Something went wrong"
   });
 });
-
+app.get("/", (req, res) => {
+  res.send("Backend is running 🚀");
+});
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({
@@ -580,9 +582,7 @@ app.use((req, res) => {
   });
 });
 app.get('/favicon.ico', (req, res) => res.status(204));
-app.get("/", (req, res) => {
-  res.send("Backend is running 🚀");
-});
+
 
 // ==============================
 // 🔌 Start Server
