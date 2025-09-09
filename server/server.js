@@ -571,6 +571,7 @@ app.use((error, req, res, next) => {
     details: process.env.NODE_ENV === "development" ? error.message : "Something went wrong"
   });
 });
+app.get('/favicon.ico', (req, res) => res.status(204));
 app.get("/", (req, res) => {
   res.send("Backend is running 🚀");
 });
@@ -581,7 +582,7 @@ app.use((req, res) => {
     message: `Route ${req.method} ${req.path} not found`
   });
 });
-app.get('/favicon.ico', (req, res) => res.status(204));
+
 
 
 // ==============================
