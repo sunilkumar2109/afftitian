@@ -1,17 +1,20 @@
 [
   {
-    "id": 1757079770162,
+    "id": "1757485187218_l58yql2ea",
     "banner_id": "e625805b-dfef-4fc5-9092-1f233426e2d9",
-    "banner_title": null,
+    "banner_title": "e625805b-dfef-4fc5-9092-1f233426e2d9",
     "section": "footer",
     "link_url": "https://koashadvertising.com/",
     "page": "/",
     "browser": "Chrome",
     "country": "IN",
     "ip": "127.0.0.1",
-    "time_spent_minutes": 3,
-    "time_spent_seconds": 187,
-    "clicked_at": "2025-09-05T13:42:50.162Z"
+    "time_spent_minutes": 18,
+    "time_spent_seconds": 52,
+    "clicked_at": "2025-09-10T06:19:46.192Z",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "first_clicked_at": "2025-09-05T13:42:50.162Z",
+    "click_count": 3
   },
   {
     "id": 1757079801024,
@@ -56,18 +59,21 @@
     "clicked_at": "2025-09-05T14:00:50.991Z"
   },
   {
-    "id": 1757081721607,
+    "id": "1757479421363_dawcmjvtr",
     "banner_id": "390831c1-f8f8-4683-aa24-044b56c466d3",
-    "banner_title": null,
+    "banner_title": "390831c1-f8f8-4683-aa24-044b56c466d3",
     "section": "sidebar",
     "link_url": "https://3aadclw3tibrlpz41kywfl0ar9.hop.clickbank.net",
     "page": "/",
-    "browser": "Edge",
+    "browser": "Chrome",
     "country": "IN",
     "ip": "127.0.0.1",
-    "time_spent_minutes": 35,
-    "time_spent_seconds": 2138,
-    "clicked_at": "2025-09-05T14:15:21.607Z"
+    "time_spent_minutes": 0,
+    "time_spent_seconds": 0,
+    "clicked_at": "2025-09-10T04:43:39.364Z",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "first_clicked_at": "2025-09-05T14:15:21.607Z",
+    "click_count": 2
   },
   {
     "id": "1757325496034_4qh89fk4d",
@@ -87,7 +93,7 @@
     "click_count": 3
   },
   {
-    "id": "1757140562279_gfi5ifuqj",
+    "id": "1757479707245_l2z8l0h0e",
     "banner_id": "8b79e8ab-042c-4d71-b859-45a6e1f59ca5",
     "banner_title": "8b79e8ab-042c-4d71-b859-45a6e1f59ca5",
     "section": "top",
@@ -96,15 +102,15 @@
     "browser": "Chrome",
     "country": "IN",
     "ip": "127.0.0.1",
-    "time_spent_minutes": 9,
-    "time_spent_seconds": 18,
-    "clicked_at": "2025-09-06T06:36:01.595Z",
+    "time_spent_minutes": 0,
+    "time_spent_seconds": 0,
+    "clicked_at": "2025-09-10T04:48:26.520Z",
     "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
     "first_clicked_at": "2025-09-06T06:07:27.129Z",
-    "click_count": 3
+    "click_count": 4
   },
   {
-    "id": "1757325495805_yn63lox1f",
+    "id": "1757483578929_27ab6whlp",
     "banner_id": "64747668-9cde-47de-8bb9-1e328275e973",
     "banner_title": "64747668-9cde-47de-8bb9-1e328275e973",
     "section": "sidebar",
@@ -113,12 +119,12 @@
     "browser": "Chrome",
     "country": "IN",
     "ip": "127.0.0.1",
-    "time_spent_minutes": 0,
-    "time_spent_seconds": 0,
-    "clicked_at": "2025-09-08T09:58:12.639Z",
+    "time_spent_minutes": 10,
+    "time_spent_seconds": 16,
+    "clicked_at": "2025-09-10T05:52:57.961Z",
     "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
     "first_clicked_at": "2025-09-06T06:09:23.988Z",
-    "click_count": 4
+    "click_count": 5
   },
   {
     "id": 1757139014776,
@@ -152,7 +158,7 @@
     "click_count": 2
   },
   {
-    "id": "1757140114325_amg5yawqm",
+    "id": "1757484138720_31wquc27c",
     "banner_id": "7cef7583-929a-48c5-9a15-9af223ff4727",
     "banner_title": "7cef7583-929a-48c5-9a15-9af223ff4727",
     "section": "sidebar",
@@ -161,12 +167,12 @@
     "browser": "Chrome",
     "country": "IN",
     "ip": "127.0.0.1",
-    "time_spent_minutes": 2,
-    "time_spent_seconds": 44,
-    "clicked_at": "2025-09-06T06:28:33.676Z",
+    "time_spent_minutes": 19,
+    "time_spent_seconds": 36,
+    "clicked_at": "2025-09-10T06:02:17.767Z",
     "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
     "first_clicked_at": "2025-09-06T06:25:48.705Z",
-    "click_count": 2
+    "click_count": 4
   },
   {
     "id": "1757140010418_1lq2rki53",
@@ -234,6 +240,91 @@
     "clicked_at": "2025-09-08T09:58:31.134Z",
     "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
     "first_clicked_at": "2025-09-08T09:58:31.134Z",
+    "click_count": 1
+  },
+  {
+    "id": "1757480341592_zw0ktfctn",
+    "banner_id": "0739ae86-537a-4a33-a13a-248eb98710d5",
+    "banner_title": "0739ae86-537a-4a33-a13a-248eb98710d5",
+    "section": "top",
+    "link_url": "https://3aadclw3tibrlpz41kywfl0ar9.hop.clickbank.net",
+    "page": "/",
+    "browser": "Chrome",
+    "country": "IN",
+    "ip": "127.0.0.1",
+    "time_spent_minutes": 10,
+    "time_spent_seconds": 34,
+    "clicked_at": "2025-09-10T04:59:00.942Z",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "first_clicked_at": "2025-09-10T04:59:00.942Z",
+    "click_count": 1
+  },
+  {
+    "id": "1757484115245_pcwymkokd",
+    "banner_id": "19ee151b-ebff-47d7-af06-7b6f8d7b4b93",
+    "banner_title": "19ee151b-ebff-47d7-af06-7b6f8d7b4b93",
+    "section": "background",
+    "link_url": "https://cpamerchant.com/",
+    "page": "/",
+    "browser": "Chrome",
+    "country": "IN",
+    "ip": "127.0.0.1",
+    "time_spent_minutes": 0,
+    "time_spent_seconds": 0,
+    "clicked_at": "2025-09-10T06:01:54.458Z",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "first_clicked_at": "2025-09-10T05:01:27.224Z",
+    "click_count": 2
+  },
+  {
+    "id": "1757484226774_e05dnzv1w",
+    "banner_id": "672b5a3d-1c7d-49d9-95c0-5dbde0413824",
+    "banner_title": "672b5a3d-1c7d-49d9-95c0-5dbde0413824",
+    "section": "sidebar",
+    "link_url": "https://leadstackinc.com/",
+    "page": "/",
+    "browser": "Chrome",
+    "country": "IN",
+    "ip": "127.0.0.1",
+    "time_spent_minutes": 21,
+    "time_spent_seconds": 4,
+    "clicked_at": "2025-09-10T06:03:46.064Z",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "first_clicked_at": "2025-09-10T05:43:18.331Z",
+    "click_count": 2
+  },
+  {
+    "id": "1757484166780_ujuyzoqxd",
+    "banner_id": "db617552-2679-4514-ba96-264c16d48376",
+    "banner_title": "db617552-2679-4514-ba96-264c16d48376",
+    "section": "top",
+    "link_url": "https://pointclicktrack.com",
+    "page": "/",
+    "browser": "Chrome",
+    "country": "IN",
+    "ip": "127.0.0.1",
+    "time_spent_minutes": 0,
+    "time_spent_seconds": 0,
+    "clicked_at": "2025-09-10T06:02:45.420Z",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "first_clicked_at": "2025-09-10T06:02:45.420Z",
+    "click_count": 1
+  },
+  {
+    "id": "1757484641086_1kh1hk4m2",
+    "banner_id": "8d8c6e3d-cad1-439c-8261-4c497c1406e1",
+    "banner_title": "8d8c6e3d-cad1-439c-8261-4c497c1406e1",
+    "section": "footer",
+    "link_url": "https://gurumedia.com/",
+    "page": "/",
+    "browser": "Chrome",
+    "country": "IN",
+    "ip": "127.0.0.1",
+    "time_spent_minutes": 9,
+    "time_spent_seconds": 46,
+    "clicked_at": "2025-09-10T06:10:40.421Z",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "first_clicked_at": "2025-09-10T06:10:40.421Z",
     "click_count": 1
   }
 ]
