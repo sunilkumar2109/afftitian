@@ -959,7 +959,7 @@ const Browse = () => {
                         {/* Compact description and tags */}
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-gray-300">
-                            {offersCountByNetwork[network.id] || 0} Offers
+                          {Math.min(offersCountByNetwork[network.id] || 0, 8)} Offers
                           </span>
                           <div className="flex gap-1">
                             {network.tags && network.tags.slice(0, 2).map((tag, idx) => (
@@ -1215,7 +1215,11 @@ const Browse = () => {
                           {getDisplayValue(network.categories?.[0], "N/A")} • {getDisplayValue(network.type, "Unknown")}
                         </div>
                         <div className="flex items-center justify-between text-xs text-gray-400">
-                          <span>📊 {offersCountByNetwork[network.id] || 0} offers</span> 
+                          <span className="text-xs text-gray-300">
+                          {Math.min(offersCountByNetwork[network.id] || 0, 8)} Offers
+                          </span>
+
+
                           <span>💰 {getDisplayValue(network.payment_frequency, "Unknown")}</span>
                         </div>
                       </div>
