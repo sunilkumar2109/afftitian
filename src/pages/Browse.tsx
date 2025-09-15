@@ -699,7 +699,8 @@ const Browse = () => {
       });
     }
 
-    return filtered;
+    // *** LIMIT TO FIRST 8 NETWORKS ***
+    return filtered.slice(0, 8);
   };
 
   // Background banner logic
@@ -900,7 +901,7 @@ const Browse = () => {
 
         {/* Main Content Area */}
         <div className="flex-1">
-          {/* Networks List - Reduced size */}
+          {/* Networks List - Limited to 8 networks */}
           {!selectedNetworkFilter && (
             <div className="space-y-2">
               {loadingNetworks ? (
@@ -1136,7 +1137,7 @@ const Browse = () => {
           )}
         </div>
 
-        {/* Networks Sidebar */}
+        {/* Networks Sidebar - Limited to 8 networks */}
         <div className="w-full lg:w-80 flex-shrink-0 order-last lg:order-none">
 
           <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden">
