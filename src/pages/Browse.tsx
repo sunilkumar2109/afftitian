@@ -764,9 +764,10 @@ const Browse = () => {
     return (
       <div className="relative group" onClick={(e) => e.stopPropagation()}>
         <Button 
-          variant="outline" 
-          className="flex items-center gap-2 px-3 py-1.5 bg-gray-900 border-gray-700 text-white hover:bg-gray-800 transition-colors text-sm"
-        >
+  variant="outline" 
+  className="flex items-center gap-1 px-2 py-1 bg-gray-900 border-gray-700 text-white hover:bg-gray-800 transition-colors text-xs sm:text-sm"
+>
+
           <span className="text-xs font-medium">{selected || title}</span>
           <ChevronDown className="w-3 h-3 text-white" />
         </Button>
@@ -861,7 +862,7 @@ const Browse = () => {
       
       {/* Header with Filters and Global Search */}
       <div className="bg-gray-900 border-b border-gray-700 px-6 py-3" onClick={(e) => e.stopPropagation()}>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-wrap">
+        <div className="flex flex-row flex-wrap items-center gap-2 sm:gap-3">
 
           <FilterDropdown 
             title="Networks" 
