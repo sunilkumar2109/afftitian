@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Network, MasterData } from "@/types/admin";
-import { Edit, Trash2, Search, CheckSquare, Square } from "lucide-react";
+import { Edit, Trash2, Search, CheckSquare, Square, ChevronLeft, ChevronRight } from "lucide-react";
 
 import NetworkForm from "./NetworkForm";
 import BulkNetworkForm from "./BulkNetworkForm";
@@ -48,30 +48,46 @@ const NetworkList = ({ networks, onUpdate, masterData }: NetworkListProps) => {
   const [selectedNetworks, setSelectedNetworks] = useState<string[]>([]);
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
 
+  // 🔹 Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const networksPerPage = 8;
+
   // ✅ Filtering
   const filteredNetworks = networks.filter(
     (network) =>
       network.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       network.type.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // 🔹 Pagination Logic
+  const totalPages = Math.ceil(filteredNetworks.length / networksPerPage);
+  const startIndex = (currentPage - 1) * networksPerPage;
+  const endIndex = startIndex + networksPerPage;
+  const currentNetworks = filteredNetworks.slice(startIndex, endIndex);
+
+  // Reset to first page when search changes
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
+
   const deleteNetwork = async (id: string) => {
-  try {
-    const { error } = await supabase.from("networks").delete().eq("id", id);
+    try {
+      const { error } = await supabase.from("networks").delete().eq("id", id);
 
-    if (error) throw error;
+      if (error) throw error;
 
-    toast({ title: "Success", description: "Network deleted" });
-    onUpdate(); // refresh list
-  } catch (error) {
-    console.error("Failed to delete network:", error);
-    toast({
-      title: "Error",
-      description: "Failed to delete",
-      variant: "destructive",
-    });
-  }
-};
-
+      toast({ title: "Success", description: "Network deleted" });
+      onUpdate(); // refresh list
+    } catch (error) {
+      console.error("Failed to delete network:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete",
+        variant: "destructive",
+      });
+    }
+  };
 
   // ✅ Selection
   const toggleSelect = (id: string) => {
@@ -81,10 +97,10 @@ const NetworkList = ({ networks, onUpdate, masterData }: NetworkListProps) => {
   };
 
   const selectAll = () => {
-    if (selectedNetworks.length === filteredNetworks.length) {
+    if (selectedNetworks.length === currentNetworks.length) {
       setSelectedNetworks([]);
     } else {
-      setSelectedNetworks(filteredNetworks.map((n) => n.id));
+      setSelectedNetworks(currentNetworks.map((n) => n.id));
     }
   };
 
@@ -110,16 +126,53 @@ const NetworkList = ({ networks, onUpdate, masterData }: NetworkListProps) => {
     }
   };
 
+  // 🔹 Pagination Controls
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
+
+  const getPaginationRange = () => {
+    const delta = 2;
+    const range = [];
+    const rangeWithDots = [];
+
+    for (
+      let i = Math.max(2, currentPage - delta);
+      i <= Math.min(totalPages - 1, currentPage + delta);
+      i++
+    ) {
+      range.push(i);
+    }
+
+    if (currentPage - delta > 2) {
+      rangeWithDots.push(1, "...");
+    } else {
+      rangeWithDots.push(1);
+    }
+
+    rangeWithDots.push(...range);
+
+    if (currentPage + delta < totalPages - 1) {
+      rangeWithDots.push("...", totalPages);
+    } else {
+      if (totalPages > 1) {
+        rangeWithDots.push(totalPages);
+      }
+    }
+
+    return rangeWithDots;
+  };
+
   return (
     <Card>
       {/* 🔹 Header */}
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          Networks ({networks.length})
+          Networks ({filteredNetworks.length})
           <div className="flex items-center gap-2">
             {bulkMode && (
               <Button variant="outline" size="sm" onClick={selectAll}>
-                {selectedNetworks.length === filteredNetworks.length
+                {selectedNetworks.length === currentNetworks.length
                   ? "Unselect All"
                   : "Select All"}
               </Button>
@@ -146,7 +199,7 @@ const NetworkList = ({ networks, onUpdate, masterData }: NetworkListProps) => {
               <Input
                 placeholder="Search networks..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="pl-8 w-64"
               />
             </div>
@@ -157,7 +210,7 @@ const NetworkList = ({ networks, onUpdate, masterData }: NetworkListProps) => {
       {/* 🔹 Content */}
       <CardContent>
         <div className="space-y-4">
-          {filteredNetworks.map((network) => (
+          {currentNetworks.map((network) => (
             <div
               key={network.id}
               className="border rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
@@ -246,9 +299,8 @@ const NetworkList = ({ networks, onUpdate, masterData }: NetworkListProps) => {
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={() => deleteNetwork(network.id)}>
-  Delete
-</AlertDialogAction>
-
+                          Delete
+                        </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
@@ -257,7 +309,7 @@ const NetworkList = ({ networks, onUpdate, masterData }: NetworkListProps) => {
             </div>
           ))}
 
-          {filteredNetworks.length === 0 && (
+          {currentNetworks.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
               {searchTerm
                 ? "No networks found matching your search."
@@ -265,6 +317,61 @@ const NetworkList = ({ networks, onUpdate, masterData }: NetworkListProps) => {
             </div>
           )}
         </div>
+
+        {/* 🔹 Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t">
+            <div className="text-sm text-muted-foreground">
+              Showing {startIndex + 1}-{Math.min(endIndex, filteredNetworks.length)} of {filteredNetworks.length} networks
+            </div>
+            
+            <div className="flex items-center gap-2">
+              {/* Previous Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="flex items-center gap-1"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Previous
+              </Button>
+
+              {/* Page Numbers */}
+              <div className="flex items-center gap-1">
+                {getPaginationRange().map((page, index) => (
+                  <div key={index}>
+                    {page === "..." ? (
+                      <span className="px-3 py-1 text-muted-foreground">...</span>
+                    ) : (
+                      <Button
+                        variant={currentPage === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => goToPage(page as number)}
+                        className="min-w-[40px]"
+                      >
+                        {page}
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Next Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="flex items-center gap-1"
+              >
+                Next
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </CardContent>
 
       {/* 🔹 Bulk Edit Dialog */}

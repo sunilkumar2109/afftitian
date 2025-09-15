@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { ChevronDown, Search } from "lucide-react";
+import { ChevronDown, Search, ChevronUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Footer from "@/components/Footer";
 import TopBar from "@/components/TopBar";
@@ -77,7 +77,6 @@ const TRACKING_API =
 
 // use like: fetch(`${TRACKING_API}/api/custom-clicks`)
 // if TRACKING_API === "" the fetch becomes "/api/custom-clicks" (works with dev proxy)
-
 
 // Enhanced logging function with better error handling
 async function logCustomClick({
@@ -334,6 +333,10 @@ const Browse = () => {
   const [networkSearchTerm, setNetworkSearchTerm] = useState("");
   const [offerSearchTerm, setOfferSearchTerm] = useState("");
   const [globalSearchTerm, setGlobalSearchTerm] = useState("");
+
+  // NEW STATE: For controlling how many networks to show in sidebar
+  const [showAllNetworks, setShowAllNetworks] = useState(false);
+  const NETWORKS_DISPLAY_LIMIT = 8; // Change this to 10 if you prefer
 
   // Function to handle background click with proper tracking
   const handleBackgroundClick = async () => {
@@ -699,8 +702,7 @@ const Browse = () => {
       });
     }
 
-    // *** LIMIT TO FIRST 8 NETWORKS ***
-    return filtered.slice(0, 8);
+    return filtered;
   };
 
   // Background banner logic
@@ -734,6 +736,11 @@ const Browse = () => {
   const offersToDisplay = getFilteredOffers();
   const networksToDisplay = getFilteredNetworks();
 
+  // NEW: Get limited networks for sidebar display
+  const sidebarNetworksToDisplay = showAllNetworks 
+    ? networksToDisplay 
+    : networksToDisplay.slice(0, NETWORKS_DISPLAY_LIMIT);
+
   const activeRotations = allRotations.filter(r => !r.expires_at || new Date(r.expires_at) > new Date());
 
   const bannersForRotation = (r: BannerRotation) => {
@@ -765,10 +772,9 @@ const Browse = () => {
     return (
       <div className="relative group" onClick={(e) => e.stopPropagation()}>
         <Button 
-  variant="outline" 
-  className="flex items-center gap-1 px-2 py-1 bg-gray-900 border-gray-700 text-white hover:bg-gray-800 transition-colors text-xs sm:text-sm"
->
-
+          variant="outline" 
+          className="flex items-center gap-1 px-2 py-1 bg-gray-900 border-gray-700 text-white hover:bg-gray-800 transition-colors text-xs sm:text-sm"
+        >
           <span className="text-xs font-medium">{selected || title}</span>
           <ChevronDown className="w-3 h-3 text-white" />
         </Button>
@@ -822,13 +828,12 @@ const Browse = () => {
         <TopBar />
         {/* Logo positioned in top left corner */}
         <div className="absolute top-16 left-4 sm:top-20 sm:left-10 z-50">
-        <img 
-        src="https://pepeleads.com/uploads/1756199032-7299397.png"
-        alt="AffiTitans Logo" 
-        className="h-10 sm:h-12 w-auto object-contain"
-        />
+          <img 
+            src="https://pepeleads.com/uploads/1756199032-7299397.png"
+            alt="AffiTitans Logo" 
+            className="h-10 sm:h-12 w-auto object-contain"
+          />
         </div>
-
       </div>
       
       {/* Fixed Top Banners */}
@@ -864,7 +869,6 @@ const Browse = () => {
       {/* Header with Filters and Global Search */}
       <div className="bg-gray-900 border-b border-gray-700 px-6 py-3" onClick={(e) => e.stopPropagation()}>
         <div className="flex flex-row flex-wrap items-center gap-2 sm:gap-3">
-
           <FilterDropdown 
             title="Networks" 
             options={networksOptions}
@@ -901,7 +905,7 @@ const Browse = () => {
 
         {/* Main Content Area */}
         <div className="flex-1">
-          {/* Networks List - Limited to 8 networks */}
+          {/* Networks List - Reduced size */}
           {!selectedNetworkFilter && (
             <div className="space-y-2">
               {loadingNetworks ? (
@@ -911,9 +915,8 @@ const Browse = () => {
               ) : (
                 networksToDisplay.map((network) => (
                   <Card
-                   key={network.id}
-                   className="p-2 hover:shadow-md transition-shadow bg-gray-900 border-gray-800 w-full sm:max-w-full md:max-w-[50%] mx-auto"
-
+                    key={network.id}
+                    className="p-2 hover:shadow-md transition-shadow bg-gray-900 border-gray-800 w-full sm:max-w-full md:max-w-[50%] mx-auto"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="flex gap-2 items-center">
@@ -960,7 +963,7 @@ const Browse = () => {
                         {/* Compact description and tags */}
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-gray-300">
-                          {Math.min(offersCountByNetwork[network.id] || 0, 8)} Offers
+                            {offersCountByNetwork[network.id] || 0} Offers
                           </span>
                           <div className="flex gap-1">
                             {network.tags && network.tags.slice(0, 2).map((tag, idx) => (
@@ -1020,12 +1023,10 @@ const Browse = () => {
               ) : (
                 offersToDisplay.map((offer) => (
                   <Card
-  key={offer.id}
-  className={`p-3 w-full hover:shadow-md transition-shadow border-gray-800 ${
-    offer.is_active ? "bg-gray-900" : "bg-gray-800"
-  } max-w-full sm:max-w-[95%] mx-auto`}
-
-
+                    key={offer.id}
+                    className={`p-3 w-full hover:shadow-md transition-shadow border-gray-800 ${
+                      offer.is_active ? "bg-gray-900" : "bg-gray-800"
+                    } max-w-full sm:max-w-[95%] mx-auto`}
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="flex items-center gap-3">
@@ -1084,17 +1085,17 @@ const Browse = () => {
                                   {geo}
                                 </Badge>
                               ))}
-                              {toStringArray(offer.vertical, false)
-                                .slice(0, 2)
-                                .map((vertical, idx) => (
-                                  <Badge
-                                    key={`vertical-${idx}`}
-                                    variant="outline"
-                                    className="text-xs px-1 py-0 border-green-700 text-green-300"
-                                  >
-                                    {vertical}
-                                  </Badge>
-                                ))}
+                            {toStringArray(offer.vertical, false)
+                              .slice(0, 2)
+                              .map((vertical, idx) => (
+                                <Badge
+                                  key={`vertical-${idx}`}
+                                  variant="outline"
+                                  className="text-xs px-1 py-0 border-green-700 text-green-300"
+                                >
+                                  {vertical}
+                                </Badge>
+                              ))}
                           </div>
                         </div>
                       </div>
@@ -1137,9 +1138,8 @@ const Browse = () => {
           )}
         </div>
 
-        {/* Networks Sidebar - Limited to 8 networks */}
+        {/* Networks Sidebar - MODIFIED TO SHOW LIMITED NETWORKS */}
         <div className="w-full lg:w-80 flex-shrink-0 order-last lg:order-none">
-
           <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden">
             {/* Sidebar Banners */}
             {rotationGroupsBySection["sidebar"].map((rotation) => (
@@ -1167,18 +1167,47 @@ const Browse = () => {
               </div>
             </div>
             
-            <div className="p-3 border-b border-gray-700">
+            <div className="p-3 border-b border-gray-700 flex items-center justify-between">
               <h2 className="font-medium text-white flex items-center gap-2 text-sm">
                 All Networks
+                {!showAllNetworks && networksToDisplay.length > NETWORKS_DISPLAY_LIMIT && (
+                  <span className="text-xs text-gray-400">
+                    ({NETWORKS_DISPLAY_LIMIT} of {networksToDisplay.length})
+                  </span>
+                )}
               </h2>
+              {networksToDisplay.length > NETWORKS_DISPLAY_LIMIT && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-blue-400 hover:text-blue-300 hover:bg-gray-800 p-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowAllNetworks(!showAllNetworks);
+                  }}
+                >
+                  {showAllNetworks ? (
+                    <>
+                      <ChevronUp className="w-3 h-3 mr-1" />
+                      Show Less
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="w-3 h-3 mr-1" />
+                      Show All ({networksToDisplay.length})
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
+            
             <div className="space-y-0">
               {loadingNetworks ? (
                 <div className="text-center py-4 text-gray-400">Loading networks...</div>
-              ) : networksToDisplay.length === 0 ? (
+              ) : sidebarNetworksToDisplay.length === 0 ? (
                 <div className="text-center py-4 text-gray-400">No networks found.</div>
               ) : (
-                networksToDisplay.map((network) => (
+                sidebarNetworksToDisplay.map((network) => (
                   <div 
                     key={network.id} 
                     className="p-3 border-b border-gray-700 last:border-b-0 hover:bg-gray-800 transition-colors"
@@ -1216,11 +1245,7 @@ const Browse = () => {
                           {getDisplayValue(network.categories?.[0], "N/A")} • {getDisplayValue(network.type, "Unknown")}
                         </div>
                         <div className="flex items-center justify-between text-xs text-gray-400">
-                          <span className="text-xs text-gray-300">
-                          {Math.min(offersCountByNetwork[network.id] || 0, 8)} Offers
-                          </span>
-
-
+                          <span>📊 {offersCountByNetwork[network.id] || 0} offers</span> 
                           <span>💰 {getDisplayValue(network.payment_frequency, "Unknown")}</span>
                         </div>
                       </div>
