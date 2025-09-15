@@ -860,7 +860,8 @@ const Browse = () => {
       
       {/* Header with Filters and Global Search */}
       <div className="bg-gray-900 border-b border-gray-700 px-6 py-3" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-wrap">
+
           <FilterDropdown 
             title="Networks" 
             options={networksOptions}
@@ -906,8 +907,9 @@ const Browse = () => {
               ) : (
                 networksToDisplay.map((network) => (
                   <Card
-                    key={network.id}
-                    className="p-2 hover:shadow-md transition-shadow bg-gray-900 border-gray-800 max-w-[50%] mx-auto"
+                   key={network.id}
+                   className="p-2 hover:shadow-md transition-shadow bg-gray-900 border-gray-800 w-full sm:max-w-[50%] mx-auto"
+
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="flex gap-2 items-center">
@@ -1015,9 +1017,10 @@ const Browse = () => {
                 offersToDisplay.map((offer) => (
                   <Card
                     key={offer.id}
-                    className={`p-3 hover:shadow-md transition-shadow border-gray-800 ${
-                      offer.is_active ? "bg-gray-900" : "bg-gray-800"
-                    }`}
+                    className={`p-3 w-full hover:shadow-md transition-shadow border-gray-800 ${
+                  offer.is_active ? "bg-gray-900" : "bg-gray-800"
+                  }`}
+
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="flex items-center gap-3">
@@ -1130,7 +1133,8 @@ const Browse = () => {
         </div>
 
         {/* Networks Sidebar */}
-        <div className="w-full lg:w-80 flex-shrink-0">
+        <div className="w-full lg:w-80 flex-shrink-0 order-last lg:order-none">
+
           <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden">
             {/* Sidebar Banners */}
             {rotationGroupsBySection["sidebar"].map((rotation) => (
