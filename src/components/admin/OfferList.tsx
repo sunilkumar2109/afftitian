@@ -49,11 +49,53 @@ const OfferList = ({ offers, networks, onUpdate, masterData }: OfferListProps) =
     offer.networks?.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Round-robin sorting function
+  const roundRobinSort = (offers: Offer[]): Offer[] => {
+    // Group offers by network
+    const offersByNetwork: { [networkId: string]: Offer[] } = {};
+    
+    offers.forEach(offer => {
+      const networkId = offer.network_id || 'unknown';
+      if (!offersByNetwork[networkId]) {
+        offersByNetwork[networkId] = [];
+      }
+      offersByNetwork[networkId].push(offer);
+    });
+
+    // Sort offers within each network by priority_order (ascending)
+    Object.keys(offersByNetwork).forEach(networkId => {
+      offersByNetwork[networkId].sort((a, b) => (a.priority_order || 0) - (b.priority_order || 0));
+    });
+
+    // Get network IDs and sort them for consistent ordering
+    const networkIds = Object.keys(offersByNetwork).sort();
+    
+    // Calculate maximum number of offers in any network
+    const maxOffersInNetwork = Math.max(...Object.values(offersByNetwork).map(arr => arr.length));
+    
+    const roundRobinOffers: Offer[] = [];
+    
+    // Round-robin distribution
+    for (let round = 0; round < maxOffersInNetwork; round++) {
+      for (const networkId of networkIds) {
+        const networkOffers = offersByNetwork[networkId];
+        if (networkOffers && networkOffers[round]) {
+          roundRobinOffers.push(networkOffers[round]);
+        }
+      }
+    }
+    
+    return roundRobinOffers;
+  };
+
+  // Apply round-robin sorting to filtered offers
+  const sortedOffers = roundRobinSort(filteredOffers);
+
   // Calculate pagination
-  const totalPages = Math.ceil(filteredOffers.length / itemsPerPage);
+  const totalPages = Math.ceil(sortedOffers.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentOffers = filteredOffers.slice(startIndex, endIndex);
+  const currentOffers = sortedOffers.slice(startIndex, endIndex);
 
   // Reset to first page when search changes
   const handleSearchChange = (value: string) => {
@@ -191,7 +233,7 @@ const OfferList = ({ offers, networks, onUpdate, masterData }: OfferListProps) =
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          Offers ({filteredOffers.length})
+          Offers ({sortedOffers.length})
           <div className="flex items-center gap-2">
             <div className="relative">
               <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -207,7 +249,7 @@ const OfferList = ({ offers, networks, onUpdate, masterData }: OfferListProps) =
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {currentOffers.map((offer) => (
+          {currentOffers.map((offer, index) => (
             <div
               key={offer.id}
               className="border rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
@@ -215,6 +257,9 @@ const OfferList = ({ offers, networks, onUpdate, masterData }: OfferListProps) =
               {/* Left Content */}
               <div className="flex-1">
                 <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-mono">
+                    #{startIndex + index + 1}
+                  </span>
                   <h3 className="font-semibold">{offer.name}</h3>
                   <Badge variant={offer.is_active ? "default" : "secondary"}>
                     {offer.is_active ? "Active" : "Inactive"}
@@ -241,7 +286,7 @@ const OfferList = ({ offers, networks, onUpdate, masterData }: OfferListProps) =
                 </div>
 
                 <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-2">
-                  <span>Network: {offer.networks?.name}</span>
+                  <span className="font-medium text-primary">Network: {offer.networks?.name}</span>
                   {offer.payout_amount && (
                     <span>Payout: {offer.payout_amount} {offer.payout_currency}</span>
                   )}
@@ -363,7 +408,7 @@ const OfferList = ({ offers, networks, onUpdate, masterData }: OfferListProps) =
         {totalPages > 1 && (
           <div className="mt-6 flex items-center justify-between">
             <div className="text-sm text-muted-foreground">
-              Showing {startIndex + 1} to {Math.min(endIndex, filteredOffers.length)} of {filteredOffers.length} offers
+              Showing {startIndex + 1} to {Math.min(endIndex, sortedOffers.length)} of {sortedOffers.length} offers
             </div>
             
             <div className="flex items-center space-x-2">
