@@ -819,13 +819,14 @@ const Browse = () => {
       >
         <TopBar />
         {/* Logo positioned in top left corner */}
-        <div className="absolute top-20 left-10 z-50">
-          <img 
-            src="https://pepeleads.com/uploads/1756199032-7299397.png"
-            alt="AffiTitans Logo" 
-            className="h-12 w-auto object-contain"
-          />
+        <div className="absolute top-16 left-4 sm:top-20 sm:left-10 z-50">
+        <img 
+        src="https://pepeleads.com/uploads/1756199032-7299397.png"
+        alt="AffiTitans Logo" 
+        className="h-10 sm:h-12 w-auto object-contain"
+        />
         </div>
+
       </div>
       
       {/* Fixed Top Banners */}
@@ -894,7 +895,8 @@ const Browse = () => {
         </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6 p-6">
+      <div className="flex flex-col lg:flex-row gap-4 p-3 sm:p-6">
+
         {/* Main Content Area */}
         <div className="flex-1">
           {/* Networks List - Reduced size */}
@@ -908,7 +910,7 @@ const Browse = () => {
                 networksToDisplay.map((network) => (
                   <Card
                    key={network.id}
-                   className="p-2 hover:shadow-md transition-shadow bg-gray-900 border-gray-800 w-full sm:max-w-[50%] mx-auto"
+                   className="p-2 hover:shadow-md transition-shadow bg-gray-900 border-gray-800 w-full sm:max-w-full md:max-w-[50%] mx-auto"
 
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -1016,10 +1018,11 @@ const Browse = () => {
               ) : (
                 offersToDisplay.map((offer) => (
                   <Card
-                    key={offer.id}
-                    className={`p-3 w-full hover:shadow-md transition-shadow border-gray-800 ${
-                  offer.is_active ? "bg-gray-900" : "bg-gray-800"
-                  }`}
+  key={offer.id}
+  className={`p-3 w-full hover:shadow-md transition-shadow border-gray-800 ${
+    offer.is_active ? "bg-gray-900" : "bg-gray-800"
+  } max-w-full sm:max-w-[95%] mx-auto`}
+
 
                     onClick={(e) => e.stopPropagation()}
                   >
