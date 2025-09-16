@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { ChevronDown, Search, ChevronUp } from "lucide-react";
+import { ChevronDown, Search, ChevronUp, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Footer from "@/components/Footer";
 import TopBar from "@/components/TopBar";
@@ -333,6 +333,10 @@ const Browse = () => {
   const [networkSearchTerm, setNetworkSearchTerm] = useState("");
   const [offerSearchTerm, setOfferSearchTerm] = useState("");
   const [globalSearchTerm, setGlobalSearchTerm] = useState("");
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [offersPerPage] = useState(10);
 
   // NEW STATE: For controlling how many networks to show in sidebar
   const [showAllNetworks, setShowAllNetworks] = useState(false);
@@ -705,6 +709,20 @@ const Browse = () => {
     return filtered;
   };
 
+  // Pagination logic
+  const offersToDisplay = getFilteredOffers();
+  const indexOfLastOffer = currentPage * offersPerPage;
+  const indexOfFirstOffer = indexOfLastOffer - offersPerPage;
+  const currentOffers = offersToDisplay.slice(indexOfFirstOffer, indexOfLastOffer);
+  const totalPages = Math.ceil(offersToDisplay.length / offersPerPage);
+
+  const paginate = (pageNumber: number) => {
+    if (pageNumber < 1) pageNumber = 1;
+    if (pageNumber > totalPages) pageNumber = totalPages;
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // Background banner logic
   const defaultBg = "https://i.pinimg.com/736x/cf/3a/c8/cf3ac842dcb713c45973de67c44d5e78.jpg";
 
@@ -733,7 +751,6 @@ const Browse = () => {
   const backgroundBanner = allBanners.find(b => bannerHasSection(b, "background"));
   const backgroundUrl = backgroundBanner ? cacheBusted(getBannerImageUrl(backgroundBanner), backgroundBanner.id) : defaultBg;
 
-  const offersToDisplay = getFilteredOffers();
   const networksToDisplay = getFilteredNetworks();
 
   // NEW: Get limited networks for sidebar display
@@ -810,6 +827,76 @@ const Browse = () => {
             </div>
           </div>
         </div>
+      </div>
+    );
+  };
+
+  const Pagination = () => {
+    if (totalPages <= 1) return null;
+
+    return (
+      <div className="flex justify-center items-center mt-6 space-x-2">
+        <Button
+          onClick={() => paginate(currentPage - 1)}
+          disabled={currentPage === 1}
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-1 bg-gray-800 text-white border-gray-700"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          Previous
+        </Button>
+        
+        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+          let pageNum;
+          if (totalPages <= 5) {
+            pageNum = i + 1;
+          } else if (currentPage <= 3) {
+            pageNum = i + 1;
+          } else if (currentPage >= totalPages - 2) {
+            pageNum = totalPages - 4 + i;
+          } else {
+            pageNum = currentPage - 2 + i;
+          }
+          
+          return (
+            <Button
+              key={pageNum}
+              onClick={() => paginate(pageNum)}
+              variant={currentPage === pageNum ? "default" : "outline"}
+              size="sm"
+              className={currentPage === pageNum ? "bg-blue-600 text-white" : "bg-gray-800 text-white border-gray-700"}
+            >
+              {pageNum}
+            </Button>
+          );
+        })}
+        
+        {totalPages > 5 && currentPage < totalPages - 2 && (
+          <span className="text-gray-400">...</span>
+        )}
+        
+        {totalPages > 5 && currentPage < totalPages - 2 && (
+          <Button
+            onClick={() => paginate(totalPages)}
+            variant="outline"
+            size="sm"
+            className="bg-gray-800 text-white border-gray-700"
+          >
+            {totalPages}
+          </Button>
+        )}
+        
+        <Button
+          onClick={() => paginate(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-1 bg-gray-800 text-white border-gray-700"
+        >
+          Next
+          <ChevronRight className="w-4 h-4" />
+        </Button>
       </div>
     );
   };
@@ -902,126 +989,60 @@ const Browse = () => {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-4 p-3 sm:p-6">
-
         {/* Main Content Area */}
         <div className="flex-1">
-          {/* Networks List - Reduced size */}
-          {!selectedNetworkFilter && (
-            <div className="space-y-2">
-              {loadingNetworks ? (
-                <div className="text-center py-4 text-gray-400">Loading networks...</div>
-              ) : networksToDisplay.length === 0 ? (
-                <div className="text-center py-4 text-gray-400">No networks found.</div>
-              ) : (
-                networksToDisplay.map((network) => (
-                  <Card
-                    key={network.id}
-                    className="p-2 hover:shadow-md transition-shadow bg-gray-900 border-gray-800 w-full sm:max-w-full md:max-w-[50%] mx-auto"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="flex gap-2 items-center">
-                      {/* Network Logo - Smaller */}
-                      <img
-                        src={
-                          network.logo_url ||
-                          `https://placehold.co/32x32?text=${network.name[0]}`
-                        }
-                        alt={network.name}
-                        className="w-8 h-8 rounded object-cover flex-shrink-0"
-                      />
-
-                      {/* Network Details - Compact layout */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="flex items-center gap-1">
-                            <h3
-                              className="font-medium text-xs text-white cursor-pointer hover:underline truncate"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleNetworkClick(network.id);
-                              }}
-                            >
-                              {network.name}
-                            </h3>
-                            <span className="text-xs text-yellow-400 font-medium">
-                              #Ad
-                            </span>
-                          </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-xs bg-white text-blue-900 hover:bg-gray-200 px-2 py-0.5 h-6"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedNetworkFilter(network.name);
-                            }}
-                          >
-                            View
-                          </Button>
-                        </div>
-
-                        {/* Compact description and tags */}
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-300">
-                            {offersCountByNetwork[network.id] || 0} Offers
-                          </span>
-                          <div className="flex gap-1">
-                            {network.tags && network.tags.slice(0, 2).map((tag, idx) => (
-                              <span
-                                key={idx}
-                                className="text-xs bg-gray-700 text-white px-1 py-0.5 rounded"
-                              >
-                                #{tag}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                ))
+          {/* Offers List with Pagination */}
+          <div className="space-y-4">
+            {/* Offer Search Input */}
+            {selectedNetworkFilter && (
+              <div className="flex flex-col sm:flex-row justify-between items-center mb-3 gap-3" onClick={(e) => e.stopPropagation()}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto px-4 py-2 text-sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedNetworkFilter(null);
+                  }}
+                >
+                  Back to All Offers
+                </Button>
+                <div className="relative w-full sm:w-auto flex-grow">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Input
+                    placeholder={`Search offers for ${selectedNetworkFilter}...`}
+                    className="pl-10 h-8 text-sm bg-gray-800 border-gray-700 text-white w-full"
+                    value={offerSearchTerm}
+                    onChange={(e) => setOfferSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+            
+            {/* Offers Count and Pagination Info */}
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-bold text-white">
+                {selectedNetworkFilter ? `Offers for ${selectedNetworkFilter}` : "All Offers"}
+                <span className="text-sm text-gray-400 ml-2">
+                  ({offersToDisplay.length} offers found)
+                </span>
+              </h2>
+              {offersToDisplay.length > 0 && (
+                <div className="text-sm text-gray-400">
+                  Page {currentPage} of {totalPages}
+                </div>
               )}
             </div>
-          )}
 
-          {/* Back Button and Offer Search Input */}
-          {selectedNetworkFilter && (
-            <div className="flex flex-col sm:flex-row justify-between items-center mb-3 gap-3" onClick={(e) => e.stopPropagation()}>
-              <Button
-                variant="outline"
-                size="sm"
-                className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto px-4 py-2 text-sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedNetworkFilter(null);
-                }}
-              >
-                Back to All Networks
-              </Button>
-              <div className="relative w-full sm:w-auto flex-grow">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder={`Search offers for ${selectedNetworkFilter}...`}
-                  className="pl-10 h-8 text-sm bg-gray-800 border-gray-700 text-white w-full"
-                  value={offerSearchTerm}
-                  onChange={(e) => setOfferSearchTerm(e.target.value)}
-                />
+            {loadingOffers ? (
+              <div className="text-center py-8 text-gray-400">Loading offers...</div>
+            ) : currentOffers.length === 0 ? (
+              <div className="text-center py-8 text-gray-400">
+                No offers found. Try adjusting your filters.
               </div>
-            </div>
-          )}
-
-          {/* Offers under Selected Network */}
-          {selectedNetworkFilter && (
-            <div className="space-y-2 mt-4">
-              <h2 className="text-lg font-bold text-white">
-                Offers for {selectedNetworkFilter}
-              </h2>
-              {offersToDisplay.length === 0 ? (
-                <div className="text-center py-8 text-gray-400">
-                  No offers found for this network.
-                </div>
-              ) : (
-                offersToDisplay.map((offer) => (
+            ) : (
+              <>
+                {currentOffers.map((offer) => (
                   <Card
                     key={offer.id}
                     className={`p-3 w-full hover:shadow-md transition-shadow border-gray-800 ${
@@ -1119,10 +1140,13 @@ const Browse = () => {
                       </div>
                     </div>
                   </Card>
-                ))
-              )}
-            </div>
-          )}
+                ))}
+                
+                {/* Pagination Controls */}
+                <Pagination />
+              </>
+            )}
+          </div>
 
           {/* Footer Banners */}
           {rotationGroupsBySection["footer"].map((rotation) => (
