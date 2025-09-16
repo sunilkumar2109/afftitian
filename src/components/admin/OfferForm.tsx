@@ -30,6 +30,9 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
   const [loading, setLoading] = useState(false);
   const [fileLoading, setFileLoading] = useState(false);
 
+  // Vertical options
+  const verticalOptions = ["Crypto", "Dating", "Gambling", "Game", "COD", "Sweepstakes", "Insurance"];
+
   // Load XLSX from CDN if it's not already loaded
   useEffect(() => {
     if (typeof XLSX === 'undefined') {
@@ -58,7 +61,7 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
     priority_order: offer?.priority_order || 0,
   });
 
-  // CHANGE 1: Helper function to clean and process string data
+  // Helper function to clean and process string data
   const cleanAndSplit = (value: string): string[] => {
     if (!value || value.trim() === "" || value === "##") return [];
     return value.split(",")
@@ -67,29 +70,30 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
       .map(s => s.replace(/\\"/g, '"')) // Unescape quotes
       .filter(s => s && s !== "##" && s !== '""' && s !== "''");
   };
- // NAME → ID mapping helpers (paste below cleanAndSplit)
-const networkNameToId = new Map(
-  networks.map(n => [n.name.trim().toLowerCase(), n.id])
-);
-const networkIds = new Set(networks.map(n => n.id));
 
-/**
- * Accepts either a network id or a network name.
- * - If it's already a known id -> return it.
- * - Else try to map by name (case-insensitive).
- * - If nothing matches -> return null and remember the name for reporting.
- */
-const resolveNetworkId = (raw: any): { id: string | null; usedName?: string } => {
-  const value = String(raw ?? "").trim();
-  if (!value) return { id: null };
+  // NAME → ID mapping helpers
+  const networkNameToId = new Map(
+    networks.map(n => [n.name.trim().toLowerCase(), n.id])
+  );
+  const networkIds = new Set(networks.map(n => n.id));
 
-  // If it exactly matches a known id, use it.
-  if (networkIds.has(value)) return { id: value };
+  /**
+   * Accepts either a network id or a network name.
+   * - If it's already a known id -> return it.
+   * - Else try to map by name (case-insensitive).
+   * - If nothing matches -> return null and remember the name for reporting.
+   */
+  const resolveNetworkId = (raw: any): { id: string | null; usedName?: string } => {
+    const value = String(raw ?? "").trim();
+    if (!value) return { id: null };
 
-  // Otherwise, try name → id
-  const byName = networkNameToId.get(value.toLowerCase());
-  return { id: byName ?? null, usedName: value };
-};
+    // If it exactly matches a known id, use it.
+    if (networkIds.has(value)) return { id: value };
+
+    // Otherwise, try name → id
+    const byName = networkNameToId.get(value.toLowerCase());
+    return { id: byName ?? null, usedName: value };
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,7 +107,7 @@ const resolveNetworkId = (raw: any): { id: string | null; usedName?: string } =>
         payout_amount: formData.payout_amount || null,
         payout_currency: formData.payout_currency,
         devices: cleanAndSplit(formData.devices),
-        vertical: cleanAndSplit(formData.vertical), // CHANGE 2: Use helper function
+        vertical: cleanAndSplit(formData.vertical),
         geo_targets: cleanAndSplit(formData.geo_targets),
         tags: cleanAndSplit(formData.tags),
         image_url: formData.image_url || null,
@@ -165,112 +169,111 @@ const resolveNetworkId = (raw: any): { id: string | null; usedName?: string } =>
   };
 
   const handleGoogleSheetImport = async () => {
-  setFileLoading(true);
-  try {
-    if (typeof XLSX === "undefined") {
-      console.error("XLSX is not loaded. Please wait or check CDN.");
+    setFileLoading(true);
+    try {
+      if (typeof XLSX === "undefined") {
+        console.error("XLSX is not loaded. Please wait or check CDN.");
+        toast({
+          title: "Error",
+          description: "Spreadsheet library not loaded. Please try again.",
+          variant: "destructive",
+        });
+        setFileLoading(false);
+        return;
+      }
+
+      const CSV_URL =
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vRaZX_27PntpNo5T4TVmslAlRihUxrGJGyUH5LliT0VBn1bZD8CPZ4bYDwFHactzxQei2qMnm640r_R/pub?output=csv";
+
+      const response = await fetch(CSV_URL);
+      const csvText = await response.text();
+
+      const workbook = XLSX.read(csvText, { type: "string" });
+      const sheetName = workbook.SheetNames[0];
+      const jsonData: any[] = XLSX.utils.sheet_to_json(
+        workbook.Sheets[sheetName]
+      );
+
+      const notFound: { row: number; network_name: string }[] = [];
+
+      const formattedData = jsonData
+        .map((row, idx) => {
+          // Accept network_id, NetworkID, network_name, Network, NetworkName
+          const rawNetwork =
+            row.network_id ??
+            row.NetworkID ??
+            row.network_name ??
+            row.Network ??
+            row.NetworkName ??
+            "";
+
+          const { id: resolvedId, usedName } = resolveNetworkId(rawNetwork);
+          if (!resolvedId) {
+            notFound.push({ row: idx + 2, network_name: usedName || "" }); // +2 to include header row
+            return null; // Skip this row
+          }
+
+          return {
+            name: row.name || row.Name || "",
+            network_id: resolvedId, // ✅ Always save ID to Supabase
+            type: row.type || row.Type || "",
+            payout_amount: parseFloat(row.payout_amount) || 0,
+            payout_currency: row.payout_currency || "USD",
+            devices: cleanAndSplit(row.devices || ""),
+            vertical: cleanAndSplit(row.vertical || ""),
+            geo_targets: cleanAndSplit(row.geo_targets || ""),
+            tags: cleanAndSplit(row.tags || ""),
+            image_url: row.image_url || "",
+            landing_page_url: row.landing_page_url || "",
+            is_active: row.is_active?.toString().toLowerCase() === "true",
+            is_featured: row.is_featured?.toString().toLowerCase() === "true",
+            priority_order: parseInt(row.priority_order) || 0,
+          };
+        })
+        .filter(Boolean);
+
+      if (formattedData.length === 0) {
+        toast({
+          title: "No rows imported",
+          description:
+            notFound.length > 0
+              ? "All rows skipped due to unknown network names. Check your 'network_name' column."
+              : "Sheet is empty or headers don't match.",
+          variant: "destructive",
+        });
+        setFileLoading(false);
+        return;
+      }
+
+      const { error } = await supabase.from("offers").insert(formattedData as any[]);
+      if (error) throw error;
+
+      const skipped = notFound.length;
+      toast({
+        title: "Success",
+        description:
+          `Imported ${formattedData.length} offer(s).` +
+          (skipped ? ` Skipped ${skipped} row(s) with unknown network name.` : ""),
+      });
+      if (skipped) {
+        console.warn(
+          "Unknown network names (1-based row numbers incl. header):",
+          notFound
+        );
+      }
+
+      onSuccess();
+    } catch (error) {
+      console.error("Google Sheet import error:", error);
       toast({
         title: "Error",
-        description: "Spreadsheet library not loaded. Please try again.",
+        description: "Failed to import offers from Google Sheet",
         variant: "destructive",
       });
+    } finally {
       setFileLoading(false);
-      return;
     }
-
-    const CSV_URL =
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vRaZX_27PntpNo5T4TVmslAlRihUxrGJGyUH5LliT0VBn1bZD8CPZ4bYDwFHactzxQei2qMnm640r_R/pub?output=csv";
-
-    const response = await fetch(CSV_URL);
-    const csvText = await response.text();
-
-    const workbook = XLSX.read(csvText, { type: "string" });
-    const sheetName = workbook.SheetNames[0];
-    const jsonData: any[] = XLSX.utils.sheet_to_json(
-      workbook.Sheets[sheetName]
-    );
-
-    const notFound: { row: number; network_name: string }[] = [];
-
-    const formattedData = jsonData
-      .map((row, idx) => {
-        // Accept network_id, NetworkID, network_name, Network, NetworkName
-        const rawNetwork =
-          row.network_id ??
-          row.NetworkID ??
-          row.network_name ??
-          row.Network ??
-          row.NetworkName ??
-          "";
-
-        const { id: resolvedId, usedName } = resolveNetworkId(rawNetwork);
-        if (!resolvedId) {
-          notFound.push({ row: idx + 2, network_name: usedName || "" }); // +2 to include header row
-          return null; // Skip this row
-        }
-
-        return {
-          name: row.name || row.Name || "",
-          network_id: resolvedId, // ✅ Always save ID to Supabase
-          type: row.type || row.Type || "",
-          payout_amount: parseFloat(row.payout_amount) || 0,
-          payout_currency: row.payout_currency || "USD",
-          devices: cleanAndSplit(row.devices || ""),
-          vertical: cleanAndSplit(row.vertical || ""),
-          geo_targets: cleanAndSplit(row.geo_targets || ""),
-          tags: cleanAndSplit(row.tags || ""),
-          image_url: row.image_url || "",
-          landing_page_url: row.landing_page_url || "",
-          is_active: row.is_active?.toString().toLowerCase() === "true",
-          is_featured: row.is_featured?.toString().toLowerCase() === "true",
-          priority_order: parseInt(row.priority_order) || 0,
-        };
-      })
-      .filter(Boolean);
-
-    if (formattedData.length === 0) {
-      toast({
-        title: "No rows imported",
-        description:
-          notFound.length > 0
-            ? "All rows skipped due to unknown network names. Check your 'network_name' column."
-            : "Sheet is empty or headers don’t match.",
-        variant: "destructive",
-      });
-      setFileLoading(false);
-      return;
-    }
-
-    const { error } = await supabase.from("offers").insert(formattedData as any[]);
-    if (error) throw error;
-
-    const skipped = notFound.length;
-    toast({
-      title: "Success",
-      description:
-        `Imported ${formattedData.length} offer(s).` +
-        (skipped ? ` Skipped ${skipped} row(s) with unknown network name.` : ""),
-    });
-    if (skipped) {
-      console.warn(
-        "Unknown network names (1-based row numbers incl. header):",
-        notFound
-      );
-    }
-
-    onSuccess();
-  } catch (error) {
-    console.error("Google Sheet import error:", error);
-    toast({
-      title: "Error",
-      description: "Failed to import offers from Google Sheet",
-      variant: "destructive",
-    });
-  } finally {
-    setFileLoading(false);
-  }
-};
-
+  };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -300,8 +303,8 @@ const resolveNetworkId = (raw: any): { id: string | null; usedName?: string } =>
         type: row.type || row.Type || "##",
         payout_amount: row.payout_amount ? parseFloat(row.payout_amount) : "##",
         payout_currency: row.payout_currency || "##",
-        devices: cleanAndSplit(row.devices || "##"), // CHANGE 5: Use helper function
-        vertical: cleanAndSplit(row.vertical || "##"), // Clean vertical data from file upload
+        devices: cleanAndSplit(row.devices || "##"),
+        vertical: cleanAndSplit(row.vertical || "##"),
         geo_targets: cleanAndSplit(row.geo_targets || "##"),
         tags: cleanAndSplit(row.tags || "##"),
         image_url: row.image_url || "##",
@@ -414,15 +417,24 @@ const resolveNetworkId = (raw: any): { id: string | null; usedName?: string } =>
                 </SelectContent>
               </Select>
             </div>
-            {/* Vertical - Input field for comma-separated values */}
+            {/* Vertical - Dropdown for selecting verticals */}
             <div>
-              <Label htmlFor="vertical">Vertical (comma-separated)</Label>
-              <Input
-                id="vertical"
+              <Label htmlFor="vertical">Vertical</Label>
+              <Select
                 value={formData.vertical}
-                onChange={(e) => setFormData({ ...formData, vertical: e.target.value })}
-                placeholder="Nutra, Dating, Gaming"
-              />
+                onValueChange={(value) => setFormData({ ...formData, vertical: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select vertical" />
+                </SelectTrigger>
+                <SelectContent>
+                  {verticalOptions.map((vertical) => (
+                    <SelectItem key={vertical} value={vertical}>
+                      {vertical}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             {/* Payout Amount */}
             <div>

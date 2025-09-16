@@ -320,6 +320,7 @@ const Browse = () => {
   const [selectedGeo, setSelectedGeo] = useState<string | null>(null);
   const [selectedVertical, setSelectedVertical] = useState<string | null>(null);
   const [selectedOfferCategory, setSelectedOfferCategory] = useState<string>("🔥 Top Offers");
+  const [selectedQuickFilter, setSelectedQuickFilter] = useState<string | null>(null);
 
   const [allOffers, setAllOffers] = useState<Offer[]>([]);
   const [allNetworks, setAllNetworks] = useState<Network[]>([]);
@@ -341,6 +342,12 @@ const Browse = () => {
   // NEW STATE: For controlling how many networks to show in sidebar
   const [showAllNetworks, setShowAllNetworks] = useState(false);
   const NETWORKS_DISPLAY_LIMIT = 8; // Change this to 10 if you prefer
+
+  // Quick filter options
+  const quickFilterOptions = [
+    "Crypto", "Dating", "Gambling", "Game", "COD", "Sweepstakes", 
+    "insurance", "SOI", "DOI", "CPA", "CPL", "CPI"
+  ];
 
   // Function to handle background click with proper tracking
   const handleBackgroundClick = async () => {
@@ -372,6 +379,15 @@ const Browse = () => {
 
   const handleNetworkClick = (networkId: string) => {
     navigate(`/network/${networkId}`);
+  };
+
+  const handleQuickFilterClick = (filter: string) => {
+    if (selectedQuickFilter === filter) {
+      setSelectedQuickFilter(null);
+    } else {
+      setSelectedQuickFilter(filter);
+      setCurrentPage(1);
+    }
   };
 
   useEffect(() => {
@@ -611,6 +627,21 @@ const Browse = () => {
       filtered = filtered.filter(offer => {
         const verticals = toStringArray(offer.vertical, false);
         return verticals.length === 0 || verticals.includes(selectedVertical);
+      });
+    }
+
+    // Apply quick filter if selected
+    if (selectedQuickFilter) {
+      filtered = filtered.filter(offer => {
+        const offerName = getDisplayValue(offer.name, "").toLowerCase();
+        const offerVerticals = toStringArray(offer.vertical, false).map(v => v.toLowerCase()).join(' ');
+        const offerTags = toStringArray(offer.tags, false).map(t => t.toLowerCase()).join(' ');
+        
+        return (
+          offerName.includes(selectedQuickFilter.toLowerCase()) ||
+          offerVerticals.includes(selectedQuickFilter.toLowerCase()) ||
+          offerTags.includes(selectedQuickFilter.toLowerCase())
+        );
       });
     }
 
@@ -991,6 +1022,35 @@ const Browse = () => {
       <div className="flex flex-col lg:flex-row gap-4 p-3 sm:p-6">
         {/* Main Content Area */}
         <div className="flex-1">
+          {/* Quick Filter Buttons */}
+          <div className="mb-4 flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
+            {quickFilterOptions.map((filter) => (
+              <Button
+                key={filter}
+                variant={selectedQuickFilter === filter ? "default" : "outline"}
+                size="sm"
+                className={`text-xs px-3 py-1 ${
+                  selectedQuickFilter === filter 
+                    ? "bg-blue-600 text-white" 
+                    : "bg-gray-800 text-white border-gray-700 hover:bg-gray-700"
+                }`}
+                onClick={() => handleQuickFilterClick(filter)}
+              >
+                {filter}
+              </Button>
+            ))}
+            {selectedQuickFilter && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs px-3 py-1 bg-red-600 text-white border-red-700 hover:bg-red-700"
+                onClick={() => setSelectedQuickFilter(null)}
+              >
+                Clear Filter
+              </Button>
+            )}
+          </div>
+
           {/* Offers List with Pagination */}
           <div className="space-y-4">
             {/* Offer Search Input */}
@@ -1022,7 +1082,11 @@ const Browse = () => {
             {/* Offers Count and Pagination Info */}
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-bold text-white">
-                {selectedNetworkFilter ? `Offers for ${selectedNetworkFilter}` : "All Offers"}
+                {selectedQuickFilter 
+                  ? `${selectedQuickFilter} Offers` 
+                  : selectedNetworkFilter 
+                    ? `Offers for ${selectedNetworkFilter}` 
+                    : "All Offers"}
                 <span className="text-sm text-gray-400 ml-2">
                   ({offersToDisplay.length} offers found)
                 </span>
