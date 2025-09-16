@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { ChevronDown, Search, ChevronUp } from "lucide-react";
+import { ChevronDown, Search, ChevronUp, Shuffle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Footer from "@/components/Footer";
 import TopBar from "@/components/TopBar";
@@ -68,6 +68,12 @@ interface BannerRotation {
   rotation_duration_ms?: number;
   expires_at?: string | null;
   created_at?: string;
+}
+
+interface NetworkWithOffers {
+  network: Network;
+  offers: Offer[];
+  currentOfferIndex: number;
 }
 
 // handles: dev proxy (/api), or production full URL (https://...)
@@ -338,6 +344,21 @@ const Browse = () => {
   const [showAllNetworks, setShowAllNetworks] = useState(false);
   const NETWORKS_DISPLAY_LIMIT = 8; // Change this to 10 if you prefer
 
+  // NEW STATE: For network-wise offer shuffling
+  const [shuffleKey, setShuffleKey] = useState(0);
+  const [displayMode, setDisplayMode] = useState<"network-shuffle" | "normal">("network-shuffle");
+  const [isShuffling, setIsShuffling] = useState(false);
+
+  // Fisher-Yates shuffle function
+  const shuffle = <T,>(array: T[]): T[] => {
+    const a = array.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  };
+
   // Function to handle background click with proper tracking
   const handleBackgroundClick = async () => {
     if (!backgroundBanner) return;
@@ -586,9 +607,42 @@ const Browse = () => {
     })
   ))];
 
+  // NEW: Group offers by network and create network-wise shuffled display
+  const networksWithOffers = useMemo(() => {
+    console.log("Recalculating networksWithOffers, shuffleKey:", shuffleKey);
+    
+    // Create a map of all active networks
+    const networkMap = new Map<string, NetworkWithOffers>();
+    
+    // Initialize networks that have offers
+    const activeNetworks = allNetworks.filter(n => n.is_active);
+    activeNetworks.forEach(network => {
+      const networkOffers = allOffers.filter(offer => 
+        offer.network_id === network.id && offer.is_active
+      );
+      
+      if (networkOffers.length > 0) {
+        networkMap.set(network.id, {
+          network,
+          offers: shuffle(networkOffers), // Shuffle offers within each network
+          currentOfferIndex: 0
+        });
+      }
+    });
+
+    const result = Array.from(networkMap.values());
+    console.log("NetworksWithOffers result:", result.map(nw => ({
+      networkName: nw.network.name,
+      offerCount: nw.offers.length
+    })));
+    
+    return result;
+  }, [allOffers, allNetworks, shuffleKey]);
+
   const getFilteredOffers = () => {
     let filtered = [...allOffers];
 
+    // Apply network filter
     if (selectedNetworkFilter && selectedNetworkFilter !== "All") {
       filtered = filtered.filter(offer => {
         const networkName = getDisplayValue(offer.networks?.name);
@@ -596,6 +650,7 @@ const Browse = () => {
       });
     }
 
+    // Apply geo filter
     if (selectedGeo && selectedGeo !== "Worldwide") {
       filtered = filtered.filter(offer => {
         const geoTargets = toStringArray(offer.geo_targets, false);
@@ -603,6 +658,7 @@ const Browse = () => {
       });
     }
 
+    // Apply vertical filter
     if (selectedVertical && selectedVertical !== "All") {
       filtered = filtered.filter(offer => {
         const verticals = toStringArray(offer.vertical, false);
@@ -610,6 +666,7 @@ const Browse = () => {
       });
     }
 
+    // Apply category filter
     if (selectedOfferCategory === "🔥 Top Offers") {
       filtered = filtered.sort((a, b) => {
         if (a.is_active && !b.is_active) return -1;
@@ -670,6 +727,36 @@ const Browse = () => {
           networkName.includes(lowerCaseGlobalSearchTerm)
         );
       });
+    }
+
+    // NEW: Apply network-wise shuffling if in network-shuffle mode
+    if (displayMode === "network-shuffle" && !selectedNetworkFilter) {
+      // Create round-robin display from networks with offers
+      const result: (Offer & { networkInfo?: Network })[] = [];
+      const maxOffersInAnyNetwork = Math.max(...networksWithOffers.map(nw => nw.offers.length));
+      
+      // Round-robin through networks
+      for (let round = 0; round < maxOffersInAnyNetwork; round++) {
+        // Shuffle network order for each round
+        const shuffledNetworkOrder = shuffle([...networksWithOffers]);
+        
+        shuffledNetworkOrder.forEach(networkData => {
+          if (networkData.offers[round]) {
+            const offerWithNetworkInfo = {
+              ...networkData.offers[round],
+              networkInfo: networkData.network
+            };
+            
+            // Apply filters to this offer
+            const passesFilters = filtered.some(f => f.id === offerWithNetworkInfo.id);
+            if (passesFilters) {
+              result.push(offerWithNetworkInfo);
+            }
+          }
+        });
+      }
+      
+      return shuffle(result); // Final shuffle
     }
 
     return filtered;
@@ -888,6 +975,54 @@ const Browse = () => {
             onSelect={setSelectedVertical}
           />
           
+          {/* NEW: Display Mode Toggle */}
+          <div className="flex items-center gap-1">
+            <Button
+              size="sm"
+              variant={displayMode === "network-shuffle" ? "default" : "outline"}
+              onClick={() => setDisplayMode("network-shuffle")}
+              className="text-xs px-2 py-1"
+            >
+              Network Mix
+            </Button>
+            <Button
+              size="sm"
+              variant={displayMode === "normal" ? "default" : "outline"}
+              onClick={() => setDisplayMode("normal")}
+              className="text-xs px-2 py-1"
+            >
+              Normal
+            </Button>
+          </div>
+
+          {/* NEW: Shuffle Button */}
+          <Button 
+            size="sm" 
+            onClick={async (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log("Shuffle button clicked, current key:", shuffleKey);
+              
+              setIsShuffling(true);
+              
+              // Add a small delay to make the shuffle visible
+              await new Promise(resolve => setTimeout(resolve, 100));
+              
+              setShuffleKey(k => {
+                const newKey = k + 1;
+                console.log("Shuffle key updated to:", newKey);
+                return newKey;
+              });
+              
+              setTimeout(() => setIsShuffling(false), 300);
+            }} 
+            disabled={isShuffling}
+            className="flex items-center gap-1 text-xs px-2 py-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+          >
+            <Shuffle className={`h-3 w-3 ${isShuffling ? 'animate-spin' : ''}`} />
+            {isShuffling ? 'Shuffling...' : 'Shuffle'}
+          </Button>
+          
           {/* Global Search Bar */}
           <div className="relative w-[50%] max-w-[400px]">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -905,9 +1040,161 @@ const Browse = () => {
 
         {/* Main Content Area */}
         <div className="flex-1">
-          {/* Networks List - Reduced size */}
-          {!selectedNetworkFilter && (
+          {/* Show Network Mix Offers when no specific network is selected and in network-shuffle mode */}
+          {!selectedNetworkFilter && displayMode === "network-shuffle" && (
             <div className="space-y-2">
+              {/* Network Distribution Info */}
+              {networksWithOffers.length > 0 && (
+                <div className="mb-4 p-3 bg-gray-900/80 rounded-lg border border-gray-700">
+                  <h4 className="font-medium mb-2 text-white">Network Mixed Offers ({offersToDisplay.length} offers from {networksWithOffers.length} networks):</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {networksWithOffers.slice(0, 8).map(nw => (
+                      <Badge key={nw.network.id} variant="outline" className="text-xs border-blue-500 text-blue-300">
+                        {nw.network.name}: {nw.offers.length} offer{nw.offers.length !== 1 ? 's' : ''}
+                      </Badge>
+                    ))}
+                    {networksWithOffers.length > 8 && (
+                      <Badge variant="outline" className="text-xs border-gray-500 text-gray-300">
+                        +{networksWithOffers.length - 8} more networks
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Display Mixed Network Offers */}
+              {loadingOffers ? (
+                <div className="text-center py-4 text-gray-400">Loading offers...</div>
+              ) : offersToDisplay.length === 0 ? (
+                <div className="text-center py-4 text-gray-400">No offers found.</div>
+              ) : (
+                offersToDisplay.map((offer, index) => {
+                  const displayOffer = offer as Offer & { networkInfo?: Network };
+                  const networkName = displayOffer.networkInfo?.name || displayOffer.networks?.name || 'Unknown Network';
+                  
+                  return (
+                    <Card
+                      key={`mixed-${offer.id}-${shuffleKey}-${index}`}
+                      className={`p-3 w-full hover:shadow-md transition-shadow border-gray-800 ${
+                        offer.is_active ? "bg-gray-900" : "bg-gray-800"
+                      } max-w-full sm:max-w-[95%] mx-auto`}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={
+                            offer.networks?.logo_url ||
+                            `https://placehold.co/32x32/333333/666666?text=${(
+                              offer.networks?.name || "N"
+                            ).charAt(0)}`
+                          }
+                          alt={offer.networks?.name || "Network Logo"}
+                          className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <h3 className="font-medium text-white text-sm truncate">
+                              {getDisplayValue(offer.name, "Unnamed Offer")}
+                            </h3>
+                            {!offer.is_active && (
+                              <Badge
+                                variant="secondary"
+                                className="text-xs bg-gray-700 text-white px-1 py-0"
+                              >
+                                Inactive
+                              </Badge>
+                            )}
+                            {offer.is_featured && (
+                              <Badge
+                                variant="default"
+                                className="text-xs bg-yellow-600 text-white px-1 py-0"
+                              >
+                                Featured
+                              </Badge>
+                            )}
+                            {/* Network Badge */}
+                            <Badge
+                              variant="outline"
+                              className="text-xs border-blue-500 text-blue-300 px-2 py-1"
+                            >
+                              {networkName}
+                            </Badge>
+                            {/* Position indicator */}
+                            <span className="text-xs bg-green-600 text-white px-2 py-0.5 rounded font-medium">
+                              #{index + 1}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <span 
+                              className="text-xs text-gray-400 cursor-pointer hover:underline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleNetworkClick(offer.network_id);
+                              }}
+                            >
+                              Network: {networkName}
+                            </span>
+                            <div className="flex gap-1 flex-wrap">
+                              {/* GEO, Vertical, and Tag Badges */}
+                              {toStringArray(offer.geo_targets, false)
+                                .slice(0, 2)
+                                .map((geo, idx) => (
+                                  <Badge
+                                    key={idx}
+                                    variant="outline"
+                                    className="text-xs px-1 py-0 border-gray-700 text-gray-300"
+                                  >
+                                    {geo}
+                                  </Badge>
+                                ))}
+                              {toStringArray(offer.vertical, false)
+                                .slice(0, 2)
+                                .map((vertical, idx) => (
+                                  <Badge
+                                    key={`vertical-${idx}`}
+                                    variant="outline"
+                                    className="text-xs px-1 py-0 border-green-700 text-green-300"
+                                  >
+                                    {vertical}
+                                  </Badge>
+                                ))}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <div className="text-sm font-bold text-primary mb-1">
+                            {getDisplayValue(offer.payout_currency, "USD")}{" "}
+                            {typeof offer.payout_amount === "number"
+                              ? offer.payout_amount.toFixed(2)
+                              : getDisplayValue(offer.payout_amount, "0.00")}
+                          </div>
+                          <Button
+                            size="sm"
+                            className="bg-primary hover:bg-primary-hover text-white text-xs px-3 py-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/offer/${offer.id}`);
+                            }}
+                          >
+                            View
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })
+              )}
+            </div>
+          )}
+
+          {/* Networks List - Show only when no specific network is selected and in normal mode */}
+          {!selectedNetworkFilter && displayMode === "normal" && (
+            <div className="space-y-2">
+              <div className="mb-4 p-3 bg-gray-900/80 rounded-lg border border-gray-700">
+                <h4 className="font-medium mb-2 text-white">All Networks ({networksToDisplay.length} networks):</h4>
+                <p className="text-sm text-gray-300">Click on a network to view its offers, or switch to "Network Mix" to see shuffled offers from all networks.</p>
+              </div>
+
               {loadingNetworks ? (
                 <div className="text-center py-4 text-gray-400">Loading networks...</div>
               ) : networksToDisplay.length === 0 ? (
@@ -1010,116 +1297,141 @@ const Browse = () => {
             </div>
           )}
 
-          {/* Offers under Selected Network */}
+          {/* Offers Display - Enhanced with network info */}
           {selectedNetworkFilter && (
             <div className="space-y-2 mt-4">
-              <h2 className="text-lg font-bold text-white">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 Offers for {selectedNetworkFilter}
+                {displayMode === "network-shuffle" && (
+                  <Badge variant="outline" className="text-xs border-blue-500 text-blue-300">
+                    Network Shuffled
+                  </Badge>
+                )}
               </h2>
               {offersToDisplay.length === 0 ? (
                 <div className="text-center py-8 text-gray-400">
                   No offers found for this network.
                 </div>
               ) : (
-                offersToDisplay.map((offer) => (
-                  <Card
-                    key={offer.id}
-                    className={`p-3 w-full hover:shadow-md transition-shadow border-gray-800 ${
-                      offer.is_active ? "bg-gray-900" : "bg-gray-800"
-                    } max-w-full sm:max-w-[95%] mx-auto`}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={
-                          offer.networks?.logo_url ||
-                          `https://placehold.co/32x32/333333/666666?text=${(
-                            offer.networks?.name || "N"
-                          ).charAt(0)}`
-                        }
-                        alt={offer.networks?.name || "Network Logo"}
-                        className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-medium text-white text-sm truncate">
-                            {getDisplayValue(offer.name, "Unnamed Offer")}
-                          </h3>
-                          {!offer.is_active && (
-                            <Badge
-                              variant="secondary"
-                              className="text-xs bg-gray-700 text-white px-1 py-0"
+                offersToDisplay.map((offer, index) => {
+                  const displayOffer = offer as Offer & { networkInfo?: Network };
+                  const networkName = displayOffer.networkInfo?.name || displayOffer.networks?.name || 'Unknown Network';
+                  
+                  return (
+                    <Card
+                      key={`${offer.id}-${shuffleKey}-${index}`}
+                      className={`p-3 w-full hover:shadow-md transition-shadow border-gray-800 ${
+                        offer.is_active ? "bg-gray-900" : "bg-gray-800"
+                      } max-w-full sm:max-w-[95%] mx-auto`}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={
+                            offer.networks?.logo_url ||
+                            `https://placehold.co/32x32/333333/666666?text=${(
+                              offer.networks?.name || "N"
+                            ).charAt(0)}`
+                          }
+                          alt={offer.networks?.name || "Network Logo"}
+                          className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-medium text-white text-sm truncate">
+                              {getDisplayValue(offer.name, "Unnamed Offer")}
+                            </h3>
+                            {!offer.is_active && (
+                              <Badge
+                                variant="secondary"
+                                className="text-xs bg-gray-700 text-white px-1 py-0"
+                              >
+                                Inactive
+                              </Badge>
+                            )}
+                            {offer.is_featured && (
+                              <Badge
+                                variant="default"
+                                className="text-xs bg-yellow-600 text-white px-1 py-0"
+                              >
+                                Featured
+                              </Badge>
+                            )}
+                            {/* NEW: Network Badge */}
+                            {displayMode === "network-shuffle" && displayOffer.networkInfo && (
+                              <Badge
+                                variant="outline"
+                                className="text-xs border-blue-500 text-blue-300 px-1 py-0"
+                              >
+                                {networkName}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <span 
+                              className="text-xs text-gray-400 cursor-pointer hover:underline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleNetworkClick(offer.network_id);
+                              }}
                             >
-                              Inactive
-                            </Badge>
-                          )}
-                          {offer.is_featured && (
-                            <Badge
-                              variant="default"
-                              className="text-xs bg-yellow-600 text-white px-1 py-0"
-                            >
-                              Featured
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <span 
-                            className="text-xs text-gray-400 cursor-pointer hover:underline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleNetworkClick(offer.network_id);
-                            }}
-                          >
-                            {getDisplayValue(offer.networks?.name, "Unknown Network")}
-                          </span>
-                          <div className="flex gap-1 flex-wrap">
-                            {/* GEO, Vertical, and Tag Badges */}
-                            {toStringArray(offer.geo_targets, false)
-                              .slice(0, 2)
-                              .map((geo, idx) => (
-                                <Badge
-                                  key={idx}
-                                  variant="outline"
-                                  className="text-xs px-1 py-0 border-gray-700 text-gray-300"
-                                >
-                                  {geo}
-                                </Badge>
-                              ))}
-                            {toStringArray(offer.vertical, false)
-                              .slice(0, 2)
-                              .map((vertical, idx) => (
-                                <Badge
-                                  key={`vertical-${idx}`}
-                                  variant="outline"
-                                  className="text-xs px-1 py-0 border-green-700 text-green-300"
-                                >
-                                  {vertical}
-                                </Badge>
-                              ))}
+                              {networkName}
+                            </span>
+                            {/* NEW: Position indicator for network shuffle */}
+                            {displayMode === "network-shuffle" && !selectedNetworkFilter && (
+                              <span className="text-xs bg-green-600 text-white px-2 py-0.5 rounded">
+                                #{index + 1}
+                              </span>
+                            )}
+                            <div className="flex gap-1 flex-wrap">
+                              {/* GEO, Vertical, and Tag Badges */}
+                              {toStringArray(offer.geo_targets, false)
+                                .slice(0, 2)
+                                .map((geo, idx) => (
+                                  <Badge
+                                    key={idx}
+                                    variant="outline"
+                                    className="text-xs px-1 py-0 border-gray-700 text-gray-300"
+                                  >
+                                    {geo}
+                                  </Badge>
+                                ))}
+                              {toStringArray(offer.vertical, false)
+                                .slice(0, 2)
+                                .map((vertical, idx) => (
+                                  <Badge
+                                    key={`vertical-${idx}`}
+                                    variant="outline"
+                                    className="text-xs px-1 py-0 border-green-700 text-green-300"
+                                  >
+                                    {vertical}
+                                  </Badge>
+                                ))}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <div className="text-sm font-bold text-primary mb-1">
-                          {getDisplayValue(offer.payout_currency, "USD")}{" "}
-                          {typeof offer.payout_amount === "number"
-                            ? offer.payout_amount.toFixed(2)
-                            : getDisplayValue(offer.payout_amount, "0.00")}
+                        <div className="text-right flex-shrink-0">
+                          <div className="text-sm font-bold text-primary mb-1">
+                            {getDisplayValue(offer.payout_currency, "USD")}{" "}
+                            {typeof offer.payout_amount === "number"
+                              ? offer.payout_amount.toFixed(2)
+                              : getDisplayValue(offer.payout_amount, "0.00")}
+                          </div>
+                          <Button
+                            size="sm"
+                            className="bg-primary hover:bg-primary-hover text-white text-xs px-3 py-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/offer/${offer.id}`);
+                            }}
+                          >
+                            View
+                          </Button>
                         </div>
-                        <Button
-                          size="sm"
-                          className="bg-primary hover:bg-primary-hover text-white text-xs px-3 py-1"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/offer/${offer.id}`);
-                          }}
-                        >
-                          View
-                        </Button>
                       </div>
-                    </div>
-                  </Card>
-                ))
+                    </Card>
+                  );
+                })
               )}
             </div>
           )}
