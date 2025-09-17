@@ -1022,22 +1022,20 @@ const Browse = () => {
       <div className="flex flex-col lg:flex-row gap-4 p-3 sm:p-6">
         {/* Main Content Area */}
         <div className="flex-1">
-          {/* Quick Filter Buttons - REMOVED CLEAR FILTER BUTTON */}
+          {/* Premium Quick Filter Buttons */}
           <div className="mb-4 flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
             {quickFilterOptions.map((filter) => (
-              <Button
+              <button
                 key={filter}
-                variant={selectedQuickFilter === filter ? "default" : "outline"}
-                size="sm"
-                className={`text-xs px-3 py-1 ${
+                className={`text-xs px-3 py-1.5 rounded-full transition-all duration-200 ease-in-out transform hover:scale-105 ${
                   selectedQuickFilter === filter 
-                    ? "bg-blue-600 text-white" 
-                    : "bg-gray-800 text-white border-gray-700 hover:bg-gray-700"
-                }`}
+                    ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg" 
+                    : "bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700 hover:text-white shadow-md"
+                } font-medium tracking-wide`}
                 onClick={() => handleQuickFilterClick(filter)}
               >
                 {filter}
-              </Button>
+              </button>
             ))}
           </div>
 
