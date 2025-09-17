@@ -1163,92 +1163,60 @@ const Browse = () => {
                       </div>
 
                       {/* Bottom Row - Tags and Info */}
-                      <div className="space-y-2">
-                        {/* First row - Offer Type and Verticals */}
-                        <div className="flex flex-wrap gap-2 items-center">
-                          {/* Offer Type Badge */}
-                          {getDisplayValue(offer.type, "") && (
+                      <div className="flex flex-wrap gap-2 items-center">
+                        {/* Offer Type Badge */}
+                        {getDisplayValue(offer.type, "") && (
+                          <Badge
+                            variant="outline"
+                            className="text-xs px-2 py-1 border-blue-500 text-blue-300 bg-blue-500/10"
+                          >
+                            {getDisplayValue(offer.type, "Unknown Type")}
+                          </Badge>
+                        )}
+                        
+                        {/* GEO Tags */}
+                        {toStringArray(offer.geo_targets, false)
+                          .slice(0, 3)
+                          .map((geo, idx) => (
                             <Badge
+                              key={`geo-${idx}`}
                               variant="outline"
-                              className="text-xs px-2 py-1 border-blue-500 text-blue-300 bg-blue-500/10"
+                              className="text-xs px-2 py-1 border-gray-500 text-gray-300 bg-gray-500/10"
                             >
-                              Type: {getDisplayValue(offer.type, "Unknown Type")}
+                              🌍 {geo}
                             </Badge>
-                          )}
-                          
-                          {/* Vertical Tags - Show all verticals */}
-                          {toStringArray(offer.vertical, false).map((vertical, idx) => (
+                          ))}
+                        
+                        {/* Vertical Tags */}
+                        {toStringArray(offer.vertical, false)
+                          .slice(0, 2)
+                          .map((vertical, idx) => (
                             <Badge
                               key={`vertical-${idx}`}
                               variant="outline"
                               className="text-xs px-2 py-1 border-green-500 text-green-300 bg-green-500/10"
                             >
-                              {vertical}
+                              📊 {vertical}
                             </Badge>
                           ))}
-                        </div>
                         
-                        {/* Second row - Device Tags */}
-                        <div className="flex flex-wrap gap-2 items-center">
-                          {toStringArray(offer.devices, false).map((device, idx) => (
-                            <Badge
-                              key={`device-${idx}`}
-                              variant="outline"
-                              className="text-xs px-2 py-1 border-purple-500 text-purple-300 bg-purple-500/10"
-                            >
-                              Device: {device}
-                            </Badge>
-                          ))}
-                        </div>
+                        {/* Show more indicators */}
+                        {toStringArray(offer.geo_targets, false).length > 3 && (
+                          <Badge
+                            variant="outline"
+                            className="text-xs px-2 py-1 border-gray-600 text-gray-400"
+                          >
+                            +{toStringArray(offer.geo_targets, false).length - 3} more geos
+                          </Badge>
+                        )}
                         
-                        {/* Third row - GEO Tags */}
-                        <div className="flex flex-wrap gap-2 items-center">
-                          {toStringArray(offer.geo_targets, false)
-                            .slice(0, 6)
-                            .map((geo, idx) => (
-                              <Badge
-                                key={`geo-${idx}`}
-                                variant="outline"
-                                className="text-xs px-2 py-1 border-gray-500 text-gray-300 bg-gray-500/10"
-                              >
-                                {geo}
-                              </Badge>
-                            ))}
-                          
-                          {toStringArray(offer.geo_targets, false).length > 6 && (
-                            <Badge
-                              variant="outline"
-                              className="text-xs px-2 py-1 border-gray-600 text-gray-400"
-                            >
-                              +{toStringArray(offer.geo_targets, false).length - 6} more geos
-                            </Badge>
-                          )}
-                        </div>
-                        
-                        {/* Fourth row - Offer Tags */}
-                        {toStringArray(offer.tags, false).length > 0 && (
-                          <div className="flex flex-wrap gap-2 items-center">
-                            {toStringArray(offer.tags, false)
-                              .slice(0, 3)
-                              .map((tag, idx) => (
-                                <Badge
-                                  key={`tag-${idx}`}
-                                  variant="outline"
-                                  className="text-xs px-2 py-1 border-orange-500 text-orange-300 bg-orange-500/10"
-                                >
-                                  {tag}
-                                </Badge>
-                              ))}
-                            
-                            {toStringArray(offer.tags, false).length > 3 && (
-                              <Badge
-                                variant="outline"
-                                className="text-xs px-2 py-1 border-gray-600 text-gray-400"
-                              >
-                                +{toStringArray(offer.tags, false).length - 3} more tags
-                              </Badge>
-                            )}
-                          </div>
+                        {toStringArray(offer.vertical, false).length > 2 && (
+                          <Badge
+                            variant="outline"
+                            className="text-xs px-2 py-1 border-gray-600 text-gray-400"
+                          >
+                            +{toStringArray(offer.vertical, false).length - 2} more verticals
+                          </Badge>
                         )}
                       </div>
                     </div>
