@@ -1163,61 +1163,123 @@ const Browse = () => {
                       </div>
 
                       {/* Bottom Row - Tags and Info */}
-                      <div className="flex flex-wrap gap-2 items-center">
-                        {/* Offer Type Badge */}
-                        {getDisplayValue(offer.type, "") && (
-                          <Badge
-                            variant="outline"
-                            className="text-xs px-2 py-1 border-blue-500 text-blue-300 bg-blue-500/10"
-                          >
-                            {getDisplayValue(offer.type, "Unknown Type")}
-                          </Badge>
-                        )}
-                        
-                        {/* GEO Tags */}
-                        {toStringArray(offer.geo_targets, false)
-                          .slice(0, 3)
-                          .map((geo, idx) => (
+                      <div className="space-y-2">
+                        {/* First row - Offer Type, Payout details, and Devices */}
+                        <div className="flex flex-wrap gap-2 items-center">
+                          {/* Offer Type Badge */}
+                          {getDisplayValue(offer.type, "") && (
                             <Badge
-                              key={`geo-${idx}`}
                               variant="outline"
-                              className="text-xs px-2 py-1 border-gray-500 text-gray-300 bg-gray-500/10"
+                              className="text-xs px-2 py-1 border-blue-500 text-blue-300 bg-blue-500/10"
                             >
-                              🌍 {geo}
+                              💼 {getDisplayValue(offer.type, "Unknown Type")}
                             </Badge>
-                          ))}
-                        
-                        {/* Vertical Tags */}
-                        {toStringArray(offer.vertical, false)
-                          .slice(0, 2)
-                          .map((vertical, idx) => (
+                          )}
+                          
+                          {/* Payout Amount Badge */}
+                          <Badge
+                            variant="outline"
+                            className="text-xs px-2 py-1 border-yellow-500 text-yellow-300 bg-yellow-500/10"
+                          >
+                            💰 {getDisplayValue(offer.payout_currency, "USD")} {typeof offer.payout_amount === "number"
+                              ? offer.payout_amount.toFixed(2)
+                              : getDisplayValue(offer.payout_amount, "0.00")}
+                          </Badge>
+                          
+                          {/* Device Tags */}
+                          {toStringArray(offer.devices, false)
+                            .slice(0, 2)
+                            .map((device, idx) => (
+                              <Badge
+                                key={`device-${idx}`}
+                                variant="outline"
+                                className="text-xs px-2 py-1 border-purple-500 text-purple-300 bg-purple-500/10"
+                              >
+                                📱 {device}
+                              </Badge>
+                            ))}
+                          
+                          {toStringArray(offer.devices, false).length > 2 && (
                             <Badge
-                              key={`vertical-${idx}`}
                               variant="outline"
-                              className="text-xs px-2 py-1 border-green-500 text-green-300 bg-green-500/10"
+                              className="text-xs px-2 py-1 border-gray-600 text-gray-400"
                             >
-                              📊 {vertical}
+                              +{toStringArray(offer.devices, false).length - 2} devices
                             </Badge>
-                          ))}
+                          )}
+                        </div>
                         
-                        {/* Show more indicators */}
-                        {toStringArray(offer.geo_targets, false).length > 3 && (
-                          <Badge
-                            variant="outline"
-                            className="text-xs px-2 py-1 border-gray-600 text-gray-400"
-                          >
-                            +{toStringArray(offer.geo_targets, false).length - 3} more geos
-                          </Badge>
-                        )}
+                        {/* Second row - Verticals and GEO Tags */}
+                        <div className="flex flex-wrap gap-2 items-center">
+                          {/* Vertical Tags */}
+                          {toStringArray(offer.vertical, false)
+                            .slice(0, 3)
+                            .map((vertical, idx) => (
+                              <Badge
+                                key={`vertical-${idx}`}
+                                variant="outline"
+                                className="text-xs px-2 py-1 border-green-500 text-green-300 bg-green-500/10"
+                              >
+                                📊 {vertical}
+                              </Badge>
+                            ))}
+                          
+                          {/* GEO Tags */}
+                          {toStringArray(offer.geo_targets, false)
+                            .slice(0, 4)
+                            .map((geo, idx) => (
+                              <Badge
+                                key={`geo-${idx}`}
+                                variant="outline"
+                                className="text-xs px-2 py-1 border-gray-500 text-gray-300 bg-gray-500/10"
+                              >
+                                🌍 {geo}
+                              </Badge>
+                            ))}
+                        </div>
                         
-                        {toStringArray(offer.vertical, false).length > 2 && (
-                          <Badge
-                            variant="outline"
-                            className="text-xs px-2 py-1 border-gray-600 text-gray-400"
-                          >
-                            +{toStringArray(offer.vertical, false).length - 2} more verticals
-                          </Badge>
-                        )}
+                        {/* Third row - Show more indicators and Tags */}
+                        <div className="flex flex-wrap gap-2 items-center">
+                          {toStringArray(offer.vertical, false).length > 3 && (
+                            <Badge
+                              variant="outline"
+                              className="text-xs px-2 py-1 border-gray-600 text-gray-400"
+                            >
+                              +{toStringArray(offer.vertical, false).length - 3} more verticals
+                            </Badge>
+                          )}
+                          
+                          {toStringArray(offer.geo_targets, false).length > 4 && (
+                            <Badge
+                              variant="outline"
+                              className="text-xs px-2 py-1 border-gray-600 text-gray-400"
+                            >
+                              +{toStringArray(offer.geo_targets, false).length - 4} more geos
+                            </Badge>
+                          )}
+                          
+                          {/* Offer Tags */}
+                          {toStringArray(offer.tags, false)
+                            .slice(0, 2)
+                            .map((tag, idx) => (
+                              <Badge
+                                key={`tag-${idx}`}
+                                variant="outline"
+                                className="text-xs px-2 py-1 border-orange-500 text-orange-300 bg-orange-500/10"
+                              >
+                                🏷️ {tag}
+                              </Badge>
+                            ))}
+                          
+                          {toStringArray(offer.tags, false).length > 2 && (
+                            <Badge
+                              variant="outline"
+                              className="text-xs px-2 py-1 border-gray-600 text-gray-400"
+                            >
+                              +{toStringArray(offer.tags, false).length - 2} more tags
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </Card>
