@@ -30,8 +30,12 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
   const [loading, setLoading] = useState(false);
   const [fileLoading, setFileLoading] = useState(false);
 
-  // Vertical options
-  const verticalOptions = ["Crypto", "Dating", "Gambling", "Game", "COD", "Sweepstakes", "Insurance"];
+  // Vertical options - updated with requested values
+  const verticalOptions = [
+    "Crypto", "Dating", "Gambling", "Game", "COD", "Sweepstakes", "Insurance",
+    "Incent", "Loan", "App", "Streaming", "Subscription", "Shopping", "HealthFree",
+    "Trial", "RevShare", "Gaming", "Direct", "Email Optin", "Mobile", "Social", "Supplement"
+  ];
 
   // Load XLSX from CDN if it's not already loaded
   useEffect(() => {
