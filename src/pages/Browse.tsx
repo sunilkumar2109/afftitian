@@ -1022,7 +1022,7 @@ const Browse = () => {
       <div className="flex flex-col lg:flex-row gap-4 p-3 sm:p-6">
         {/* Main Content Area */}
         <div className="flex-1">
-          {/* Quick Filter Buttons */}
+          {/* Quick Filter Buttons - REMOVED CLEAR FILTER BUTTON */}
           <div className="mb-4 flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
             {quickFilterOptions.map((filter) => (
               <Button
@@ -1039,16 +1039,6 @@ const Browse = () => {
                 {filter}
               </Button>
             ))}
-            {selectedQuickFilter && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs px-3 py-1 bg-red-600 text-white border-red-700 hover:bg-red-700"
-                onClick={() => setSelectedQuickFilter(null)}
-              >
-                Clear Filter
-              </Button>
-            )}
           </div>
 
           {/* Offers List with Pagination */}
@@ -1079,7 +1069,7 @@ const Browse = () => {
               </div>
             )}
             
-            {/* Offers Count and Pagination Info */}
+            {/* REMOVED OFFERS COUNT AND PAGE INFO */}
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-bold text-white">
                 {selectedQuickFilter 
@@ -1087,15 +1077,7 @@ const Browse = () => {
                   : selectedNetworkFilter 
                     ? `Offers for ${selectedNetworkFilter}` 
                     : "All Offers"}
-                <span className="text-sm text-gray-400 ml-2">
-                  ({offersToDisplay.length} offers found)
-                </span>
               </h2>
-              {offersToDisplay.length > 0 && (
-                <div className="text-sm text-gray-400">
-                  Page {currentPage} of {totalPages}
-                </div>
-              )}
             </div>
 
             {loadingOffers ? (
