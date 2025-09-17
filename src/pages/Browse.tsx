@@ -1067,7 +1067,6 @@ const Browse = () => {
               </div>
             )}
             
-            {/* REMOVED OFFERS COUNT AND PAGE INFO */}
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-bold text-white">
                 {selectedQuickFilter 
@@ -1089,98 +1088,136 @@ const Browse = () => {
                 {currentOffers.map((offer) => (
                   <Card
                     key={offer.id}
-                    className={`p-3 w-full hover:shadow-md transition-shadow border-gray-800 ${
+                    className={`p-4 w-full hover:shadow-md transition-shadow border-gray-800 ${
                       offer.is_active ? "bg-gray-900" : "bg-gray-800"
                     } max-w-full sm:max-w-[95%] mx-auto`}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={
-                          offer.networks?.logo_url ||
-                          `https://placehold.co/32x32/333333/666666?text=${(
-                            offer.networks?.name || "N"
-                          ).charAt(0)}`
-                        }
-                        alt={offer.networks?.name || "Network Logo"}
-                        className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-medium text-white text-sm truncate">
-                            {getDisplayValue(offer.name, "Unnamed Offer")}
-                          </h3>
-                          {!offer.is_active && (
-                            <Badge
-                              variant="secondary"
-                              className="text-xs bg-gray-700 text-white px-1 py-0"
-                            >
-                              Inactive
-                            </Badge>
-                          )}
-                          {offer.is_featured && (
-                            <Badge
-                              variant="default"
-                              className="text-xs bg-yellow-600 text-white px-1 py-0"
-                            >
-                              Featured
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <span 
-                            className="text-xs text-gray-400 cursor-pointer hover:underline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleNetworkClick(offer.network_id);
-                            }}
-                          >
-                            {getDisplayValue(offer.networks?.name, "Unknown Network")}
-                          </span>
-                          <div className="flex gap-1 flex-wrap">
-                            {/* GEO, Vertical, and Tag Badges */}
-                            {toStringArray(offer.geo_targets, false)
-                              .slice(0, 2)
-                              .map((geo, idx) => (
+                    <div className="flex flex-col gap-3">
+                      {/* Top Row - Network Info and Payout */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={
+                              offer.networks?.logo_url ||
+                              `https://placehold.co/40x40/333333/666666?text=${(
+                                offer.networks?.name || "N"
+                              ).charAt(0)}`
+                            }
+                            alt={offer.networks?.name || "Network Logo"}
+                            className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-semibold text-white text-base truncate">
+                                {getDisplayValue(offer.name, "Unnamed Offer")}
+                              </h3>
+                              {!offer.is_active && (
                                 <Badge
-                                  key={idx}
-                                  variant="outline"
-                                  className="text-xs px-1 py-0 border-gray-700 text-gray-300"
+                                  variant="secondary"
+                                  className="text-xs bg-gray-700 text-white px-2 py-1"
                                 >
-                                  {geo}
+                                  Inactive
                                 </Badge>
-                              ))}
-                            {toStringArray(offer.vertical, false)
-                              .slice(0, 2)
-                              .map((vertical, idx) => (
+                              )}
+                              {offer.is_featured && (
                                 <Badge
-                                  key={`vertical-${idx}`}
-                                  variant="outline"
-                                  className="text-xs px-1 py-0 border-green-700 text-green-300"
+                                  variant="default"
+                                  className="text-xs bg-yellow-600 text-white px-2 py-1"
                                 >
-                                  {vertical}
+                                  Featured
                                 </Badge>
-                              ))}
+                              )}
+                            </div>
+                            <span 
+                              className="text-sm text-gray-400 cursor-pointer hover:underline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleNetworkClick(offer.network_id);
+                              }}
+                            >
+                              {getDisplayValue(offer.networks?.name, "Unknown Network")}
+                            </span>
                           </div>
                         </div>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <div className="text-sm font-bold text-primary mb-1">
-                          {getDisplayValue(offer.payout_currency, "USD")}{" "}
-                          {typeof offer.payout_amount === "number"
-                            ? offer.payout_amount.toFixed(2)
-                            : getDisplayValue(offer.payout_amount, "0.00")}
+                        
+                        {/* Payout Section */}
+                        <div className="text-right flex-shrink-0">
+                          <div className="text-lg font-bold text-green-400 mb-1">
+                            {getDisplayValue(offer.payout_currency, "USD")}{" "}
+                            {typeof offer.payout_amount === "number"
+                              ? offer.payout_amount.toFixed(2)
+                              : getDisplayValue(offer.payout_amount, "0.00")}
+                          </div>
+                          <Button
+                            size="sm"
+                            className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/offer/${offer.id}`);
+                            }}
+                          >
+                            View Offer
+                          </Button>
                         </div>
-                        <Button
-                          size="sm"
-                          className="bg-primary hover:bg-primary-hover text-white text-xs px-3 py-1"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/offer/${offer.id}`);
-                          }}
-                        >
-                          View
-                        </Button>
+                      </div>
+
+                      {/* Bottom Row - Tags and Info */}
+                      <div className="flex flex-wrap gap-2 items-center">
+                        {/* Offer Type Badge */}
+                        {getDisplayValue(offer.type, "") && (
+                          <Badge
+                            variant="outline"
+                            className="text-xs px-2 py-1 border-blue-500 text-blue-300 bg-blue-500/10"
+                          >
+                            {getDisplayValue(offer.type, "Unknown Type")}
+                          </Badge>
+                        )}
+                        
+                        {/* GEO Tags */}
+                        {toStringArray(offer.geo_targets, false)
+                          .slice(0, 3)
+                          .map((geo, idx) => (
+                            <Badge
+                              key={`geo-${idx}`}
+                              variant="outline"
+                              className="text-xs px-2 py-1 border-gray-500 text-gray-300 bg-gray-500/10"
+                            >
+                              🌍 {geo}
+                            </Badge>
+                          ))}
+                        
+                        {/* Vertical Tags */}
+                        {toStringArray(offer.vertical, false)
+                          .slice(0, 2)
+                          .map((vertical, idx) => (
+                            <Badge
+                              key={`vertical-${idx}`}
+                              variant="outline"
+                              className="text-xs px-2 py-1 border-green-500 text-green-300 bg-green-500/10"
+                            >
+                              📊 {vertical}
+                            </Badge>
+                          ))}
+                        
+                        {/* Show more indicators */}
+                        {toStringArray(offer.geo_targets, false).length > 3 && (
+                          <Badge
+                            variant="outline"
+                            className="text-xs px-2 py-1 border-gray-600 text-gray-400"
+                          >
+                            +{toStringArray(offer.geo_targets, false).length - 3} more geos
+                          </Badge>
+                        )}
+                        
+                        {toStringArray(offer.vertical, false).length > 2 && (
+                          <Badge
+                            variant="outline"
+                            className="text-xs px-2 py-1 border-gray-600 text-gray-400"
+                          >
+                            +{toStringArray(offer.vertical, false).length - 2} more verticals
+                          </Badge>
+                        )}
                       </div>
                     </div>
                   </Card>
@@ -1206,7 +1243,7 @@ const Browse = () => {
           )}
         </div>
 
-        {/* Networks Sidebar - MODIFIED TO SHOW LIMITED NETWORKS */}
+        {/* Networks Sidebar */}
         <div className="w-full lg:w-80 flex-shrink-0 order-last lg:order-none">
           <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden">
             {/* Sidebar Banners */}
@@ -1313,8 +1350,8 @@ const Browse = () => {
                           {getDisplayValue(network.categories?.[0], "N/A")} • {getDisplayValue(network.type, "Unknown")}
                         </div>
                         <div className="flex items-center justify-between text-xs text-gray-400">
-                          <span>📊 {offersCountByNetwork[network.id] || 0} offers</span> 
-                          <span>💰 {getDisplayValue(network.payment_frequency, "Unknown")}</span>
+                          <span>{offersCountByNetwork[network.id] || 0} offers</span> 
+                          <span>{getDisplayValue(network.payment_frequency, "Unknown")}</span>
                         </div>
                       </div>
                     </div>
