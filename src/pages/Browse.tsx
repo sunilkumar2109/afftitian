@@ -1201,11 +1201,10 @@ const Browse = () => {
                           ))}
                         </div>
                         
-                        {/* Third row - GEO Tags and Additional Details */}
+                        {/* Third row - GEO Tags */}
                         <div className="flex flex-wrap gap-2 items-center">
-                          {/* GEO Tags */}
                           {toStringArray(offer.geo_targets, false)
-                            .slice(0, 4) // Reduced from 6 to make room for other details
+                            .slice(0, 6)
                             .map((geo, idx) => (
                               <Badge
                                 key={`geo-${idx}`}
@@ -1216,55 +1215,12 @@ const Browse = () => {
                               </Badge>
                             ))}
                           
-                          {toStringArray(offer.geo_targets, false).length > 4 && (
+                          {toStringArray(offer.geo_targets, false).length > 6 && (
                             <Badge
                               variant="outline"
                               className="text-xs px-2 py-1 border-gray-600 text-gray-400"
                             >
-                              +{toStringArray(offer.geo_targets, false).length - 4} more geos
-                            </Badge>
-                          )}
-
-                          {/* Additional Details - NEW SECTION */}
-                          {/* Payout Type if available */}
-                          {offer.type && (
-                            <Badge
-                              variant="outline"
-                              className="text-xs px-2 py-1 border-cyan-500 text-cyan-300 bg-cyan-500/10"
-                            >
-                              Payout: {getDisplayValue(offer.type, "N/A")}
-                            </Badge>
-                          )}
-
-                          {/* Priority Order Badge */}
-                          {offer.priority_order && typeof offer.priority_order === 'number' && offer.priority_order > 0 && (
-                            <Badge
-                              variant="outline"
-                              className="text-xs px-2 py-1 border-yellow-500 text-yellow-300 bg-yellow-500/10"
-                            >
-                              Priority: {offer.priority_order}
-                            </Badge>
-                          )}
-
-                          {/* Active Status */}
-                          <Badge
-                            variant="outline"
-                            className={`text-xs px-2 py-1 ${
-                              offer.is_active 
-                                ? "border-green-500 text-green-300 bg-green-500/10" 
-                                : "border-red-500 text-red-300 bg-red-500/10"
-                            }`}
-                          >
-                            {offer.is_active ? "Active" : "Inactive"}
-                          </Badge>
-
-                          {/* Featured Badge */}
-                          {offer.is_featured && (
-                            <Badge
-                              variant="outline"
-                              className="text-xs px-2 py-1 border-gold-500 text-yellow-300 bg-yellow-500/10"
-                            >
-                              Featured
+                              +{toStringArray(offer.geo_targets, false).length - 6} more geos
                             </Badge>
                           )}
                         </div>
@@ -1294,19 +1250,6 @@ const Browse = () => {
                             )}
                           </div>
                         )}
-
-                        {/* Fifth row - Additional Metadata (Optional) */}
-                        <div className="flex flex-wrap gap-2 items-center text-xs text-gray-500">
-                          {/* Show offer ID for reference */}
-                          <span className="px-2 py-1 bg-gray-800 rounded">
-                            ID: {offer.id.slice(0, 8)}...
-                          </span>
-                          
-                          {/* Network ID reference */}
-                          <span className="px-2 py-1 bg-gray-800 rounded">
-                            Network: {offer.network_id.slice(0, 8)}...
-                          </span>
-                        </div>
                       </div>
                     </div>
                   </Card>
