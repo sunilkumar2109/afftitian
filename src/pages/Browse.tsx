@@ -1020,6 +1020,125 @@ const Browse = () => {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-4 p-3 sm:p-6">
+        {/* Left Sidebar - Networks */}
+        <div className="w-full lg:w-80 flex-shrink-0">
+          <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden">
+            {/* Sidebar Banners */}
+            {rotationGroupsBySection["sidebar"].map((rotation) => (
+              <BannerDisplay
+                key={rotation.id}
+                banners={bannersForRotation(rotation)}
+                section="sidebar"
+                intervalMs={rotation.rotation_duration_ms || 5000}
+              />
+            ))}
+            {sidebarBanners.length > 0 && (
+              <SidebarBannerDisplay banners={sidebarBanners} />
+            )}
+            
+            {/* Network Search Box */}
+            <div className="p-3 border-b border-gray-700" onClick={(e) => e.stopPropagation()}>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Search networks..."
+                  className="pl-10 bg-gray-800 border-gray-700 text-white h-8 text-sm"
+                  value={networkSearchTerm}
+                  onChange={(e) => setNetworkSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
+            
+            <div className="p-3 border-b border-gray-700 flex items-center justify-between">
+              <h2 className="font-medium text-white flex items-center gap-2 text-sm">
+                All Networks
+                {!showAllNetworks && networksToDisplay.length > NETWORKS_DISPLAY_LIMIT && (
+                  <span className="text-xs text-gray-400">
+                    ({NETWORKS_DISPLAY_LIMIT} of {networksToDisplay.length})
+                  </span>
+                )}
+              </h2>
+              {networksToDisplay.length > NETWORKS_DISPLAY_LIMIT && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-blue-400 hover:text-blue-300 hover:bg-gray-800 p-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowAllNetworks(!showAllNetworks);
+                  }}
+                >
+                  {showAllNetworks ? (
+                    <>
+                      <ChevronUp className="w-3 h-3 mr-1" />
+                      Show Less
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="w-3 h-3 mr-1" />
+                      Show All ({networksToDisplay.length})
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+            
+            <div className="space-y-0">
+              {loadingNetworks ? (
+                <div className="text-center py-4 text-gray-400">Loading networks...</div>
+              ) : sidebarNetworksToDisplay.length === 0 ? (
+                <div className="text-center py-4 text-gray-400">No networks found.</div>
+              ) : (
+                sidebarNetworksToDisplay.map((network) => (
+                  <div 
+                    key={network.id} 
+                    className="p-3 border-b border-gray-700 last:border-b-0 hover:bg-gray-800 transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex items-center gap-2">
+                      <img 
+                        src={network.logo_url || `https://placehold.co/32x32/333333/666666?text=${network.name.charAt(0)}`}
+                        alt={network.name}
+                        className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <h3 
+                            className="font-medium text-white truncate cursor-pointer hover:underline text-sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleNetworkClick(network.id);
+                            }}
+                          >
+                            {getDisplayValue(network.name, "Unnamed Network")}
+                          </h3>
+                          <Button 
+                            size="sm" 
+                            className="bg-primary hover:bg-primary-hover text-white text-xs px-2 py-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleNetworkClick(network.id);
+                            }}
+                          >
+                            Join
+                          </Button>
+                        </div>
+                        <div className="text-xs text-gray-400 mb-1">
+                          {getDisplayValue(network.categories?.[0], "N/A")} • {getDisplayValue(network.type, "Unknown")}
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-gray-400">
+                          <span>{offersCountByNetwork[network.id] || 0} offers</span> 
+                          <span>{getDisplayValue(network.payment_frequency, "Unknown")}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* Main Content Area */}
         <div className="flex-1">
           {/* Premium Quick Filter Buttons */}
@@ -1210,125 +1329,6 @@ const Browse = () => {
           {footerBanners.length > 0 && (
             <BannerDisplay banners={footerBanners} section="footer" />
           )}
-        </div>
-
-        {/* Networks Sidebar */}
-        <div className="w-full lg:w-80 flex-shrink-0 order-last lg:order-none">
-          <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden">
-            {/* Sidebar Banners */}
-            {rotationGroupsBySection["sidebar"].map((rotation) => (
-              <BannerDisplay
-                key={rotation.id}
-                banners={bannersForRotation(rotation)}
-                section="sidebar"
-                intervalMs={rotation.rotation_duration_ms || 5000}
-              />
-            ))}
-            {sidebarBanners.length > 0 && (
-              <SidebarBannerDisplay banners={sidebarBanners} />
-            )}
-            
-            {/* Network Search Box */}
-            <div className="p-3 border-b border-gray-700" onClick={(e) => e.stopPropagation()}>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Search networks..."
-                  className="pl-10 bg-gray-800 border-gray-700 text-white h-8 text-sm"
-                  value={networkSearchTerm}
-                  onChange={(e) => setNetworkSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-            
-            <div className="p-3 border-b border-gray-700 flex items-center justify-between">
-              <h2 className="font-medium text-white flex items-center gap-2 text-sm">
-                All Networks
-                {!showAllNetworks && networksToDisplay.length > NETWORKS_DISPLAY_LIMIT && (
-                  <span className="text-xs text-gray-400">
-                    ({NETWORKS_DISPLAY_LIMIT} of {networksToDisplay.length})
-                  </span>
-                )}
-              </h2>
-              {networksToDisplay.length > NETWORKS_DISPLAY_LIMIT && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs text-blue-400 hover:text-blue-300 hover:bg-gray-800 p-1"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowAllNetworks(!showAllNetworks);
-                  }}
-                >
-                  {showAllNetworks ? (
-                    <>
-                      <ChevronUp className="w-3 h-3 mr-1" />
-                      Show Less
-                    </>
-                  ) : (
-                    <>
-                      <ChevronDown className="w-3 h-3 mr-1" />
-                      Show All ({networksToDisplay.length})
-                    </>
-                  )}
-                </Button>
-              )}
-            </div>
-            
-            <div className="space-y-0">
-              {loadingNetworks ? (
-                <div className="text-center py-4 text-gray-400">Loading networks...</div>
-              ) : sidebarNetworksToDisplay.length === 0 ? (
-                <div className="text-center py-4 text-gray-400">No networks found.</div>
-              ) : (
-                sidebarNetworksToDisplay.map((network) => (
-                  <div 
-                    key={network.id} 
-                    className="p-3 border-b border-gray-700 last:border-b-0 hover:bg-gray-800 transition-colors"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="flex items-center gap-2">
-                      <img 
-                        src={network.logo_url || `https://placehold.co/32x32/333333/666666?text=${network.name.charAt(0)}`}
-                        alt={network.name}
-                        className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <h3 
-                            className="font-medium text-white truncate cursor-pointer hover:underline text-sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleNetworkClick(network.id);
-                            }}
-                          >
-                            {getDisplayValue(network.name, "Unnamed Network")}
-                          </h3>
-                          <Button 
-                            size="sm" 
-                            className="bg-primary hover:bg-primary-hover text-white text-xs px-2 py-1"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleNetworkClick(network.id);
-                            }}
-                          >
-                            Join
-                          </Button>
-                        </div>
-                        <div className="text-xs text-gray-400 mb-1">
-                          {getDisplayValue(network.categories?.[0], "N/A")} • {getDisplayValue(network.type, "Unknown")}
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-gray-400">
-                          <span>{offersCountByNetwork[network.id] || 0} offers</span> 
-                          <span>{getDisplayValue(network.payment_frequency, "Unknown")}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
         </div>
       </div>
       
