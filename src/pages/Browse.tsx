@@ -345,9 +345,9 @@ const Browse = () => {
   const [showAllNetworks, setShowAllNetworks] = useState(false);
   const NETWORKS_DISPLAY_LIMIT = 8; // Change this to 10 if you prefer
 
-  // Quick filter options - ALL OFFERS FIRST, INSURANCE IN MIDDLE
+  // Quick filter options - ALL OFFERS FIRST, INSURANCE IN MIDDLE, DUPLICATES ADDED
   const quickFilterOptions = [
-    "All Offers", "Amount", "Date Added", "Crypto", "Dating", "Gambling", "insurance", "Game", "COD", "Sweepstakes", 
+    "All Offers", "Amount", "Date Added", "Duplicates", "Crypto", "Dating", "Gambling", "insurance", "Game", "COD", "Sweepstakes", 
     "SOI", "DOI", "CPA", "CPL", "CPI"
   ];
 
@@ -383,6 +383,37 @@ const Browse = () => {
     navigate(`/network/${networkId}`);
   };
 
+  // Function to detect duplicate offers
+  const detectDuplicateOffers = (offers: Offer[]) => {
+    const duplicateIds = new Set<string>();
+    const seenOffers = new Map<string, Offer[]>();
+
+    offers.forEach(offer => {
+      // Create a normalized key for comparison
+      const normalizedName = getDisplayValue(offer.name, "").toLowerCase().trim();
+      const normalizedVertical = toStringArray(offer.vertical, false).map(v => v.toLowerCase()).sort().join(',');
+      const normalizedGeo = toStringArray(offer.geo_targets, false).map(g => g.toLowerCase()).sort().join(',');
+      const payoutAmount = typeof offer.payout_amount === 'number' ? offer.payout_amount : parseFloat(String(offer.payout_amount)) || 0;
+      
+      // Create a composite key for duplicate detection
+      const compositeKey = `${normalizedName}|${normalizedVertical}|${normalizedGeo}|${payoutAmount}`;
+      
+      if (!seenOffers.has(compositeKey)) {
+        seenOffers.set(compositeKey, []);
+      }
+      seenOffers.get(compositeKey)!.push(offer);
+    });
+
+    // Mark offers as duplicates if there are multiple with same key
+    seenOffers.forEach((offersGroup) => {
+      if (offersGroup.length > 1) {
+        offersGroup.forEach(offer => duplicateIds.add(offer.id));
+      }
+    });
+
+    return duplicateIds;
+  };
+
   const handleQuickFilterClick = (filter: string) => {
     if (selectedQuickFilter === filter) {
       setSelectedQuickFilter(null);
@@ -392,8 +423,8 @@ const Browse = () => {
       // WHEN ALL OFFERS IS SELECTED, SHOW INSURANCE OFFERS
       if (filter === "All Offers") {
         setSelectedOfferCategory("insurance");
-      } else if (filter === "Amount" || filter === "Date Added") {
-        // For sorting filters, keep current category or default to showing all
+      } else if (filter === "Amount" || filter === "Date Added" || filter === "Duplicates") {
+        // For sorting/special filters, keep current category or default to showing all
         setSelectedOfferCategory("All");
       } else {
         setSelectedOfferCategory(filter);
@@ -644,7 +675,7 @@ const Browse = () => {
     }
 
     // Apply quick filter if selected
-    if (selectedQuickFilter && selectedQuickFilter !== "All Offers" && selectedQuickFilter !== "Amount" && selectedQuickFilter !== "Date Added") {
+    if (selectedQuickFilter && selectedQuickFilter !== "All Offers" && selectedQuickFilter !== "Amount" && selectedQuickFilter !== "Date Added" && selectedQuickFilter !== "Duplicates") {
       filtered = filtered.filter(offer => {
         const offerName = getDisplayValue(offer.name, "").toLowerCase();
         const offerVerticals = toStringArray(offer.vertical, false).map(v => v.toLowerCase()).join(' ');
@@ -691,7 +722,7 @@ const Browse = () => {
       });
     }
 
-    // SPECIAL SORTING FOR AMOUNT AND DATE ADDED FILTERS
+    // SPECIAL SORTING AND FILTERING FOR AMOUNT, DATE ADDED, AND DUPLICATES
     if (selectedQuickFilter === "Amount") {
       filtered = filtered.sort((a, b) => {
         const aAmount = typeof a.payout_amount === 'number' ? a.payout_amount : parseFloat(String(a.payout_amount)) || 0;
@@ -705,6 +736,17 @@ const Browse = () => {
         const aDate = (a as any).created_at ? new Date((a as any).created_at).getTime() : parseInt(a.id) || 0;
         const bDate = (b as any).created_at ? new Date((b as any).created_at).getTime() : parseInt(b.id) || 0;
         return bDate - aDate; // Latest first
+      });
+    } else if (selectedQuickFilter === "Duplicates") {
+      // Filter to show only duplicate offers
+      const duplicateIds = detectDuplicateOffers(filtered);
+      filtered = filtered.filter(offer => duplicateIds.has(offer.id));
+      
+      // Sort duplicates by name for easier comparison
+      filtered = filtered.sort((a, b) => {
+        const aName = getDisplayValue(a.name, "").toLowerCase();
+        const bName = getDisplayValue(b.name, "").toLowerCase();
+        return aName.localeCompare(bName);
       });
     }
 
@@ -1121,6 +1163,8 @@ const Browse = () => {
                       ? "Offers by Highest Amount"
                     : selectedQuickFilter === "Date Added"
                       ? "Latest Offers"
+                    : selectedQuickFilter === "Duplicates"
+                      ? "Duplicate Offers"
                       : selectedQuickFilter 
                         ? `${selectedQuickFilter} Offers` 
                         : selectedNetworkFilter 
