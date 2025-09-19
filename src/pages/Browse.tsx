@@ -345,10 +345,10 @@ const Browse = () => {
   const [showAllNetworks, setShowAllNetworks] = useState(false);
   const NETWORKS_DISPLAY_LIMIT = 8; // Change this to 10 if you prefer
 
-  // Quick filter options - INSURANCE FIRST, ALL OFFERS AT THE END
+  // Quick filter options - ALL OFFERS FIRST, INSURANCE IN MIDDLE
   const quickFilterOptions = [
-    "insurance", "Crypto", "Dating", "Gambling", "Game", "COD", "Sweepstakes", 
-    "SOI", "DOI", "CPA", "CPL", "CPI", "All Offers"
+    "All Offers", "Amount", "Date Added", "Crypto", "Dating", "Gambling", "insurance", "Game", "COD", "Sweepstakes", 
+    "SOI", "DOI", "CPA", "CPL", "CPI"
   ];
 
   // Function to handle background click with proper tracking
@@ -392,6 +392,9 @@ const Browse = () => {
       // WHEN ALL OFFERS IS SELECTED, SHOW INSURANCE OFFERS
       if (filter === "All Offers") {
         setSelectedOfferCategory("insurance");
+      } else if (filter === "Amount" || filter === "Date Added") {
+        // For sorting filters, keep current category or default to showing all
+        setSelectedOfferCategory("All");
       } else {
         setSelectedOfferCategory(filter);
       }
@@ -641,7 +644,7 @@ const Browse = () => {
     }
 
     // Apply quick filter if selected
-    if (selectedQuickFilter && selectedQuickFilter !== "All Offers") {
+    if (selectedQuickFilter && selectedQuickFilter !== "All Offers" && selectedQuickFilter !== "Amount" && selectedQuickFilter !== "Date Added") {
       filtered = filtered.filter(offer => {
         const offerName = getDisplayValue(offer.name, "").toLowerCase();
         const offerVerticals = toStringArray(offer.vertical, false).map(v => v.toLowerCase()).join(' ');
@@ -655,7 +658,7 @@ const Browse = () => {
       });
     }
 
-    // MODIFIED: Handle special cases for filtering
+    // MODIFIED: Handle special cases for filtering and sorting
     if (selectedOfferCategory === "🔥 Top Offers") {
       filtered = filtered.sort((a, b) => {
         if (a.is_active && !b.is_active) return -1;
@@ -685,6 +688,23 @@ const Browse = () => {
       filtered = filtered.filter(offer => {
         const verticals = toStringArray(offer.vertical, false);
         return verticals.includes(selectedOfferCategory);
+      });
+    }
+
+    // SPECIAL SORTING FOR AMOUNT AND DATE ADDED FILTERS
+    if (selectedQuickFilter === "Amount") {
+      filtered = filtered.sort((a, b) => {
+        const aAmount = typeof a.payout_amount === 'number' ? a.payout_amount : parseFloat(String(a.payout_amount)) || 0;
+        const bAmount = typeof b.payout_amount === 'number' ? b.payout_amount : parseFloat(String(b.payout_amount)) || 0;
+        return bAmount - aAmount; // Highest amount first
+      });
+    } else if (selectedQuickFilter === "Date Added") {
+      filtered = filtered.sort((a, b) => {
+        // Assuming offers have a created_at or similar date field
+        // If not available, we'll use the offer id as a proxy (higher id = newer)
+        const aDate = (a as any).created_at ? new Date((a as any).created_at).getTime() : parseInt(a.id) || 0;
+        const bDate = (b as any).created_at ? new Date((b as any).created_at).getTime() : parseInt(b.id) || 0;
+        return bDate - aDate; // Latest first
       });
     }
 
@@ -1046,12 +1066,12 @@ const Browse = () => {
       <div className="flex flex-col lg:flex-row gap-4 p-3 sm:p-6">
         {/* Main Content Area */}
         <div className="flex-1">
-          {/* Premium Quick Filter Buttons - Single Line Layout */}
-          <div className="mb-4 flex flex-nowrap gap-2 overflow-x-auto scrollbar-hide" onClick={(e) => e.stopPropagation()}>
+          {/* Premium Quick Filter Buttons - Single Line Layout with Better Spacing */}
+          <div className="mb-4 flex flex-nowrap gap-1 overflow-x-auto scrollbar-hide pb-2" onClick={(e) => e.stopPropagation()}>
             {quickFilterOptions.map((filter) => (
               <button
                 key={filter}
-                className={`text-xs px-3 py-1.5 rounded-full transition-all duration-200 ease-in-out transform hover:scale-105 whitespace-nowrap flex-shrink-0 ${
+                className={`text-xs px-2 py-1 rounded-full transition-all duration-200 ease-in-out transform hover:scale-105 whitespace-nowrap flex-shrink-0 min-w-max ${
                   selectedQuickFilter === filter 
                     ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg" 
                     : "bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700 hover:text-white shadow-md"
@@ -1097,11 +1117,15 @@ const Browse = () => {
                   ? "Insurance Offers" 
                   : selectedQuickFilter === "insurance"
                     ? "Insurance Offers"
-                    : selectedQuickFilter 
-                      ? `${selectedQuickFilter} Offers` 
-                      : selectedNetworkFilter 
-                        ? `Offers for ${selectedNetworkFilter}` 
-                        : "Insurance Offers"}
+                    : selectedQuickFilter === "Amount"
+                      ? "Offers by Highest Amount"
+                    : selectedQuickFilter === "Date Added"
+                      ? "Latest Offers"
+                      : selectedQuickFilter 
+                        ? `${selectedQuickFilter} Offers` 
+                        : selectedNetworkFilter 
+                          ? `Offers for ${selectedNetworkFilter}` 
+                          : "Insurance Offers"}
               </h2>
             </div>
 
