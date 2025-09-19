@@ -319,8 +319,10 @@ const Browse = () => {
   const [selectedNetworkFilter, setSelectedNetworkFilter] = useState<string | null>(null);
   const [selectedGeo, setSelectedGeo] = useState<string | null>(null);
   const [selectedVertical, setSelectedVertical] = useState<string | null>(null);
-  const [selectedOfferCategory, setSelectedOfferCategory] = useState<string>("🔥 Top Offers");
-  const [selectedQuickFilter, setSelectedQuickFilter] = useState<string | null>(null);
+  // AUTO-SELECT INSURANCE ON PAGE LOAD
+  const [selectedOfferCategory, setSelectedOfferCategory] = useState<string>("insurance");
+  // AUTO-SELECT INSURANCE QUICK FILTER ON PAGE LOAD
+  const [selectedQuickFilter, setSelectedQuickFilter] = useState<string>("insurance");
 
   const [allOffers, setAllOffers] = useState<Offer[]>([]);
   const [allNetworks, setAllNetworks] = useState<Network[]>([]);
@@ -343,10 +345,10 @@ const Browse = () => {
   const [showAllNetworks, setShowAllNetworks] = useState(false);
   const NETWORKS_DISPLAY_LIMIT = 8; // Change this to 10 if you prefer
 
-  // Quick filter options
+  // Quick filter options - INSURANCE FIRST, ALL OFFERS AT THE END
   const quickFilterOptions = [
-    "Crypto", "Dating", "Gambling", "Game", "COD", "Sweepstakes", 
-    "insurance", "SOI", "DOI", "CPA", "CPL", "CPI"
+    "insurance", "Crypto", "Dating", "Gambling", "Game", "COD", "Sweepstakes", 
+    "SOI", "DOI", "CPA", "CPL", "CPI", "All Offers"
   ];
 
   // Function to handle background click with proper tracking
@@ -384,8 +386,15 @@ const Browse = () => {
   const handleQuickFilterClick = (filter: string) => {
     if (selectedQuickFilter === filter) {
       setSelectedQuickFilter(null);
+      setSelectedOfferCategory("🔥 Top Offers");
     } else {
       setSelectedQuickFilter(filter);
+      // WHEN ALL OFFERS IS SELECTED, SHOW INSURANCE OFFERS
+      if (filter === "All Offers") {
+        setSelectedOfferCategory("insurance");
+      } else {
+        setSelectedOfferCategory(filter);
+      }
       setCurrentPage(1);
     }
   };
@@ -599,10 +608,11 @@ const Browse = () => {
     })
   ))];
   
-  const offerCategories = ["🔥 Top Offers", "All", ...Array.from(new Set(
+  // MODIFIED: Include insurance in the offer categories
+  const offerCategories = ["🔥 Top Offers", "All", "insurance", ...Array.from(new Set(
     allOffers.flatMap(o => {
       const verticals = toStringArray(o.vertical, false);
-      return verticals.length > 0 ? verticals : [];
+      return verticals.length > 0 ? verticals.filter(v => v.toLowerCase() !== "insurance") : [];
     })
   ))];
 
@@ -631,7 +641,7 @@ const Browse = () => {
     }
 
     // Apply quick filter if selected
-    if (selectedQuickFilter) {
+    if (selectedQuickFilter && selectedQuickFilter !== "All Offers") {
       filtered = filtered.filter(offer => {
         const offerName = getDisplayValue(offer.name, "").toLowerCase();
         const offerVerticals = toStringArray(offer.vertical, false).map(v => v.toLowerCase()).join(' ');
@@ -645,6 +655,7 @@ const Browse = () => {
       });
     }
 
+    // MODIFIED: Handle special cases for filtering
     if (selectedOfferCategory === "🔥 Top Offers") {
       filtered = filtered.sort((a, b) => {
         if (a.is_active && !b.is_active) return -1;
@@ -656,6 +667,19 @@ const Browse = () => {
         const aPriority = typeof a.priority_order === 'number' ? a.priority_order : 0;
         const bPriority = typeof b.priority_order === 'number' ? b.priority_order : 0;
         return bPriority - aPriority;
+      });
+    } else if (selectedOfferCategory === "insurance" || (selectedQuickFilter === "All Offers")) {
+      // BOTH INSURANCE AND ALL OFFERS SHOW INSURANCE OFFERS
+      filtered = filtered.filter(offer => {
+        const verticals = toStringArray(offer.vertical, false).map(v => v.toLowerCase());
+        const offerName = getDisplayValue(offer.name, "").toLowerCase();
+        const offerTags = toStringArray(offer.tags, false).map(t => t.toLowerCase());
+        
+        return (
+          verticals.includes("insurance") ||
+          offerName.includes("insurance") ||
+          offerTags.includes("insurance")
+        );
       });
     } else if (selectedOfferCategory !== "All") {
       filtered = filtered.filter(offer => {
@@ -1069,11 +1093,15 @@ const Browse = () => {
             
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-bold text-white">
-                {selectedQuickFilter 
-                  ? `${selectedQuickFilter} Offers` 
-                  : selectedNetworkFilter 
-                    ? `Offers for ${selectedNetworkFilter}` 
-                    : "All Offers"}
+                {selectedQuickFilter === "All Offers" 
+                  ? "Insurance Offers" 
+                  : selectedQuickFilter === "insurance"
+                    ? "Insurance Offers"
+                    : selectedQuickFilter 
+                      ? `${selectedQuickFilter} Offers` 
+                      : selectedNetworkFilter 
+                        ? `Offers for ${selectedNetworkFilter}` 
+                        : "Insurance Offers"}
               </h2>
             </div>
 
