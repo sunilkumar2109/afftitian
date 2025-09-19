@@ -42,6 +42,7 @@ interface Offer {
   is_active: boolean;
   is_featured: boolean;
   priority_order: number | string;
+  created_at: string;
   networks?: {
     id: string;
     name: string;
@@ -416,7 +417,7 @@ const Browse = () => {
 
   const handleQuickFilterClick = (filter: string) => {
     if (selectedQuickFilter === filter) {
-      setSelectedQuickFilter(null);
+      setSelectedQuickFilter("");
       setSelectedOfferCategory("🔥 Top Offers");
     } else {
       setSelectedQuickFilter(filter);
@@ -439,7 +440,8 @@ const Browse = () => {
       try {
         const { data, error } = await supabase
           .from('offers')
-          .select(`*, networks (id, name, logo_url)`);
+          .select(`*, networks (id, name, logo_url)`)
+          .order('created_at', { ascending: false });
 
         if (error) throw error;
         
@@ -624,6 +626,21 @@ const Browse = () => {
     return String(value);
   };
 
+  const formatDate = (dateString: string): string => {
+    if (!dateString) return "N/A";
+    
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (e) {
+      return "N/A";
+    }
+  };
+
   const networksOptions = ["All", ...Array.from(new Set(
     allNetworks.map(n => getDisplayValue(n.name)).filter(name => name !== "N/A")
   ))];
@@ -680,18 +697,50 @@ const Browse = () => {
         const offerName = getDisplayValue(offer.name, "").toLowerCase();
         const offerVerticals = toStringArray(offer.vertical, false).map(v => v.toLowerCase()).join(' ');
         const offerTags = toStringArray(offer.tags, false).map(t => t.toLowerCase()).join(' ');
+        const offerType = getDisplayValue(offer.type, "").toLowerCase();
         
+        // Special handling for different quick filter types
+        const filterTerm = selectedQuickFilter.toLowerCase();
+        
+        // For offer types (CPA, CPL, CPI, SOI, DOI)
+        if (["cpa", "cpl", "cpi", "soi", "doi"].includes(filterTerm)) {
+          return (
+            offerType.includes(filterTerm) ||
+            offerName.includes(filterTerm) ||
+            offerTags.includes(filterTerm)
+          );
+        }
+        
+        // For Game and COD
+        if (["game", "cod"].includes(filterTerm)) {
+          return (
+            offerVerticals.includes(filterTerm) ||
+            offerName.includes(filterTerm) ||
+            offerTags.includes(filterTerm) ||
+            (filterTerm === "game" && (offerVerticals.includes("gaming") || offerTags.includes("gaming"))) ||
+            (filterTerm === "cod" && (offerName.includes("call of duty") || offerTags.includes("call of duty")))
+          );
+        }
+        
+        // For all other filters
         return (
-          offerName.includes(selectedQuickFilter.toLowerCase()) ||
-          offerVerticals.includes(selectedQuickFilter.toLowerCase()) ||
-          offerTags.includes(selectedQuickFilter.toLowerCase())
+          offerName.includes(filterTerm) ||
+          offerVerticals.includes(filterTerm) ||
+          offerTags.includes(filterTerm)
         );
       });
     }
 
     // MODIFIED: Handle special cases for filtering and sorting
     if (selectedOfferCategory === "🔥 Top Offers") {
+      // Sort by highest amount first, then by other criteria
       filtered = filtered.sort((a, b) => {
+        const aAmount = typeof a.payout_amount === 'number' ? a.payout_amount : parseFloat(String(a.payout_amount)) || 0;
+        const bAmount = typeof b.payout_amount === 'number' ? b.payout_amount : parseFloat(String(b.payout_amount)) || 0;
+        
+        // Sort by highest amount first
+        if (aAmount !== bAmount) return bAmount - aAmount;
+        
         if (a.is_active && !b.is_active) return -1;
         if (!a.is_active && b.is_active) return 1;
         
@@ -702,7 +751,7 @@ const Browse = () => {
         const bPriority = typeof b.priority_order === 'number' ? b.priority_order : 0;
         return bPriority - aPriority;
       });
-    } else if (selectedOfferCategory === "insurance" || (selectedQuickFilter === "All Offers")) {
+    } else if (selectedOfferCategory === "insurance" || selectedQuickFilter === "All Offers") {
       // BOTH INSURANCE AND ALL OFFERS SHOW INSURANCE OFFERS
       filtered = filtered.filter(offer => {
         const verticals = toStringArray(offer.vertical, false).map(v => v.toLowerCase());
@@ -731,10 +780,9 @@ const Browse = () => {
       });
     } else if (selectedQuickFilter === "Date Added") {
       filtered = filtered.sort((a, b) => {
-        // Assuming offers have a created_at or similar date field
-        // If not available, we'll use the offer id as a proxy (higher id = newer)
-        const aDate = (a as any).created_at ? new Date((a as any).created_at).getTime() : parseInt(a.id) || 0;
-        const bDate = (b as any).created_at ? new Date((b as any).created_at).getTime() : parseInt(b.id) || 0;
+        // Sort by created_at date (newest first)
+        const aDate = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const bDate = b.created_at ? new Date(b.created_at).getTime() : 0;
         return bDate - aDate; // Latest first
       });
     } else if (selectedQuickFilter === "Duplicates") {
@@ -751,7 +799,14 @@ const Browse = () => {
     }
 
     if (selectedOfferCategory !== "🔥 Top Offers") {
+      // Sort by highest amount first, then by other criteria
       filtered = filtered.sort((a, b) => {
+        const aAmount = typeof a.payout_amount === 'number' ? a.payout_amount : parseFloat(String(a.payout_amount)) || 0;
+        const bAmount = typeof b.payout_amount === 'number' ? b.payout_amount : parseFloat(String(b.payout_amount)) || 0;
+        
+        // Sort by highest amount first
+        if (aAmount !== bAmount) return bAmount - aAmount;
+        
         if (a.is_active && !b.is_active) return -1;
         if (!a.is_active && b.is_active) return 1;
         
@@ -1010,7 +1065,7 @@ const Browse = () => {
           variant="outline"
           size="sm"
           className="flex items-center gap-1 bg-gray-800 text-white border-gray-700"
-        >
+          >
           Next
           <ChevronRight className="w-4 h-4" />
         </Button>
@@ -1271,6 +1326,10 @@ const Browse = () => {
                               ? offer.payout_amount.toFixed(2)
                               : getDisplayValue(offer.payout_amount, "0.00")}
                           </div>
+                          {/* Always show date for every offer */}
+                          <div className="text-xs text-gray-400 mt-1">
+                            {formatDate(offer.created_at)}
+                          </div>
                         </div>
                         
                         <Button
@@ -1395,7 +1454,8 @@ const Browse = () => {
                             className="font-medium text-white truncate cursor-pointer hover:underline text-sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleNetworkClick(network.id);
+                              setSelectedNetworkFilter(network.name);
+                              setCurrentPage(1);
                             }}
                           >
                             {getDisplayValue(network.name, "Unnamed Network")}
@@ -1405,10 +1465,11 @@ const Browse = () => {
                             className="bg-primary hover:bg-primary-hover text-white text-xs px-2 py-1"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleNetworkClick(network.id);
+                              setSelectedNetworkFilter(network.name);
+                              setCurrentPage(1);
                             }}
                           >
-                            Join
+                            View Offers
                           </Button>
                         </div>
                         <div className="text-xs text-gray-400 mb-1">
