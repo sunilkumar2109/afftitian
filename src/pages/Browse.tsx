@@ -1046,12 +1046,12 @@ const Browse = () => {
       <div className="flex flex-col lg:flex-row gap-4 p-3 sm:p-6">
         {/* Main Content Area */}
         <div className="flex-1">
-          {/* Premium Quick Filter Buttons */}
-          <div className="mb-4 flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
+          {/* Premium Quick Filter Buttons - Single Line Layout */}
+          <div className="mb-4 flex flex-nowrap gap-2 overflow-x-auto scrollbar-hide" onClick={(e) => e.stopPropagation()}>
             {quickFilterOptions.map((filter) => (
               <button
                 key={filter}
-                className={`text-xs px-3 py-1.5 rounded-full transition-all duration-200 ease-in-out transform hover:scale-105 ${
+                className={`text-xs px-3 py-1.5 rounded-full transition-all duration-200 ease-in-out transform hover:scale-105 whitespace-nowrap flex-shrink-0 ${
                   selectedQuickFilter === filter 
                     ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg" 
                     : "bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700 hover:text-white shadow-md"
