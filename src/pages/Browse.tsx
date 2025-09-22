@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { ChevronDown, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronDown, Search, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Footer from "@/components/Footer";
 import TopBar from "@/components/TopBar";
@@ -385,8 +385,23 @@ const Browse = () => {
     }
   };
 
-  const handleNetworkClick = (networkId: string) => {
-    navigate(`/network/${networkId}`);
+  const handleNetworkClick = (networkId: string, networkName: string) => {
+    setSelectedNetworkFilter(networkName);
+    setCurrentPage(1);
+  };
+
+  // Function to handle network website click
+  const handleNetworkWebsiteClick = (network: Network, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (network.website_link) {
+      window.open(network.website_link, "_blank", "noopener,noreferrer");
+    } else {
+      toast({
+        title: "No Website Available",
+        description: `${network.name} does not have a website link configured.`,
+        variant: "destructive",
+      });
+    }
   };
 
   // Function to detect duplicate offers
@@ -808,7 +823,7 @@ const Browse = () => {
     if (selectedNetworkFilter && selectedNetworkFilter !== "All") {
       filtered = filtered.filter(offer => {
         const networkName = getDisplayValue(offer.networks?.name);
-        return networkName === selectedNetworkFilter;
+        return networkName.toLowerCase() === selectedNetworkFilter.toLowerCase();
       });
     }
 
@@ -1457,7 +1472,7 @@ const Browse = () => {
                               className="cursor-pointer hover:underline"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleNetworkClick(offer.network_id);
+                                handleNetworkClick(offer.network_id, getDisplayValue(offer.networks?.name, ""));
                               }}
                             >
                               {getDisplayValue(offer.networks?.name, "Unknown Network")}
@@ -1543,7 +1558,7 @@ const Browse = () => {
           )}
         </div>
 
-        {/* Networks Sidebar - MODIFIED: Show only icons */}
+        {/* Networks Sidebar - MODIFIED: Network names are now clickable to open website */}
         <div className="w-full lg:w-80 flex-shrink-0 order-last lg:order-none">
           <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden">
             {/* Sidebar Banners */}
@@ -1587,21 +1602,29 @@ const Browse = () => {
                     <div
                       key={network.id}
                       className="flex flex-col items-center"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedNetworkFilter(network.name);
-                        setCurrentPage(1);
-                      }}
                       title={network.name}
                     >
                       <img
                         src={network.logo_url || `https://placehold.co/40x40/333333/666666?text=${network.name.charAt(0)}`}
                         alt={network.name}
                         className="w-10 h-10 rounded-full object-cover cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleNetworkClick(network.id, network.name);
+                        }}
                       />
-                      <span className="text-xs text-white truncate w-full text-center mt-1">
-                        {network.name}
-                      </span>
+                      <div 
+                        className="flex items-center gap-1 cursor-pointer hover:underline group mt-1"
+                        onClick={(e) => handleNetworkWebsiteClick(network, e)}
+                        title={`Visit ${network.name} website`}
+                      >
+                        <span className="text-xs text-white truncate w-full text-center">
+                          {network.name}
+                        </span>
+                        {network.website_link && (
+                          <ExternalLink className="w-3 h-3 text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        )}
+                      </div>
                     </div>
                   ))
                 )}
