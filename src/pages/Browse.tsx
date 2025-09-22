@@ -1436,33 +1436,30 @@ const Browse = () => {
             </div>
             
             <div className="p-3">
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-4 gap-3">
                 {loadingNetworks ? (
-                  <div className="text-center py-4 text-gray-400 col-span-3">Loading networks...</div>
+                  <div className="text-center py-4 text-gray-400 col-span-4">Loading networks...</div>
                 ) : networksToDisplay.length === 0 ? (
-                  <div className="text-center py-4 text-gray-400 col-span-3">No networks found.</div>
+                  <div className="text-center py-4 text-gray-400 col-span-4">No networks found.</div>
                 ) : (
                   networksToDisplay.map((network) => (
                     <div
                       key={network.id}
-                      className="flex flex-col items-center cursor-pointer group"
+                      className="flex flex-col items-center"
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedNetworkFilter(network.name);
                         setCurrentPage(1);
                       }}
-                      title={`${network.name} (${offersCountByNetwork[network.id] || 0} offers)`}
+                      title={network.name}
                     >
                       <img
                         src={network.logo_url || `https://placehold.co/40x40/333333/666666?text=${network.name.charAt(0)}`}
                         alt={network.name}
-                        className="w-10 h-10 rounded-full object-cover mb-1 group-hover:ring-2 group-hover:ring-blue-500 transition-all"
+                        className="w-10 h-10 rounded-full object-cover cursor-pointer"
                       />
-                      <span className="text-xs text-white truncate w-full text-center">
+                      <span className="text-xs text-white truncate w-full text-center mt-1">
                         {network.name}
-                      </span>
-                      <span className="text-xs text-gray-400">
-                        ({offersCountByNetwork[network.id] || 0})
                       </span>
                     </div>
                   ))
