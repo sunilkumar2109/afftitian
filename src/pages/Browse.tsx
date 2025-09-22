@@ -320,10 +320,10 @@ const Browse = () => {
   const [selectedNetworkFilter, setSelectedNetworkFilter] = useState<string | null>(null);
   const [selectedGeo, setSelectedGeo] = useState<string | null>(null);
   const [selectedVertical, setSelectedVertical] = useState<string | null>(null);
-  // AUTO-SELECT INSURANCE ON PAGE LOAD
-  const [selectedOfferCategory, setSelectedOfferCategory] = useState<string>("insurance");
-  // AUTO-SELECT INSURANCE QUICK FILTER ON PAGE LOAD
-  const [selectedQuickFilter, setSelectedQuickFilter] = useState<string>("insurance");
+  // REMOVED INSURANCE DEFAULT
+  const [selectedOfferCategory, setSelectedOfferCategory] = useState<string>("🔥 Top Offers");
+  // REMOVED INSURANCE DEFAULT
+  const [selectedQuickFilter, setSelectedQuickFilter] = useState<string>("");
 
   const [allOffers, setAllOffers] = useState<Offer[]>([]);
   const [allNetworks, setAllNetworks] = useState<Network[]>([]);
@@ -341,10 +341,6 @@ const Browse = () => {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [offersPerPage] = useState(15); // Increased from 10 to 15 since cards are smaller
-
-  // NEW STATE: For controlling how many networks to show in sidebar
-  const [showAllNetworks, setShowAllNetworks] = useState(false);
-  const NETWORKS_DISPLAY_LIMIT = 8; // Change this to 10 if you prefer
 
   // Quick filter options - ALL OFFERS FIRST, INSURANCE IN MIDDLE, DUPLICATES ADDED
   const quickFilterOptions = [
@@ -421,9 +417,9 @@ const Browse = () => {
       setSelectedOfferCategory("🔥 Top Offers");
     } else {
       setSelectedQuickFilter(filter);
-      // WHEN ALL OFFERS IS SELECTED, SHOW INSURANCE OFFERS
+      // WHEN ALL OFFERS IS SELECTED, SHOW ALL OFFERS
       if (filter === "All Offers") {
-        setSelectedOfferCategory("insurance");
+        setSelectedOfferCategory("All");
       } else if (filter === "Amount" || filter === "Date Added" || filter === "Duplicates") {
         // For sorting/special filters, keep current category or default to showing all
         setSelectedOfferCategory("All");
@@ -659,13 +655,108 @@ const Browse = () => {
     })
   ))];
   
-  // MODIFIED: Include insurance in the offer categories
+  // MODIFIED: Include insurance in the offer categories but removed as default
   const offerCategories = ["🔥 Top Offers", "All", "insurance", ...Array.from(new Set(
     allOffers.flatMap(o => {
       const verticals = toStringArray(o.vertical, false);
       return verticals.length > 0 ? verticals.filter(v => v.toLowerCase() !== "insurance") : [];
     })
   ))];
+
+  // Enhanced filtering function that matches offers comprehensively
+  const matchesFilter = (offer: Offer, filterTerm: string): boolean => {
+    const normalizedFilter = filterTerm.toLowerCase().trim();
+    
+    // Get all searchable fields from the offer
+    const offerName = getDisplayValue(offer.name, "").toLowerCase();
+    const offerType = getDisplayValue(offer.type, "").toLowerCase();
+    const offerVerticals = toStringArray(offer.vertical, false).map(v => v.toLowerCase()).join(' ');
+    const offerTags = toStringArray(offer.tags, false).map(t => t.toLowerCase()).join(' ');
+    const offerGeos = toStringArray(offer.geo_targets, false).map(g => g.toLowerCase()).join(' ');
+    const offerDevices = toStringArray(offer.devices, false).map(d => d.toLowerCase()).join(' ');
+    const networkName = getDisplayValue(offer.networks?.name, "").toLowerCase();
+    
+    // Create a combined searchable text
+    const searchableText = `${offerName} ${offerType} ${offerVerticals} ${offerTags} ${offerGeos} ${offerDevices} ${networkName}`;
+    
+    // Special handling for specific filters
+    switch (normalizedFilter) {
+      case "crypto":
+        return searchableText.includes("crypto") || 
+               searchableText.includes("bitcoin") || 
+               searchableText.includes("btc") || 
+               searchableText.includes("ethereum") ||
+               searchableText.includes("blockchain");
+      
+      case "dating":
+        return searchableText.includes("dating") || 
+               searchableText.includes("romance") || 
+               searchableText.includes("relationship") ||
+               searchableText.includes("singles") ||
+               searchableText.includes("match");
+      
+      case "gambling":
+        return searchableText.includes("gambling") || 
+               searchableText.includes("casino") || 
+               searchableText.includes("poker") ||
+               searchableText.includes("betting") ||
+               searchableText.includes("slots") ||
+               searchableText.includes("jackpot");
+      
+      case "insurance":
+        return searchableText.includes("insurance") || 
+               searchableText.includes("auto insurance") || 
+               searchableText.includes("health insurance") ||
+               searchableText.includes("life insurance") ||
+               searchableText.includes("home insurance");
+      
+      case "game":
+        return searchableText.includes("game") || 
+               searchableText.includes("gaming") || 
+               searchableText.includes("mobile game") ||
+               searchableText.includes("video game") ||
+               searchableText.includes("app game");
+      
+      case "cod":
+        return searchableText.includes("cod") || 
+               searchableText.includes("call of duty") ||
+               searchableText.includes("cash on delivery");
+      
+      case "sweepstakes":
+        return searchableText.includes("sweepstakes") || 
+               searchableText.includes("sweeps") || 
+               searchableText.includes("contest") ||
+               searchableText.includes("giveaway") ||
+               searchableText.includes("prize");
+      
+      case "soi":
+        return offerType.includes("soi") || 
+               searchableText.includes("single opt") ||
+               searchableText.includes("single opt-in");
+      
+      case "doi":
+        return offerType.includes("doi") || 
+               searchableText.includes("double opt") ||
+               searchableText.includes("double opt-in");
+      
+      case "cpa":
+        return offerType.includes("cpa") || 
+               searchableText.includes("cost per action") ||
+               searchableText.includes("cost per acquisition");
+      
+      case "cpl":
+        return offerType.includes("cpl") || 
+               searchableText.includes("cost per lead");
+      
+      case "cpi":
+        return offerType.includes("cpi") || 
+               searchableText.includes("cost per install");
+      
+      default:
+        // For any other filter, do a general search
+        return searchableText.includes(normalizedFilter);
+    }
+  };
 
   const getFilteredOffers = () => {
     let filtered = [...allOffers];
@@ -693,42 +784,7 @@ const Browse = () => {
 
     // Apply quick filter if selected
     if (selectedQuickFilter && selectedQuickFilter !== "All Offers" && selectedQuickFilter !== "Amount" && selectedQuickFilter !== "Date Added" && selectedQuickFilter !== "Duplicates") {
-      filtered = filtered.filter(offer => {
-        const offerName = getDisplayValue(offer.name, "").toLowerCase();
-        const offerVerticals = toStringArray(offer.vertical, false).map(v => v.toLowerCase()).join(' ');
-        const offerTags = toStringArray(offer.tags, false).map(t => t.toLowerCase()).join(' ');
-        const offerType = getDisplayValue(offer.type, "").toLowerCase();
-        
-        // Special handling for different quick filter types
-        const filterTerm = selectedQuickFilter.toLowerCase();
-        
-        // For offer types (CPA, CPL, CPI, SOI, DOI)
-        if (["cpa", "cpl", "cpi", "soi", "doi"].includes(filterTerm)) {
-          return (
-            offerType.includes(filterTerm) ||
-            offerName.includes(filterTerm) ||
-            offerTags.includes(filterTerm)
-          );
-        }
-        
-        // For Game and COD
-        if (["game", "cod"].includes(filterTerm)) {
-          return (
-            offerVerticals.includes(filterTerm) ||
-            offerName.includes(filterTerm) ||
-            offerTags.includes(filterTerm) ||
-            (filterTerm === "game" && (offerVerticals.includes("gaming") || offerTags.includes("gaming"))) ||
-            (filterTerm === "cod" && (offerName.includes("call of duty") || offerTags.includes("call of duty")))
-          );
-        }
-        
-        // For all other filters
-        return (
-          offerName.includes(filterTerm) ||
-          offerVerticals.includes(filterTerm) ||
-          offerTags.includes(filterTerm)
-        );
-      });
+      filtered = filtered.filter(offer => matchesFilter(offer, selectedQuickFilter));
     }
 
     // MODIFIED: Handle special cases for filtering and sorting
@@ -751,19 +807,8 @@ const Browse = () => {
         const bPriority = typeof b.priority_order === 'number' ? b.priority_order : 0;
         return bPriority - aPriority;
       });
-    } else if (selectedOfferCategory === "insurance" || selectedQuickFilter === "All Offers") {
-      // BOTH INSURANCE AND ALL OFFERS SHOW INSURANCE OFFERS
-      filtered = filtered.filter(offer => {
-        const verticals = toStringArray(offer.vertical, false).map(v => v.toLowerCase());
-        const offerName = getDisplayValue(offer.name, "").toLowerCase();
-        const offerTags = toStringArray(offer.tags, false).map(t => t.toLowerCase());
-        
-        return (
-          verticals.includes("insurance") ||
-          offerName.includes("insurance") ||
-          offerTags.includes("insurance")
-        );
-      });
+    } else if (selectedOfferCategory === "insurance") {
+      filtered = filtered.filter(offer => matchesFilter(offer, "insurance"));
     } else if (selectedOfferCategory !== "All") {
       filtered = filtered.filter(offer => {
         const verticals = toStringArray(offer.vertical, false);
@@ -825,11 +870,9 @@ const Browse = () => {
         const offerName = getDisplayValue(offer.name, "").toLowerCase();
         const offerVerticals = toStringArray(offer.vertical, false).map(v => v.toLowerCase()).join(' ');
         const offerGeos = toStringArray(offer.geo_targets, false).map(g => g.toLowerCase()).join(' ');
-        return (
-          offerName.includes(lowerCaseOfferSearchTerm) ||
-          offerVerticals.includes(lowerCaseOfferSearchTerm) ||
-          offerGeos.includes(lowerCaseOfferSearchTerm)
-        );
+        const offerTags = toStringArray(offer.tags, false).map(t => t.toLowerCase()).join(' ');
+        const searchableText = `${offerName} ${offerVerticals} ${offerGeos} ${offerTags}`;
+        return searchableText.includes(lowerCaseOfferSearchTerm);
       });
     }
 
@@ -838,13 +881,10 @@ const Browse = () => {
         const offerName = getDisplayValue(offer.name, "").toLowerCase();
         const offerVerticals = toStringArray(offer.vertical, false).map(v => v.toLowerCase()).join(' ');
         const offerGeos = toStringArray(offer.geo_targets, false).map(g => g.toLowerCase()).join(' ');
+        const offerTags = toStringArray(offer.tags, false).map(t => t.toLowerCase()).join(' ');
         const networkName = getDisplayValue(offer.networks?.name, "").toLowerCase();
-        return (
-          offerName.includes(lowerCaseGlobalSearchTerm) ||
-          offerVerticals.includes(lowerCaseGlobalSearchTerm) ||
-          offerGeos.includes(lowerCaseGlobalSearchTerm) ||
-          networkName.includes(lowerCaseGlobalSearchTerm)
-        );
+        const searchableText = `${offerName} ${offerVerticals} ${offerGeos} ${offerTags} ${networkName}`;
+        return searchableText.includes(lowerCaseGlobalSearchTerm);
       });
     }
 
@@ -924,11 +964,6 @@ const Browse = () => {
   const backgroundUrl = backgroundBanner ? cacheBusted(getBannerImageUrl(backgroundBanner), backgroundBanner.id) : defaultBg;
 
   const networksToDisplay = getFilteredNetworks();
-
-  // NEW: Get limited networks for sidebar display
-  const sidebarNetworksToDisplay = showAllNetworks 
-    ? networksToDisplay 
-    : networksToDisplay.slice(0, NETWORKS_DISPLAY_LIMIT);
 
   const activeRotations = allRotations.filter(r => !r.expires_at || new Date(r.expires_at) > new Date());
 
@@ -1211,7 +1246,7 @@ const Browse = () => {
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-bold text-white">
                 {selectedQuickFilter === "All Offers" 
-                  ? "Insurance Offers" 
+                  ? "All Offers" 
                   : selectedQuickFilter === "insurance"
                     ? "Insurance Offers"
                     : selectedQuickFilter === "Amount"
@@ -1224,7 +1259,7 @@ const Browse = () => {
                         ? `${selectedQuickFilter} Offers` 
                         : selectedNetworkFilter 
                           ? `Offers for ${selectedNetworkFilter}` 
-                          : "Insurance Offers"}
+                          : "🔥 Top Offers"}
               </h2>
             </div>
 
@@ -1367,7 +1402,7 @@ const Browse = () => {
           )}
         </div>
 
-        {/* Networks Sidebar */}
+        {/* Networks Sidebar - MODIFIED: Show only icons */}
         <div className="w-full lg:w-80 flex-shrink-0 order-last lg:order-none">
           <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden">
             {/* Sidebar Banners */}
@@ -1396,94 +1431,37 @@ const Browse = () => {
               </div>
             </div>
             
-            <div className="p-3 border-b border-gray-700 flex items-center justify-between">
-              <h2 className="font-medium text-white flex items-center gap-2 text-sm">
-                All Networks
-                {!showAllNetworks && networksToDisplay.length > NETWORKS_DISPLAY_LIMIT && (
-                  <span className="text-xs text-gray-400">
-                    ({NETWORKS_DISPLAY_LIMIT} of {networksToDisplay.length})
-                  </span>
-                )}
-              </h2>
-              {networksToDisplay.length > NETWORKS_DISPLAY_LIMIT && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs text-blue-400 hover:text-blue-300 hover:bg-gray-800 p-1"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowAllNetworks(!showAllNetworks);
-                  }}
-                >
-                  {showAllNetworks ? (
-                    <>
-                      <ChevronUp className="w-3 h-3 mr-1" />
-                      Show Less
-                    </>
-                  ) : (
-                    <>
-                      <ChevronDown className="w-3 h-3 mr-1" />
-                      Show All ({networksToDisplay.length})
-                    </>
-                  )}
-                </Button>
-              )}
+            <div className="p-3 border-b border-gray-700">
+              <h2 className="font-medium text-white text-sm">All Networks</h2>
             </div>
             
-            <div className="space-y-0">
-              {loadingNetworks ? (
-                <div className="text-center py-4 text-gray-400">Loading networks...</div>
-              ) : sidebarNetworksToDisplay.length === 0 ? (
-                <div className="text-center py-4 text-gray-400">No networks found.</div>
-              ) : (
-                sidebarNetworksToDisplay.map((network) => (
-                  <div 
-                    key={network.id} 
-                    className="p-3 border-b border-gray-700 last:border-b-0 hover:bg-gray-800 transition-colors"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="flex items-center gap-2">
-                      <img 
-                        src={network.logo_url || `https://placehold.co/32x32/333333/666666?text=${network.name.charAt(0)}`}
+            <div className="p-3">
+              <div className="grid grid-cols-4 gap-3">
+                {loadingNetworks ? (
+                  <div className="text-center py-4 text-gray-400 col-span-4">Loading networks...</div>
+                ) : networksToDisplay.length === 0 ? (
+                  <div className="text-center py-4 text-gray-400 col-span-4">No networks found.</div>
+                ) : (
+                  networksToDisplay.map((network) => (
+                    <div
+                      key={network.id}
+                      className="flex flex-col items-center"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedNetworkFilter(network.name);
+                        setCurrentPage(1);
+                      }}
+                      title={`${network.name} (${offersCountByNetwork[network.id] || 0} offers)`}
+                    >
+                      <img
+                        src={network.logo_url || `https://placehold.co/40x40/333333/666666?text=${network.name.charAt(0)}`}
                         alt={network.name}
-                        className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                        className="w-10 h-10 rounded-full object-cover cursor-pointer"
                       />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <h3 
-                            className="font-medium text-white truncate cursor-pointer hover:underline text-sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedNetworkFilter(network.name);
-                              setCurrentPage(1);
-                            }}
-                          >
-                            {getDisplayValue(network.name, "Unnamed Network")}
-                          </h3>
-                          <Button 
-                            size="sm" 
-                            className="bg-primary hover:bg-primary-hover text-white text-xs px-2 py-1"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedNetworkFilter(network.name);
-                              setCurrentPage(1);
-                            }}
-                          >
-                            View Offers
-                          </Button>
-                        </div>
-                        <div className="text-xs text-gray-400 mb-1">
-                          {getDisplayValue(network.categories?.[0], "N/A")} • {getDisplayValue(network.type, "Unknown")}
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-gray-400">
-                          <span>{offersCountByNetwork[network.id] || 0} offers</span> 
-                          <span>{getDisplayValue(network.payment_frequency, "Unknown")}</span>
-                        </div>
-                      </div>
                     </div>
-                  </div>
-                ))
-              )}
+                  ))
+                )}
+              </div>
             </div>
           </div>
         </div>

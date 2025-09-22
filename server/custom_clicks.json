@@ -76,21 +76,21 @@
     "click_count": 2
   },
   {
-    "id": "1757325496034_4qh89fk4d",
+    "id": "1758454987378_vq4dfl8zq",
     "banner_id": "cd9e78cf-9835-43de-b8bf-8faac5683601",
     "banner_title": "cd9e78cf-9835-43de-b8bf-8faac5683601",
     "section": "top",
     "link_url": "https://sweeps-one.com",
     "page": "/",
-    "browser": "Chrome",
+    "browser": "Edge",
     "country": "IN",
     "ip": "127.0.0.1",
     "time_spent_minutes": 0,
     "time_spent_seconds": 0,
-    "clicked_at": "2025-09-08T09:58:14.845Z",
-    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "clicked_at": "2025-09-21T11:43:04.417Z",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0",
     "first_clicked_at": "2025-09-06T05:59:31.136Z",
-    "click_count": 3
+    "click_count": 4
   },
   {
     "id": "1757479707245_l2z8l0h0e",
@@ -376,6 +376,23 @@
     "clicked_at": "2025-09-12T10:05:12.318Z",
     "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0",
     "first_clicked_at": "2025-09-12T10:05:12.318Z",
+    "click_count": 1
+  },
+  {
+    "id": "1758455364297_rj45zonsd",
+    "banner_id": "02b27da3-72ae-49e7-abca-c7e892ada7de",
+    "banner_title": "02b27da3-72ae-49e7-abca-c7e892ada7de",
+    "section": "top",
+    "link_url": "https://paysale.com/",
+    "page": "/",
+    "browser": "Edge",
+    "country": "IN",
+    "ip": "127.0.0.1",
+    "time_spent_minutes": 6,
+    "time_spent_seconds": 16,
+    "clicked_at": "2025-09-21T11:49:23.088Z",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0",
+    "first_clicked_at": "2025-09-21T11:49:23.088Z",
     "click_count": 1
   }
 ]
