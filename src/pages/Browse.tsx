@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { ChevronDown, Search, ChevronUp, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronDown, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Footer from "@/components/Footer";
 import TopBar from "@/components/TopBar";
@@ -48,6 +48,7 @@ interface Offer {
     name: string;
     logo_url: string;
   };
+  click_count?: number;
 }
 
 interface Banner {
@@ -75,9 +76,6 @@ interface BannerRotation {
 const RAW_TRACKING = (import.meta as any).env?.VITE_TRACKING_API;
 const TRACKING_API =
   RAW_TRACKING && RAW_TRACKING !== "/api" ? RAW_TRACKING.replace(/\/$/, "") : "";
-
-// use like: fetch(`${TRACKING_API}/api/custom-clicks`)
-// if TRACKING_API === "" the fetch becomes "/api/custom-clicks" (works with dev proxy)
 
 // Enhanced logging function with better error handling
 async function logCustomClick({
@@ -324,6 +322,7 @@ const Browse = () => {
   const [selectedOfferCategory, setSelectedOfferCategory] = useState<string>("🔥 Top Offers");
   // REMOVED INSURANCE DEFAULT
   const [selectedQuickFilter, setSelectedQuickFilter] = useState<string>("");
+  const [sortBy, setSortBy] = useState<string>("payout"); // New state for sorting
 
   const [allOffers, setAllOffers] = useState<Offer[]>([]);
   const [allNetworks, setAllNetworks] = useState<Network[]>([]);
@@ -346,6 +345,16 @@ const Browse = () => {
   const quickFilterOptions = [
     "All Offers", "Amount", "Date Added", "Duplicates", "Crypto", "Dating", "Gambling", "insurance", "Game", "COD", "Sweepstakes", 
     "SOI", "DOI", "CPA", "CPL", "CPI"
+  ];
+
+  // Sorting options
+  const sortOptions = [
+    { value: "payout", label: "Highest Payout" },
+    { value: "name", label: "Name (A-Z)" },
+    { value: "date", label: "Date Added (Newest)" },
+    { value: "clicks", label: "Highest Clicks" },
+    { value: "cpa", label: "CPA Offers" },
+    { value: "cpl", label: "CPL Offers" }
   ];
 
   // Function to handle background click with proper tracking
@@ -430,6 +439,11 @@ const Browse = () => {
     }
   };
 
+  const handleSortChange = (value: string) => {
+    setSortBy(value);
+    setCurrentPage(1);
+  };
+
   useEffect(() => {
     const fetchOffers = async () => {
       setLoadingOffers(true);
@@ -441,7 +455,13 @@ const Browse = () => {
 
         if (error) throw error;
         
-        setAllOffers(data || []);
+        // Add random click counts for demonstration
+        const offersWithClicks = (data || []).map(offer => ({
+          ...offer,
+          click_count: Math.floor(Math.random() * 1000) // Random click count for demo
+        }));
+        
+        setAllOffers(offersWithClicks);
 
         const counts: Record<string, number> = {};
         (data || []).forEach(offer => {
@@ -715,42 +735,66 @@ const Browse = () => {
                searchableText.includes("gaming") || 
                searchableText.includes("mobile game") ||
                searchableText.includes("video game") ||
-               searchableText.includes("app game");
+               searchableText.includes("app game") ||
+               offerVerticals.includes("game") ||
+               offerTags.includes("game");
       
       case "cod":
         return searchableText.includes("cod") || 
                searchableText.includes("call of duty") ||
-               searchableText.includes("cash on delivery");
+               searchableText.includes("cash on delivery") ||
+               offerVerticals.includes("cod") ||
+               offerTags.includes("cod");
       
       case "sweepstakes":
         return searchableText.includes("sweepstakes") || 
                searchableText.includes("sweeps") || 
                searchableText.includes("contest") ||
                searchableText.includes("giveaway") ||
-               searchableText.includes("prize");
+               searchableText.includes("prize") ||
+               offerVerticals.includes("sweepstakes") ||
+               offerTags.includes("sweepstakes");
       
       case "soi":
-        return offerType.includes("soi") || 
+      case "single opt-in":
+      case "single opt in":
+        return offerType.toLowerCase().includes("soi") || 
                searchableText.includes("single opt") ||
-               searchableText.includes("single opt-in");
+               searchableText.includes("single opt-in") ||
+               offerVerticals.toLowerCase().includes("soi") ||
+               offerTags.toLowerCase().includes("soi");
       
       case "doi":
-        return offerType.includes("doi") || 
+      case "double opt-in":
+      case "double opt in":
+        return offerType.toLowerCase().includes("doi") || 
                searchableText.includes("double opt") ||
-               searchableText.includes("double opt-in");
+               searchableText.includes("double opt-in") ||
+               offerVerticals.toLowerCase().includes("doi") ||
+               offerTags.toLowerCase().includes("doi");
       
       case "cpa":
-        return offerType.includes("cpa") || 
+      case "cost per action":
+      case "cost per acquisition":
+        return offerType.toLowerCase().includes("cpa") || 
                searchableText.includes("cost per action") ||
-               searchableText.includes("cost per acquisition");
+               searchableText.includes("cost per acquisition") ||
+               offerVerticals.toLowerCase().includes("cpa") ||
+               offerTags.toLowerCase().includes("cpa");
       
       case "cpl":
-        return offerType.includes("cpl") || 
-               searchableText.includes("cost per lead");
+      case "cost per lead":
+        return offerType.toLowerCase().includes("cpl") || 
+               searchableText.includes("cost per lead") ||
+               offerVerticals.toLowerCase().includes("cpl") ||
+               offerTags.toLowerCase().includes("cpl");
       
       case "cpi":
-        return offerType.includes("cpi") || 
-               searchableText.includes("cost per install");
+      case "cost per install":
+        return offerType.toLowerCase().includes("cpi") || 
+               searchableText.includes("cost per install") ||
+               offerVerticals.toLowerCase().includes("cpi") ||
+               offerTags.toLowerCase().includes("cpi");
       
       default:
         // For any other filter, do a general search
@@ -812,7 +856,7 @@ const Browse = () => {
     } else if (selectedOfferCategory !== "All") {
       filtered = filtered.filter(offer => {
         const verticals = toStringArray(offer.vertical, false);
-        return verticals.includes(selectedOfferCategory);
+        return verticals.length === 0 || verticals.includes(selectedOfferCategory);
       });
     }
 
@@ -840,6 +884,51 @@ const Browse = () => {
         const aName = getDisplayValue(a.name, "").toLowerCase();
         const bName = getDisplayValue(b.name, "").toLowerCase();
         return aName.localeCompare(bName);
+      });
+    }
+
+    // Apply sorting based on the sortBy state
+    if (sortBy === "payout") {
+      filtered = filtered.sort((a, b) => {
+        const aAmount = typeof a.payout_amount === 'number' ? a.payout_amount : parseFloat(String(a.payout_amount)) || 0;
+        const bAmount = typeof b.payout_amount === 'number' ? b.payout_amount : parseFloat(String(b.payout_amount)) || 0;
+        return bAmount - aAmount; // Highest payout first
+      });
+    } else if (sortBy === "name") {
+      filtered = filtered.sort((a, b) => {
+        const aName = getDisplayValue(a.name, "").toLowerCase();
+        const bName = getDisplayValue(b.name, "").toLowerCase();
+        return aName.localeCompare(bName); // Alphabetical order
+      });
+    } else if (sortBy === "date") {
+      filtered = filtered.sort((a, b) => {
+        const aDate = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const bDate = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return bDate - aDate; // Newest first
+      });
+    } else if (sortBy === "clicks") {
+      filtered = filtered.sort((a, b) => {
+        const aClicks = a.click_count || 0;
+        const bClicks = b.click_count || 0;
+        return bClicks - aClicks; // Highest clicks first
+      });
+    } else if (sortBy === "cpa") {
+      filtered = filtered.filter(offer => {
+        const type = getDisplayValue(offer.type, "").toLowerCase();
+        return type.includes("cpa") || matchesFilter(offer, "cpa");
+      }).sort((a, b) => {
+        const aAmount = typeof a.payout_amount === 'number' ? a.payout_amount : parseFloat(String(a.payout_amount)) || 0;
+        const bAmount = typeof b.payout_amount === 'number' ? b.payout_amount : parseFloat(String(b.payout_amount)) || 0;
+        return bAmount - aAmount; // Highest payout first
+      });
+    } else if (sortBy === "cpl") {
+      filtered = filtered.filter(offer => {
+        const type = getDisplayValue(offer.type, "").toLowerCase();
+        return type.includes("cpl") || matchesFilter(offer, "cpl");
+      }).sort((a, b) => {
+        const aAmount = typeof a.payout_amount === 'number' ? a.payout_amount : parseFloat(String(a.payout_amount)) || 0;
+        const bAmount = typeof b.payout_amount === 'number' ? b.payout_amount : parseFloat(String(b.payout_amount)) || 0;
+        return bAmount - aAmount; // Highest payout first
       });
     }
 
@@ -1038,6 +1127,45 @@ const Browse = () => {
     );
   };
 
+  const SortDropdown = () => {
+    return (
+      <div className="relative group" onClick={(e) => e.stopPropagation()}>
+        <Button 
+          variant="outline" 
+          className="flex items-center gap-1 px-2 py-1 bg-gray-900 border-gray-700 text-white hover:bg-gray-800 transition-colors text-xs sm:text-sm"
+        >
+          <span className="text-xs font-medium">
+            {sortOptions.find(opt => opt.value === sortBy)?.label || "Sort By"}
+          </span>
+          <ChevronDown className="w-3 h-3 text-white" />
+        </Button>
+        <div className="absolute top-full left-0 mt-1 w-48 bg-gray-900 border border-gray-700 rounded-lg shadow-lg z-50 hidden group-hover:block">
+          <div className="p-2">
+            <div className="max-h-64 overflow-y-auto">
+              {sortOptions.map((option) => (
+                <div
+                  key={option.value}
+                  className="flex items-center justify-between px-3 py-2 hover:bg-gray-800 cursor-pointer rounded text-sm text-white"
+                  onClick={() => handleSortChange(option.value)}
+                >
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input 
+                      type="radio" 
+                      className="w-4 h-4"
+                      checked={sortBy === option.value}
+                      readOnly
+                    />
+                    {option.label}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const Pagination = () => {
     if (totalPages <= 1) return null;
 
@@ -1182,6 +1310,9 @@ const Browse = () => {
             onSelect={setSelectedVertical}
           />
           
+          {/* Sort Dropdown */}
+          <SortDropdown />
+          
           {/* Global Search Bar */}
           <div className="relative w-[50%] max-w-[400px]">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -1261,6 +1392,10 @@ const Browse = () => {
                           ? `Offers for ${selectedNetworkFilter}` 
                           : "🔥 Top Offers"}
               </h2>
+              <div className="text-sm text-gray-400">
+                {offersToDisplay.length} offers found
+                {sortBy !== "payout" && ` • Sorted by ${sortOptions.find(opt => opt.value === sortBy)?.label}`}
+              </div>
             </div>
 
             {loadingOffers ? (
@@ -1361,6 +1496,12 @@ const Browse = () => {
                               ? offer.payout_amount.toFixed(2)
                               : getDisplayValue(offer.payout_amount, "0.00")}
                           </div>
+                          {/* Show click count if sorting by clicks */}
+                          {sortBy === "clicks" && (
+                            <div className="text-xs text-gray-400 mt-1">
+                              {offer.click_count || 0} clicks
+                            </div>
+                          )}
                           {/* Always show date for every offer */}
                           <div className="text-xs text-gray-400 mt-1">
                             {formatDate(offer.created_at)}
