@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { ChevronDown, Search, ChevronLeft, ChevronRight, ExternalLink, Star, Users, Clock, Target } from "lucide-react";
+import { ChevronDown, Search, ChevronLeft, ChevronRight, ExternalLink, Star, Users, Clock, Target, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Footer from "@/components/Footer";
 import TopBar from "@/components/TopBar";
@@ -230,8 +230,8 @@ const BannerDisplay = ({
     // Log to custom tracking system
     await logCustomClick({ banner, linkOpened: linkToOpen, section });
 
-    // Open the link
-    window.open(linkToOpen, "_blank", "noopener,noreferrer");
+    // Open the link in the same tab like AffPlus
+    window.location.href = linkToOpen;
 
     // Log to Supabase (existing system)
     await logBannerClick(banner.id);
@@ -279,7 +279,8 @@ const SidebarBannerDisplay = ({ banners }: { banners: Banner[] }) => {
 
     await logCustomClick({ banner, linkOpened: linkToOpen, section: "sidebar" });
 
-    window.open(linkToOpen, "_blank", "noopener,noreferrer");
+    // Open in same tab like AffPlus
+    window.location.href = linkToOpen;
     await logBannerClick(banner.id);
 
     setClickIndexMap((prev) => ({
@@ -341,7 +342,7 @@ const StarRating = ({ rating, totalRatings, size = 14 }: { rating: number; total
   );
 };
 
-// Join Button Component similar to AffPlus
+// Join Button Component similar to AffPlus - Opens in same tab
 const JoinButton = ({ 
   offer, 
   network, 
@@ -357,7 +358,8 @@ const JoinButton = ({
     e.stopPropagation();
     
     if (offer.landing_page_url) {
-      window.open(offer.landing_page_url, "_blank", "noopener,noreferrer");
+      // Open in same tab like AffPlus
+      window.location.href = offer.landing_page_url;
       
       // Log the join action
       console.log(`User joined offer: ${offer.name}`);
@@ -392,6 +394,258 @@ const JoinButton = ({
   );
 };
 
+// Network Page Component
+const NetworkPage = ({ 
+  network, 
+  offers, 
+  onBack 
+}: { 
+  network: Network; 
+  offers: Offer[]; 
+  onBack: () => void;
+}) => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const networkOffers = offers.filter(offer => offer.network_id === network.id);
+
+  const handleOfferClick = (offerId: string) => {
+    navigate(`/offer/${offerId}`);
+  };
+
+  const handleJoinClick = (offer: Offer, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (offer.landing_page_url) {
+      // Open in same tab like AffPlus
+      window.location.href = offer.landing_page_url;
+    } else {
+      toast({
+        title: "No Landing Page Available",
+        description: "This offer does not have a landing page configured.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <div className="min-h-screen text-white bg-cover bg-center">
+      {/* Back Button */}
+      <div className="bg-gray-900 border-b border-gray-700 px-6 py-4">
+        <Button
+          onClick={onBack}
+          variant="outline"
+          className="flex items-center gap-2 bg-gray-800 text-white border-gray-700 hover:bg-gray-700"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to All Networks
+        </Button>
+      </div>
+
+      {/* Network Header */}
+      <div className="bg-gray-900/80 backdrop-blur-sm border-b border-gray-700 px-6 py-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+            <img
+              src={network.logo_url || `https://placehold.co/120x120/333333/666666?text=${network.name.charAt(0)}`}
+              alt={network.name}
+              className="w-24 h-24 rounded-lg object-cover"
+            />
+            <div className="flex-1">
+              <div className="flex items-center gap-4 mb-2">
+                <h1 className="text-3xl font-bold text-white">{network.name}</h1>
+                {network.rating && (
+                  <StarRating rating={network.rating} totalRatings={network.total_ratings} size={20} />
+                )}
+              </div>
+              
+              <p className="text-gray-300 mb-4">{network.description || "No description available."}</p>
+              
+              <div className="flex flex-wrap gap-4 text-sm text-gray-400">
+                {network.payment_frequency && (
+                  <div>
+                    <span className="font-medium text-white">Payment:</span> {network.payment_frequency}
+                  </div>
+                )}
+                {network.payment_methods && network.payment_methods.length > 0 && (
+                  <div>
+                    <span className="font-medium text-white">Methods:</span> {network.payment_methods.join(", ")}
+                  </div>
+                )}
+                {network.categories && network.categories.length > 0 && (
+                  <div>
+                    <span className="font-medium text-white">Categories:</span> {network.categories.join(", ")}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {network.website_link && (
+              <Button
+                onClick={() => window.location.href = network.website_link}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Visit Website
+                <ExternalLink className="w-4 h-4 ml-2" />
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Network Offers */}
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-white">
+            Offers from {network.name} ({networkOffers.length})
+          </h2>
+        </div>
+
+        {networkOffers.length === 0 ? (
+          <div className="text-center py-12 text-gray-400">
+            <p className="text-lg">No offers available for this network.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {networkOffers.map((offer) => (
+              <Card
+                key={offer.id}
+                className={`p-4 w-full hover:shadow-md transition-shadow border-gray-800 cursor-pointer ${
+                  offer.is_active ? "bg-gray-900 hover:bg-gray-850" : "bg-gray-800"
+                }`}
+                onClick={() => handleOfferClick(offer.id)}
+              >
+                <div className="flex items-center justify-between gap-4">
+                  {/* Left Side - Offer Info */}
+                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                    {offer.image_url && (
+                      <img
+                        src={offer.image_url}
+                        alt={offer.name}
+                        className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+                      />
+                    )}
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-white text-lg truncate">
+                          {offer.name}
+                        </h3>
+                        {!offer.is_active && (
+                          <Badge
+                            variant="secondary"
+                            className="text-xs bg-gray-700 text-white px-2 py-0"
+                          >
+                            Inactive
+                          </Badge>
+                        )}
+                        {offer.is_featured && (
+                          <Badge
+                            variant="default"
+                            className="text-xs bg-yellow-600 text-white px-2 py-0"
+                          >
+                            Featured
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {offer.geo_targets && Array.isArray(offer.geo_targets) && offer.geo_targets.slice(0, 3).map((geo, idx) => (
+                          <Badge
+                            key={`geo-${idx}`}
+                            variant="outline"
+                            className="text-xs px-2 py-0 border-gray-600 text-gray-300 bg-gray-600/10"
+                          >
+                            {geo}
+                          </Badge>
+                        ))}
+                        
+                        {offer.vertical && Array.isArray(offer.vertical) && offer.vertical.slice(0, 2).map((vertical, idx) => (
+                          <Badge
+                            key={`vertical-${idx}`}
+                            variant="outline"
+                            className="text-xs px-2 py-0 border-green-600 text-green-300 bg-green-600/10"
+                          >
+                            {vertical}
+                          </Badge>
+                        ))}
+                        
+                        {offer.type && (
+                          <Badge
+                            variant="outline"
+                            className="text-xs px-2 py-0 border-blue-600 text-blue-300 bg-blue-600/10"
+                          >
+                            {offer.type}
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center gap-4 text-sm text-gray-400">
+                        {offer.conversion_rate && (
+                          <div className="flex items-center gap-1">
+                            <Target size={12} />
+                            <span>{offer.conversion_rate.toFixed(1)}% CR</span>
+                          </div>
+                        )}
+
+                        {offer.last_updated && (
+                          <div className="flex items-center gap-1">
+                            <Clock size={12} />
+                            <span>Updated {new Date(offer.last_updated).toLocaleDateString()}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Side - Payout and Action Buttons */}
+                  <div className="flex items-center gap-4 flex-shrink-0">
+                    <div className="text-right">
+                      <div className="text-xl font-bold text-green-400">
+                        {offer.payout_currency || "USD"} {typeof offer.payout_amount === "number"
+                          ? offer.payout_amount.toFixed(2)
+                          : offer.payout_amount}
+                      </div>
+                      
+                      {offer.epc && (
+                        <div className="text-sm text-blue-400 mt-1">
+                          EPC: ${offer.epc.toFixed(2)}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex flex-col gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOfferClick(offer.id);
+                        }}
+                      >
+                        Details
+                      </Button>
+                      
+                      <Button
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                        onClick={(e) => handleJoinClick(offer, e)}
+                      >
+                        Join Offer
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const Browse = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -402,11 +656,11 @@ const Browse = () => {
   const [selectedNetworkFilter, setSelectedNetworkFilter] = useState<string | null>(null);
   const [selectedGeo, setSelectedGeo] = useState<string | null>(null);
   const [selectedVertical, setSelectedVertical] = useState<string | null>(null);
-  // REMOVED INSURANCE DEFAULT
   const [selectedOfferCategory, setSelectedOfferCategory] = useState<string>("🔥 Top Offers");
-  // REMOVED INSURANCE DEFAULT
   const [selectedQuickFilter, setSelectedQuickFilter] = useState<string>("");
-  const [sortBy, setSortBy] = useState<string>("payout"); // New state for sorting
+  const [sortBy, setSortBy] = useState<string>("payout");
+  const [viewMode, setViewMode] = useState<"browse" | "network">("browse");
+  const [selectedNetwork, setSelectedNetwork] = useState<Network | null>(null);
 
   const [allOffers, setAllOffers] = useState<Offer[]>([]);
   const [allNetworks, setAllNetworks] = useState<Network[]>([]);
@@ -423,9 +677,9 @@ const Browse = () => {
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [offersPerPage] = useState(15); // Increased from 10 to 15 since cards are smaller
+  const [offersPerPage] = useState(15);
 
-  // Quick filter options - ALL OFFERS FIRST, INSURANCE IN MIDDLE, DUPLICATES ADDED
+  // Quick filter options
   const quickFilterOptions = [
     "All Offers", "Amount", "Date Added", "Duplicates", "Crypto", "Dating", "Gambling", "insurance", "Game", "COD", "Sweepstakes", 
     "SOI", "DOI", "CPA", "CPL", "CPI"
@@ -461,7 +715,8 @@ const Browse = () => {
         section: "background",
       });
 
-      window.open(linkToOpen, "_blank", "noopener,noreferrer");
+      // Open in same tab like AffPlus
+      window.location.href = linkToOpen;
       
       setClickIndexMap(prev => ({
         ...prev,
@@ -475,18 +730,16 @@ const Browse = () => {
     setCurrentPage(1);
   };
 
-  // Function to handle network website click
-  const handleNetworkWebsiteClick = (network: Network, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (network.website_link) {
-      window.open(network.website_link, "_blank", "noopener,noreferrer");
-    } else {
-      toast({
-        title: "No Website Available",
-        description: `${network.name} does not have a website link configured.`,
-        variant: "destructive",
-      });
-    }
+  // Function to handle network page navigation
+  const handleNetworkPageClick = (network: Network) => {
+    setSelectedNetwork(network);
+    setViewMode("network");
+  };
+
+  // Function to go back to browse view
+  const handleBackToBrowse = () => {
+    setViewMode("browse");
+    setSelectedNetwork(null);
   };
 
   // Function to detect duplicate offers
@@ -544,17 +797,6 @@ const Browse = () => {
     setCurrentPage(1);
   };
 
-  // Function to generate random rating data (for demo purposes)
-  const generateRatingData = () => {
-    return {
-      rating: Math.random() * 2 + 3, // Random between 3.0 and 5.0
-      total_ratings: Math.floor(Math.random() * 100) + 1,
-      conversion_rate: Math.random() * 10 + 5, // Random between 5% and 15%
-      epc: Math.random() * 5 + 1, // Random between 1.00 and 6.00
-      last_updated: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString() // Random date in last 30 days
-    };
-  };
-
   useEffect(() => {
     const fetchOffers = async () => {
       setLoadingOffers(true);
@@ -566,14 +808,8 @@ const Browse = () => {
 
         if (error) throw error;
         
-        // Add random click counts and rating data for demonstration
-        const offersWithEnhancedData = (data || []).map(offer => ({
-          ...offer,
-          click_count: Math.floor(Math.random() * 1000), // Random click count for demo
-          ...generateRatingData()
-        }));
-        
-        setAllOffers(offersWithEnhancedData);
+        // Use only your actual data, no demo data
+        setAllOffers(data || []);
 
         const counts: Record<string, number> = {};
         (data || []).forEach(offer => {
@@ -608,14 +844,8 @@ const Browse = () => {
 
         if (error) throw error;
         
-        // Add rating data to networks
-        const networksWithRatings = (data || []).map(network => ({
-          ...network,
-          rating: Math.random() * 2 + 3, // Random between 3.0 and 5.0
-          total_ratings: Math.floor(Math.random() * 500) + 10
-        }));
-        
-        setAllNetworks(networksWithRatings);
+        // Use only your actual data, no demo data
+        setAllNetworks(data || []);
       } catch (error: any) {
         console.error("Error fetching networks:", error.message);
         toast({
@@ -815,7 +1045,7 @@ const Browse = () => {
     })
   ))];
   
-  // MODIFIED: Include insurance in the offer categories but removed as default
+  // Include insurance in the offer categories but removed as default
   const offerCategories = ["🔥 Top Offers", "All", "insurance", ...Array.from(new Set(
     allOffers.flatMap(o => {
       const verticals = toStringArray(o.vertical, false);
@@ -971,7 +1201,7 @@ const Browse = () => {
       filtered = filtered.filter(offer => matchesFilter(offer, selectedQuickFilter));
     }
 
-    // MODIFIED: Handle special cases for filtering and sorting
+    // Handle special cases for filtering and sorting
     if (selectedOfferCategory === "🔥 Top Offers") {
       // Sort by highest amount first, then by other criteria
       filtered = filtered.sort((a, b) => {
@@ -1381,6 +1611,17 @@ const Browse = () => {
       </div>
     );
   };
+
+  // If we're in network view mode, show the network page
+  if (viewMode === "network" && selectedNetwork) {
+    return (
+      <NetworkPage 
+        network={selectedNetwork} 
+        offers={allOffers} 
+        onBack={handleBackToBrowse}
+      />
+    );
+  }
   
   return (
     <div
@@ -1606,17 +1847,21 @@ const Browse = () => {
                               className="text-xs text-blue-400 cursor-pointer hover:underline font-medium"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleNetworkClick(offer.network_id, getDisplayValue(offer.networks?.name, ""));
+                                // Navigate to network page instead of filtering
+                                const network = allNetworks.find(n => n.id === offer.network_id);
+                                if (network) {
+                                  handleNetworkPageClick(network);
+                                }
                               }}
                             >
                               {getDisplayValue(offer.networks?.name, "Unknown Network")}
                             </span>
                             
-                            {/* Rating Display */}
-                            {(offer.rating || offer.networks?.rating) && (
+                            {/* Rating Display - Only show if data exists */}
+                            {offer.rating && (
                               <StarRating 
-                                rating={offer.rating || offer.networks?.rating || 0} 
-                                totalRatings={offer.total_ratings || offer.networks?.total_ratings}
+                                rating={offer.rating} 
+                                totalRatings={offer.total_ratings}
                                 size={12}
                               />
                             )}
@@ -1644,7 +1889,7 @@ const Browse = () => {
                               </Badge>
                             ))}
 
-                            {/* Additional metrics */}
+                            {/* Additional metrics - Only show if data exists */}
                             {offer.conversion_rate && (
                               <div className="flex items-center gap-1">
                                 <Target size={10} />
@@ -1702,7 +1947,7 @@ const Browse = () => {
                             Details
                           </Button>
                           
-                          {/* Join Button - AffPlus style */}
+                          {/* Join Button - AffPlus style - Opens in same tab */}
                           <JoinButton offer={offer} network={offer.networks} variant="compact" />
                         </div>
                       </div>
@@ -1730,7 +1975,7 @@ const Browse = () => {
           )}
         </div>
 
-        {/* Networks Sidebar - MODIFIED: Network names are now clickable to open website */}
+        {/* Networks Sidebar - Network names are now clickable to open network page */}
         <div className="w-full lg:w-80 flex-shrink-0 order-last lg:order-none">
           <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden">
             {/* Sidebar Banners */}
@@ -1773,32 +2018,25 @@ const Browse = () => {
                   networksToDisplay.map((network) => (
                     <div
                       key={network.id}
-                      className="flex flex-col items-center"
+                      className="flex flex-col items-center cursor-pointer group"
                       title={network.name}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleNetworkPageClick(network);
+                      }}
                     >
                       <img
                         src={network.logo_url || `https://placehold.co/40x40/333333/666666?text=${network.name.charAt(0)}`}
                         alt={network.name}
-                        className="w-10 h-10 rounded-lg object-cover cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleNetworkClick(network.id, network.name);
-                        }}
+                        className="w-10 h-10 rounded-lg object-cover group-hover:scale-110 transition-transform"
                       />
-                      <div 
-                        className="flex items-center gap-1 cursor-pointer hover:underline group mt-1"
-                        onClick={(e) => handleNetworkWebsiteClick(network, e)}
-                        title={`Visit ${network.name} website`}
-                      >
+                      <div className="flex items-center gap-1 group-hover:underline mt-1">
                         <span className="text-xs text-white truncate w-full text-center">
                           {network.name}
                         </span>
-                        {network.website_link && (
-                          <ExternalLink className="w-3 h-3 text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        )}
                       </div>
                       
-                      {/* Network Rating */}
+                      {/* Network Rating - Only show if data exists */}
                       {network.rating && (
                         <StarRating 
                           rating={network.rating} 
