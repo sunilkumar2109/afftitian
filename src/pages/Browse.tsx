@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { ChevronDown, Search, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
+import { ChevronDown, Search, ChevronLeft, ChevronRight, ExternalLink, Star, Users, Clock, Target } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Footer from "@/components/Footer";
 import TopBar from "@/components/TopBar";
@@ -24,6 +24,8 @@ interface Network {
   is_active: boolean;
   is_featured: boolean;
   priority_order: number;
+  rating?: number;
+  total_ratings?: number;
 }
 
 interface Offer {
@@ -47,8 +49,15 @@ interface Offer {
     id: string;
     name: string;
     logo_url: string;
+    rating?: number;
+    total_ratings?: number;
   };
   click_count?: number;
+  rating?: number;
+  total_ratings?: number;
+  conversion_rate?: number;
+  epc?: number;
+  last_updated?: string;
 }
 
 interface Banner {
@@ -308,6 +317,81 @@ const SidebarBannerDisplay = ({ banners }: { banners: Banner[] }) => {
   );
 };
 
+// Star Rating Component
+const StarRating = ({ rating, totalRatings, size = 14 }: { rating: number; totalRatings?: number; size?: number }) => {
+  const fullStars = Math.floor(rating);
+  const hasHalfStar = rating % 1 >= 0.5;
+  
+  return (
+    <div className="flex items-center gap-1">
+      <div className="flex">
+        {[...Array(5)].map((_, i) => (
+          <Star
+            key={i}
+            className={`${i < fullStars ? "fill-yellow-400 text-yellow-400" : hasHalfStar && i === fullStars ? "fill-yellow-400 text-yellow-400" : "text-gray-400"}`}
+            size={size}
+          />
+        ))}
+      </div>
+      <span className="text-xs text-gray-300">{rating.toFixed(1)}</span>
+      {totalRatings && (
+        <span className="text-xs text-gray-400">({totalRatings})</span>
+      )}
+    </div>
+  );
+};
+
+// Join Button Component similar to AffPlus
+const JoinButton = ({ 
+  offer, 
+  network, 
+  variant = "default" 
+}: { 
+  offer: Offer; 
+  network?: Network; 
+  variant?: "default" | "compact"; 
+}) => {
+  const { toast } = useToast();
+  
+  const handleJoinClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (offer.landing_page_url) {
+      window.open(offer.landing_page_url, "_blank", "noopener,noreferrer");
+      
+      // Log the join action
+      console.log(`User joined offer: ${offer.name}`);
+    } else {
+      toast({
+        title: "No Landing Page Available",
+        description: "This offer does not have a landing page configured.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (variant === "compact") {
+    return (
+      <Button
+        size="sm"
+        className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 font-medium"
+        onClick={handleJoinClick}
+      >
+        Join
+      </Button>
+    );
+  }
+
+  return (
+    <Button
+      className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md"
+      onClick={handleJoinClick}
+    >
+      Join Offer
+    </Button>
+  );
+};
+
 const Browse = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -354,7 +438,8 @@ const Browse = () => {
     { value: "date", label: "Date Added (Newest)" },
     { value: "clicks", label: "Highest Clicks" },
     { value: "cpa", label: "CPA Offers" },
-    { value: "cpl", label: "CPL Offers" }
+    { value: "cpl", label: "CPL Offers" },
+    { value: "rating", label: "Highest Rating" }
   ];
 
   // Function to handle background click with proper tracking
@@ -459,6 +544,17 @@ const Browse = () => {
     setCurrentPage(1);
   };
 
+  // Function to generate random rating data (for demo purposes)
+  const generateRatingData = () => {
+    return {
+      rating: Math.random() * 2 + 3, // Random between 3.0 and 5.0
+      total_ratings: Math.floor(Math.random() * 100) + 1,
+      conversion_rate: Math.random() * 10 + 5, // Random between 5% and 15%
+      epc: Math.random() * 5 + 1, // Random between 1.00 and 6.00
+      last_updated: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString() // Random date in last 30 days
+    };
+  };
+
   useEffect(() => {
     const fetchOffers = async () => {
       setLoadingOffers(true);
@@ -470,13 +566,14 @@ const Browse = () => {
 
         if (error) throw error;
         
-        // Add random click counts for demonstration
-        const offersWithClicks = (data || []).map(offer => ({
+        // Add random click counts and rating data for demonstration
+        const offersWithEnhancedData = (data || []).map(offer => ({
           ...offer,
-          click_count: Math.floor(Math.random() * 1000) // Random click count for demo
+          click_count: Math.floor(Math.random() * 1000), // Random click count for demo
+          ...generateRatingData()
         }));
         
-        setAllOffers(offersWithClicks);
+        setAllOffers(offersWithEnhancedData);
 
         const counts: Record<string, number> = {};
         (data || []).forEach(offer => {
@@ -510,7 +607,15 @@ const Browse = () => {
           .order('priority_order', { ascending: false });
 
         if (error) throw error;
-        setAllNetworks(data || []);
+        
+        // Add rating data to networks
+        const networksWithRatings = (data || []).map(network => ({
+          ...network,
+          rating: Math.random() * 2 + 3, // Random between 3.0 and 5.0
+          total_ratings: Math.floor(Math.random() * 500) + 10
+        }));
+        
+        setAllNetworks(networksWithRatings);
       } catch (error: any) {
         console.error("Error fetching networks:", error.message);
         toast({
@@ -667,6 +772,26 @@ const Browse = () => {
         month: 'short',
         day: 'numeric'
       });
+    } catch (e) {
+      return "N/A";
+    }
+  };
+
+  const formatRelativeTime = (dateString: string): string => {
+    if (!dateString) return "N/A";
+    
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 0) return "Today";
+      if (diffDays === 1) return "1 day ago";
+      if (diffDays < 7) return `${diffDays} days ago`;
+      if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+      if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+      return `${Math.floor(diffDays / 365)} years ago`;
     } catch (e) {
       return "N/A";
     }
@@ -944,6 +1069,12 @@ const Browse = () => {
         const aAmount = typeof a.payout_amount === 'number' ? a.payout_amount : parseFloat(String(a.payout_amount)) || 0;
         const bAmount = typeof b.payout_amount === 'number' ? b.payout_amount : parseFloat(String(b.payout_amount)) || 0;
         return bAmount - aAmount; // Highest payout first
+      });
+    } else if (sortBy === "rating") {
+      filtered = filtered.sort((a, b) => {
+        const aRating = a.rating || 0;
+        const bRating = b.rating || 0;
+        return bRating - aRating; // Highest rating first
       });
     }
 
@@ -1421,32 +1552,35 @@ const Browse = () => {
               </div>
             ) : (
               <>
-                {/* COMPACT OFFER CARDS - Much smaller height */}
+                {/* COMPACT OFFER CARDS - Much smaller height with AffPlus-like features */}
                 {currentOffers.map((offer) => (
                   <Card
                     key={offer.id}
-                    className={`p-2 w-full hover:shadow-md transition-shadow border-gray-800 ${
-                      offer.is_active ? "bg-gray-900" : "bg-gray-800"
+                    className={`p-3 w-full hover:shadow-md transition-shadow border-gray-800 cursor-pointer ${
+                      offer.is_active ? "bg-gray-900 hover:bg-gray-850" : "bg-gray-800"
                     } max-w-full sm:max-w-[600px] mx-auto`}
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/offer/${offer.id}`);
+                    }}
                   >
                     <div className="flex items-center justify-between gap-3">
                       {/* Left Side - Network Logo and Offer Info */}
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
                         <img
                           src={
                             offer.networks?.logo_url ||
-                            `https://placehold.co/32x32/333333/666666?text=${(
+                            `https://placehold.co/40x40/333333/666666?text=${(
                               offer.networks?.name || "N"
                             ).charAt(0)}`
                           }
                           alt={offer.networks?.name || "Network Logo"}
-                          className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+                          className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
                         />
                         
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1 mb-1">
-                            <h3 className="font-medium text-white text-sm truncate">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-white text-sm truncate">
                               {getDisplayValue(offer.name, "Unnamed Offer")}
                             </h3>
                             {!offer.is_active && (
@@ -1467,9 +1601,9 @@ const Browse = () => {
                             )}
                           </div>
                           
-                          <div className="flex items-center gap-2 text-xs text-gray-400">
+                          <div className="flex items-center gap-2 mb-1">
                             <span 
-                              className="cursor-pointer hover:underline"
+                              className="text-xs text-blue-400 cursor-pointer hover:underline font-medium"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleNetworkClick(offer.network_id, getDisplayValue(offer.networks?.name, ""));
@@ -1478,6 +1612,17 @@ const Browse = () => {
                               {getDisplayValue(offer.networks?.name, "Unknown Network")}
                             </span>
                             
+                            {/* Rating Display */}
+                            {(offer.rating || offer.networks?.rating) && (
+                              <StarRating 
+                                rating={offer.rating || offer.networks?.rating || 0} 
+                                totalRatings={offer.total_ratings || offer.networks?.total_ratings}
+                                size={12}
+                              />
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center gap-2 text-xs text-gray-400">
                             {/* Quick Tags - Only show first 2 */}
                             {toStringArray(offer.geo_targets, false).slice(0, 1).map((geo, idx) => (
                               <Badge
@@ -1498,11 +1643,26 @@ const Browse = () => {
                                 {vertical}
                               </Badge>
                             ))}
+
+                            {/* Additional metrics */}
+                            {offer.conversion_rate && (
+                              <div className="flex items-center gap-1">
+                                <Target size={10} />
+                                <span>{offer.conversion_rate.toFixed(1)}% CR</span>
+                              </div>
+                            )}
+
+                            {offer.last_updated && (
+                              <div className="flex items-center gap-1">
+                                <Clock size={10} />
+                                <span>{formatRelativeTime(offer.last_updated)}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
 
-                      {/* Right Side - Payout and Action Button */}
+                      {/* Right Side - Payout and Action Buttons */}
                       <div className="flex items-center gap-3 flex-shrink-0">
                         <div className="text-right">
                           <div className="text-sm font-bold text-green-400">
@@ -1511,28 +1671,40 @@ const Browse = () => {
                               ? offer.payout_amount.toFixed(2)
                               : getDisplayValue(offer.payout_amount, "0.00")}
                           </div>
+                          
                           {/* Show click count if sorting by clicks */}
                           {sortBy === "clicks" && (
-                            <div className="text-xs text-gray-400 mt-1">
+                            <div className="text-xs text-gray-400 mt-1 flex items-center gap-1 justify-end">
+                              <Users size={10} />
                               {offer.click_count || 0} clicks
                             </div>
                           )}
-                          {/* Always show date for every offer */}
-                          <div className="text-xs text-gray-400 mt-1">
-                            {formatDate(offer.created_at)}
-                          </div>
+                          
+                          {/* EPC if available */}
+                          {offer.epc && (
+                            <div className="text-xs text-blue-400 mt-1">
+                              EPC: ${offer.epc.toFixed(2)}
+                            </div>
+                          )}
                         </div>
                         
-                        <Button
-                          size="sm"
-                          className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/offer/${offer.id}`);
-                          }}
-                        >
-                          View
-                        </Button>
+                        <div className="flex flex-col gap-2">
+                          {/* View Details Button */}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 border-blue-600"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/offer/${offer.id}`);
+                            }}
+                          >
+                            Details
+                          </Button>
+                          
+                          {/* Join Button - AffPlus style */}
+                          <JoinButton offer={offer} network={offer.networks} variant="compact" />
+                        </div>
                       </div>
                     </div>
                   </Card>
@@ -1607,7 +1779,7 @@ const Browse = () => {
                       <img
                         src={network.logo_url || `https://placehold.co/40x40/333333/666666?text=${network.name.charAt(0)}`}
                         alt={network.name}
-                        className="w-10 h-10 rounded-full object-cover cursor-pointer"
+                        className="w-10 h-10 rounded-lg object-cover cursor-pointer"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleNetworkClick(network.id, network.name);
@@ -1625,6 +1797,15 @@ const Browse = () => {
                           <ExternalLink className="w-3 h-3 text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                         )}
                       </div>
+                      
+                      {/* Network Rating */}
+                      {network.rating && (
+                        <StarRating 
+                          rating={network.rating} 
+                          totalRatings={network.total_ratings}
+                          size={10}
+                        />
+                      )}
                     </div>
                   ))
                 )}
