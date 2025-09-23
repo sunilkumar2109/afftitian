@@ -30,11 +30,18 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
   const [loading, setLoading] = useState(false);
   const [fileLoading, setFileLoading] = useState(false);
 
-  // Vertical options - updated with requested values
+  // Offer type options - updated with requested country codes
+  const offerTypeOptions = [
+    "UA", "KE", "ES", "DE", "RU", "GR", "IT", "PL", "RO", "GE", "TR", "QA", 
+    "SK", "PH", "BE", "EG", "PT"
+  ];
+
+  // Vertical options - updated with requested values including nutra and health
   const verticalOptions = [
     "Crypto", "Dating", "Gambling", "Game", "COD", "Sweepstakes", "Insurance",
     "Incent", "Loan", "App", "Streaming", "Subscription", "Shopping", "HealthFree",
-    "Trial", "RevShare", "Gaming", "Direct", "Email Optin", "Mobile", "Social", "Supplement"
+    "Trial", "RevShare", "Gaming", "Direct", "Email Optin", "Mobile", "Social", 
+    "Supplement", "Nutra", "Health"
   ];
 
   // Load XLSX from CDN if it's not already loaded
@@ -402,7 +409,7 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
                 </SelectContent>
               </Select>
             </div>
-            {/* Offer Type */}
+            {/* Offer Type - Updated to use local options instead of masterData */}
             <div>
               <Label htmlFor="type">Offer Type</Label>
               <Select
@@ -413,7 +420,7 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {masterData?.offer_types.map((type) => (
+                  {offerTypeOptions.map((type) => (
                     <SelectItem key={type} value={type}>
                       {type}
                     </SelectItem>
@@ -421,7 +428,7 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
                 </SelectContent>
               </Select>
             </div>
-            {/* Vertical - Dropdown for selecting verticals */}
+            {/* Vertical - Updated dropdown for selecting verticals */}
             <div>
               <Label htmlFor="vertical">Vertical</Label>
               <Select

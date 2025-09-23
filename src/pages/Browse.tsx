@@ -440,8 +440,55 @@ const NetworkPage = ({
 }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [sortBy, setSortBy] = useState<string>("relevance-desc");
 
   const networkOffers = offers.filter(offer => offer.network_id === network.id);
+
+  // Sort offers based on selected option
+  const getSortedOffers = () => {
+    const offersToSort = [...networkOffers];
+    
+    switch (sortBy) {
+      case "relevance-desc":
+        return offersToSort.sort((a, b) => {
+          // Relevance: featured first, then active, then by priority
+          if (a.is_featured && !b.is_featured) return -1;
+          if (!a.is_featured && b.is_featured) return 1;
+          if (a.is_active && !b.is_active) return -1;
+          if (!a.is_active && b.is_active) return 1;
+          
+          const aPriority = typeof a.priority_order === 'number' ? a.priority_order : 0;
+          const bPriority = typeof b.priority_order === 'number' ? b.priority_order : 0;
+          return bPriority - aPriority;
+        });
+      
+      case "time-desc":
+        return offersToSort.sort((a, b) => {
+          const aDate = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const bDate = b.created_at ? new Date(b.created_at).getTime() : 0;
+          return bDate - aDate;
+        });
+      
+      case "price-asc":
+        return offersToSort.sort((a, b) => {
+          const aAmount = typeof a.payout_amount === 'number' ? a.payout_amount : parseFloat(String(a.payout_amount)) || 0;
+          const bAmount = typeof b.payout_amount === 'number' ? b.payout_amount : parseFloat(String(b.payout_amount)) || 0;
+          return aAmount - bAmount;
+        });
+      
+      case "price-desc":
+        return offersToSort.sort((a, b) => {
+          const aAmount = typeof a.payout_amount === 'number' ? a.payout_amount : parseFloat(String(a.payout_amount)) || 0;
+          const bAmount = typeof b.payout_amount === 'number' ? b.payout_amount : parseFloat(String(b.payout_amount)) || 0;
+          return bAmount - aAmount;
+        });
+      
+      default:
+        return offersToSort;
+    }
+  };
+
+  const sortedOffers = getSortedOffers();
 
   const handleOfferClick = (offerId: string) => {
     navigate(`/offer/${offerId}`);
@@ -549,22 +596,37 @@ const NetworkPage = ({
       <div className="max-w-6xl mx-auto px-4 py-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-white">
-            Offers from {network.name} ({networkOffers.length})
+            Offers from {network.name} ({sortedOffers.length})
           </h2>
+          
+          {/* Sorting Dropdown */}
+          <div className="relative group">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="bg-gray-800 border border-gray-700 text-white text-sm rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="relevance-desc">Relevance desc</option>
+              <option value="time-desc">Time desc</option>
+              <option value="price-asc">Price asc</option>
+              <option value="price-desc">Price desc</option>
+            </select>
+          </div>
         </div>
 
-        {networkOffers.length === 0 ? (
+        {sortedOffers.length === 0 ? (
           <div className="text-center py-8 text-gray-400">
             <p className="text-sm">No offers available for this network.</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {networkOffers.map((offer) => (
+            {sortedOffers.map((offer) => (
               <Card
                 key={offer.id}
                 className={`p-3 w-full hover:shadow-md transition-shadow border-gray-800 cursor-pointer ${
                   offer.is_active ? "bg-gray-900 hover:bg-gray-850" : "bg-gray-800"
                 }`}
+
                 onClick={() => handleOfferClick(offer.id)}
               >
                 <div className="flex items-center justify-between gap-3">
@@ -602,6 +664,7 @@ const NetworkPage = ({
                       </div>
                       
                       <div className="flex flex-wrap gap-1 mb-2">
+                        {/* Geo Targets - Show up to 3 */}
                         {offer.geo_targets && Array.isArray(offer.geo_targets) && offer.geo_targets.slice(0, 3).map((geo, idx) => (
                           <Badge
                             key={`geo-${idx}`}
@@ -612,6 +675,7 @@ const NetworkPage = ({
                           </Badge>
                         ))}
                         
+                        {/* Vertical Tags - Show up to 2 after geo tags */}
                         {offer.vertical && Array.isArray(offer.vertical) && offer.vertical.slice(0, 2).map((vertical, idx) => (
                           <Badge
                             key={`vertical-${idx}`}
@@ -733,9 +797,9 @@ const Browse = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [offersPerPage] = useState(15);
 
-  // Quick filter options
+  // Quick filter options (removed "Amount" and "Date Added")
   const quickFilterOptions = [
-    "All Offers", "Amount", "Date Added", "Duplicates", "Crypto", "Dating", "Gambling", "insurance", "Game", "COD", "Sweepstakes", 
+    "All Offers", "Duplicates", "Crypto", "Dating", "Gambling", "insurance", "Game", "COD", "Sweepstakes", 
     "SOI", "DOI", "CPA", "CPL", "CPI"
   ];
 
@@ -836,7 +900,7 @@ const Browse = () => {
       // WHEN ALL OFFERS IS SELECTED, SHOW ALL OFFERS
       if (filter === "All Offers") {
         setSelectedOfferCategory("All");
-      } else if (filter === "Amount" || filter === "Date Added" || filter === "Duplicates") {
+      } else if (filter === "Duplicates") {
         // For sorting/special filters, keep current category or default to showing all
         setSelectedOfferCategory("All");
       } else {
@@ -1241,6 +1305,8 @@ const Browse = () => {
     if (selectedGeo && selectedGeo !== "Worldwide") {
       filtered = filtered.filter(offer => {
         const geoTargets = toStringArray(offer.geo_targets, false);
+        const verticals = toStringArray(offer.vertical, false);
+
         return geoTargets.length === 0 || geoTargets.includes(selectedGeo);
       });
     }
@@ -1255,21 +1321,7 @@ const Browse = () => {
 
     // Apply quick filter if selected - FIXED FILTERING LOGIC
     if (selectedQuickFilter && selectedQuickFilter !== "All Offers") {
-      if (selectedQuickFilter === "Amount") {
-        // Just sort by amount, no filtering
-        filtered = filtered.sort((a, b) => {
-          const aAmount = typeof a.payout_amount === 'number' ? a.payout_amount : parseFloat(String(a.payout_amount)) || 0;
-          const bAmount = typeof b.payout_amount === 'number' ? b.payout_amount : parseFloat(String(b.payout_amount)) || 0;
-          return bAmount - aAmount;
-        });
-      } else if (selectedQuickFilter === "Date Added") {
-        // Just sort by date, no filtering
-        filtered = filtered.sort((a, b) => {
-          const aDate = a.created_at ? new Date(a.created_at).getTime() : 0;
-          const bDate = b.created_at ? new Date(b.created_at).getTime() : 0;
-          return bDate - aDate;
-        });
-      } else if (selectedQuickFilter === "Duplicates") {
+      if (selectedQuickFilter === "Duplicates") {
         // Filter duplicates
         const duplicateIds = detectDuplicateOffers(filtered);
         filtered = filtered.filter(offer => duplicateIds.has(offer.id));
@@ -1869,10 +1921,6 @@ const Browse = () => {
                   ? "All Offers" 
                   : selectedQuickFilter === "insurance"
                     ? "Insurance Offers"
-                    : selectedQuickFilter === "Amount"
-                      ? "Offers by Highest Amount"
-                    : selectedQuickFilter === "Date Added"
-                      ? "Latest Offers"
                     : selectedQuickFilter === "Duplicates"
                       ? "Duplicate Offers"
                       : selectedQuickFilter 
@@ -1892,167 +1940,180 @@ const Browse = () => {
             ) : (
               <>
                 {/* COMPACT OFFER CARDS - Much smaller height with AffPlus-like features */}
-                {currentOffers.map((offer) => (
-                  <Card
-                    key={offer.id}
-                    className={`p-2 w-full hover:shadow-md transition-shadow border-gray-800 cursor-pointer ${
-                      offer.is_active ? "bg-gray-900 hover:bg-gray-850" : "bg-gray-800"
-                    } max-w-full sm:max-w-[600px] mx-auto`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/offer/${offer.id}`);
-                    }}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      {/* Left Side - Network Logo and Offer Info */}
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <img
-                          src={
-                            offer.networks?.logo_url ||
-                            `https://placehold.co/32x32/333333/666666?text=${(
-                              offer.networks?.name || "N"
-                            ).charAt(0)}`
-                          }
-                          alt={offer.networks?.name || "Network Logo"}
-                          className="w-8 h-8 rounded-lg object-cover flex-shrink-0"
-                        />
-                        
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1 mb-0.5">
-                            <h3 className="font-semibold text-white text-xs truncate">
-                              {getDisplayValue(offer.name, "Unnamed Offer")}
-                            </h3>
-                            {!offer.is_active && (
-                              <Badge
-                                variant="secondary"
-                                className="text-[10px] bg-gray-700 text-white px-1 py-0 h-3"
+                {currentOffers.map((offer) => {
+                  // Get payout amount as number for proper display
+                  const payoutAmount = typeof offer.payout_amount === 'number' 
+                    ? offer.payout_amount 
+                    : parseFloat(String(offer.payout_amount)) || 0;
+                  
+                  // Get verticals and geo tags as arrays
+                  const verticals = toStringArray(offer.vertical, false);
+                  const geoTargets = toStringArray(offer.geo_targets, false);
+                  
+                  
+                  return (
+                    <Card
+                      key={offer.id}
+                      className={`p-2 w-full hover:shadow-md transition-shadow border-gray-800 cursor-pointer ${
+                        offer.is_active ? "bg-gray-900 hover:bg-gray-850" : "bg-gray-800"
+                      } max-w-full sm:max-w-[600px] mx-auto`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/offer/${offer.id}`);
+                      }}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        {/* Left Side - Network Logo and Offer Info */}
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <img
+                            src={
+                              offer.networks?.logo_url ||
+                              `https://placehold.co/32x32/333333/666666?text=${(
+                                offer.networks?.name || "N"
+                              ).charAt(0)}`
+                            }
+                            alt={offer.networks?.name || "Network Logo"}
+                            className="w-8 h-8 rounded-lg object-cover flex-shrink-0"
+                          />
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1 mb-0.5">
+                              <h3 className="font-semibold text-white text-xs truncate">
+                                {getDisplayValue(offer.name, "Unnamed Offer")}
+                              </h3>
+                              {!offer.is_active && (
+                                <Badge
+                                  variant="secondary"
+                                  className="text-[10px] bg-gray-700 text-white px-1 py-0 h-3"
+                                >
+                                  Inactive
+                                </Badge>
+                              )}
+                              {offer.is_featured && (
+                                <Badge
+                                  variant="default"
+                                  className="text-[10px] bg-yellow-600 text-white px-1 py-0 h-3"
+                                >
+                                  Featured
+                                </Badge>
+                              )}
+                            </div>
+                            
+                            <div className="flex items-center gap-1 mb-0.5">
+                              <span 
+                                className="text-[10px] text-blue-400 cursor-pointer hover:underline font-medium"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // Navigate to network page instead of filtering
+                                  const network = allNetworks.find(n => n.id === offer.network_id);
+                                  if (network) {
+                                    handleNetworkPageClick(network);
+                                  }
+                                }}
                               >
-                                Inactive
-                              </Badge>
+                                {getDisplayValue(offer.networks?.name, "Unknown Network")}
+                              </span>
+                              
+                              {/* Rating Display - Only show if data exists */}
+                              {offer.rating && (
+                                <StarRating 
+                                  rating={offer.rating} 
+                                  totalRatings={offer.total_ratings}
+                                  size={10}
+                                />
+                              )}
+                            </div>
+                            
+                            <div className="flex flex-wrap gap-1 mb-0.5">
+                              {/* Geo Targets - Show all available */}
+                              {geoTargets.map((geo, idx) => (
+                                <Badge
+                                  key={`geo-${idx}`}
+                                  variant="outline"
+                                  className="text-[10px] px-1 py-0 h-3 border-gray-600 text-gray-300 bg-gray-600/10"
+                                >
+                                  {geo}
+                                </Badge>
+                              ))}
+                              
+                              {/* Vertical Tags - Show all available */}
+                              {verticals.map((vertical, idx) => (
+                                <Badge
+                                  key={`vertical-${idx}`}
+                                  variant="outline"
+                                  className="text-[10px] px-1 py-0 h-3 border-green-600 text-green-300 bg-green-600/10"
+                                >
+                                  {vertical}
+                                </Badge>
+                              ))}
+                            </div>
+
+                            <div className="flex items-center gap-1 text-[10px] text-gray-400">
+                              {/* Additional metrics - Only show if data exists */}
+                              {offer.conversion_rate && (
+                                <div className="flex items-center gap-1">
+                                  <Target size={8} />
+                                  <span>{offer.conversion_rate.toFixed(1)}% CR</span>
+                                </div>
+                              )}
+
+                              {offer.last_updated && (
+                                <div className="flex items-center gap-1">
+                                  <Clock size={8} />
+                                  <span>{formatRelativeTime(offer.last_updated)}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right Side - Payout and Action Buttons */}
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <div className="text-right">
+                            <div className="text-sm font-bold text-green-400">
+                              {getDisplayValue(offer.payout_currency, "USD")}{" "}
+                              {payoutAmount.toFixed(2)}
+                            </div>
+                            
+                            {/* Show click count if sorting by clicks */}
+                            {sortBy === "clicks" && (
+                              <div className="text-[10px] text-gray-400 mt-0.5 flex items-center gap-1 justify-end">
+                                <Users size={8} />
+                                {offer.click_count || 0} clicks
+                              </div>
                             )}
-                            {offer.is_featured && (
-                              <Badge
-                                variant="default"
-                                className="text-[10px] bg-yellow-600 text-white px-1 py-0 h-3"
-                              >
-                                Featured
-                              </Badge>
+                            
+                            {/* EPC if available */}
+                            {offer.epc && (
+                              <div className="text-[10px] text-blue-400 mt-0.5">
+                                EPC: ${offer.epc.toFixed(2)}
+                              </div>
                             )}
                           </div>
                           
-                          <div className="flex items-center gap-1 mb-0.5">
-                            <span 
-                              className="text-[10px] text-blue-400 cursor-pointer hover:underline font-medium"
+                          <div className="flex flex-col gap-1">
+                            {/* View Details Button - Now with three dots icon */}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] p-1 h-6 w-6 border-blue-600"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                // Navigate to network page instead of filtering
-                                const network = allNetworks.find(n => n.id === offer.network_id);
-                                if (network) {
-                                  handleNetworkPageClick(network);
-                                }
+                                navigate(`/offer/${offer.id}`);
                               }}
+                              title="Details"
                             >
-                              {getDisplayValue(offer.networks?.name, "Unknown Network")}
-                            </span>
+                              <MoreHorizontal className="w-3 h-3" />
+                            </Button>
                             
-                            {/* Rating Display - Only show if data exists */}
-                            {offer.rating && (
-                              <StarRating 
-                                rating={offer.rating} 
-                                totalRatings={offer.total_ratings}
-                                size={10}
-                              />
-                            )}
-                          </div>
-                          
-                          <div className="flex items-center gap-1 text-[10px] text-gray-400">
-                            {/* Quick Tags - Only show first 2 */}
-                            {toStringArray(offer.geo_targets, false).slice(0, 1).map((geo, idx) => (
-                              <Badge
-                                key={`geo-${idx}`}
-                                variant="outline"
-                                className="text-[10px] px-1 py-0 h-3 border-gray-600 text-gray-300 bg-gray-600/10"
-                              >
-                                {geo}
-                              </Badge>
-                            ))}
-                            
-                            {toStringArray(offer.vertical, false).slice(0, 1).map((vertical, idx) => (
-                              <Badge
-                                key={`vertical-${idx}`}
-                                variant="outline"
-                                className="text-[10px] px-1 py-0 h-3 border-green-600 text-green-300 bg-green-600/10"
-                              >
-                                {vertical}
-                              </Badge>
-                            ))}
-
-                            {/* Additional metrics - Only show if data exists */}
-                            {offer.conversion_rate && (
-                              <div className="flex items-center gap-1">
-                                <Target size={8} />
-                                <span>{offer.conversion_rate.toFixed(1)}% CR</span>
-                              </div>
-                            )}
-
-                            {offer.last_updated && (
-                              <div className="flex items-center gap-1">
-                                <Clock size={8} />
-                                <span>{formatRelativeTime(offer.last_updated)}</span>
-                              </div>
-                            )}
+                            {/* Join Button - Now with titled arrow icon */}
+                            <JoinButton offer={offer} network={offer.networks} variant="icon" />
                           </div>
                         </div>
                       </div>
-
-                      {/* Right Side - Payout and Action Buttons */}
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <div className="text-right">
-                          <div className="text-sm font-bold text-green-400">
-                            {getDisplayValue(offer.payout_currency, "USD")}{" "}
-                            {typeof offer.payout_amount === "number"
-                              ? offer.payout_amount.toFixed(2)
-                              : getDisplayValue(offer.payout_amount, "0.00")}
-                          </div>
-                          
-                          {/* Show click count if sorting by clicks */}
-                          {sortBy === "clicks" && (
-                            <div className="text-[10px] text-gray-400 mt-0.5 flex items-center gap-1 justify-end">
-                              <Users size={8} />
-                              {offer.click_count || 0} clicks
-                            </div>
-                          )}
-                          
-                          {/* EPC if available */}
-                          {offer.epc && (
-                            <div className="text-[10px] text-blue-400 mt-0.5">
-                              EPC: ${offer.epc.toFixed(2)}
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="flex flex-col gap-1">
-                          {/* View Details Button - Now with three dots icon */}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] p-1 h-6 w-6 border-blue-600"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/offer/${offer.id}`);
-                            }}
-                            title="Details"
-                          >
-                            <MoreHorizontal className="w-3 h-3" />
-                          </Button>
-                          
-                          {/* Join Button - Now with titled arrow icon */}
-                          <JoinButton offer={offer} network={offer.networks} variant="icon" />
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
+                    </Card>
+                  );
+                })}
                 
                 {/* Pagination Controls */}
                 <Pagination />
