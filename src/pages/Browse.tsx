@@ -357,18 +357,39 @@ const JoinButton = ({
   const handleJoinClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     
-    if (offer.landing_page_url) {
+    // Check if landing_page_url exists and is valid
+    if (offer.landing_page_url && 
+        offer.landing_page_url.trim() !== "" && 
+        offer.landing_page_url !== "null" && 
+        offer.landing_page_url !== "undefined" &&
+        offer.landing_page_url !== "##" &&
+        (offer.landing_page_url.startsWith("http://") || offer.landing_page_url.startsWith("https://"))) {
+      
       // Open in same tab like AffPlus
       window.location.href = offer.landing_page_url;
       
       // Log the join action
-      console.log(`User joined offer: ${offer.name}`);
+      console.log(`User joined offer: ${offer.name}`, offer.landing_page_url);
     } else {
-      toast({
-        title: "No Landing Page Available",
-        description: "This offer does not have a landing page configured.",
-        variant: "destructive",
-      });
+      // If no valid landing page, try network website
+      if (network?.website_link && 
+          network.website_link.trim() !== "" && 
+          network.website_link !== "null" && 
+          network.website_link !== "undefined" &&
+          network.website_link !== "##" &&
+          (network.website_link.startsWith("http://") || network.website_link.startsWith("https://"))) {
+        
+        window.location.href = network.website_link;
+        console.log(`User redirected to network website: ${network.name}`, network.website_link);
+      } else {
+        // If neither is available, show error
+        toast({
+          title: "No Landing Page Available",
+          description: "This offer does not have a valid landing page configured. Please contact the network for more information.",
+          variant: "destructive",
+        });
+        console.warn("No valid landing page or website link found for offer:", offer.name);
+      }
     }
   };
 
@@ -416,15 +437,33 @@ const NetworkPage = ({
   const handleJoinClick = (offer: Offer, e: React.MouseEvent) => {
     e.stopPropagation();
     
-    if (offer.landing_page_url) {
+    // Check if landing_page_url exists and is valid
+    if (offer.landing_page_url && 
+        offer.landing_page_url.trim() !== "" && 
+        offer.landing_page_url !== "null" && 
+        offer.landing_page_url !== "undefined" &&
+        offer.landing_page_url !== "##" &&
+        (offer.landing_page_url.startsWith("http://") || offer.landing_page_url.startsWith("https://"))) {
+      
       // Open in same tab like AffPlus
       window.location.href = offer.landing_page_url;
     } else {
-      toast({
-        title: "No Landing Page Available",
-        description: "This offer does not have a landing page configured.",
-        variant: "destructive",
-      });
+      // If no valid landing page, try network website
+      if (network.website_link && 
+          network.website_link.trim() !== "" && 
+          network.website_link !== "null" && 
+          network.website_link !== "undefined" &&
+          network.website_link !== "##" &&
+          (network.website_link.startsWith("http://") || network.website_link.startsWith("https://"))) {
+        
+        window.location.href = network.website_link;
+      } else {
+        toast({
+          title: "No Landing Page Available",
+          description: "This offer does not have a valid landing page configured. Please contact the network for more information.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
