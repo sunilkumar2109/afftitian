@@ -186,23 +186,23 @@ const BannerDisplay = ({
     case "fixed-top":
     case "header":
       containerClass = "w-full bg-black shadow-md";
-      imageClass = "w-full h-20 object-cover";
+      imageClass = "w-full h-16 object-cover";
       break;
     case "fixed-bottom":
       containerClass = "fixed bottom-0 left-0 right-0 z-50 bg-black shadow-md";
-      imageClass = "w-full h-20 object-cover";
+      imageClass = "w-full h-16 object-cover";
       break;
     case "sidebar":
       containerClass = "mb-4";
       imageClass = "w-full h-auto object-contain";
       break;
     case "top":
-      containerClass = "my-4 flex justify-end pr-3";
-      imageClass = "w-[900px] h-[100px] object-contain";
+      containerClass = "my-3 flex justify-end pr-3";
+      imageClass = "w-[800px] h-[80px] object-contain";
       break;
     case "footer":
-      containerClass = "my-6";
-      imageClass = "w-full h-20 object-cover";
+      containerClass = "my-4";
+      imageClass = "w-full h-16 object-cover";
       break;
   }
 
@@ -290,7 +290,7 @@ const SidebarBannerDisplay = ({ banners }: { banners: Banner[] }) => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {banners.map((banner) => {
         const bannerSrc = banner.image_url?.startsWith("http")
           ? banner.image_url
@@ -305,7 +305,7 @@ const SidebarBannerDisplay = ({ banners }: { banners: Banner[] }) => {
             <img
               src={bannerSrc}
               alt="Sidebar banner"
-              className="w-full h-[400px] object-contain rounded-md"
+              className="w-full h-[300px] object-contain rounded-md"
               onError={(e) => {
                 console.error("Sidebar banner failed to load:", bannerSrc);
                 e.currentTarget.style.display = "none";
@@ -319,7 +319,7 @@ const SidebarBannerDisplay = ({ banners }: { banners: Banner[] }) => {
 };
 
 // Star Rating Component
-const StarRating = ({ rating, totalRatings, size = 14 }: { rating: number; totalRatings?: number; size?: number }) => {
+const StarRating = ({ rating, totalRatings, size = 12 }: { rating: number; totalRatings?: number; size?: number }) => {
   const fullStars = Math.floor(rating);
   const hasHalfStar = rating % 1 >= 0.5;
   
@@ -397,7 +397,7 @@ const JoinButton = ({
     return (
       <Button
         size="sm"
-        className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 font-medium"
+        className="bg-green-600 hover:bg-green-700 text-white text-xs px-2 py-0 h-6 font-medium"
         onClick={handleJoinClick}
       >
         Join
@@ -409,18 +409,18 @@ const JoinButton = ({
     return (
       <Button
         size="sm"
-        className="bg-green-600 hover:bg-green-700 text-white p-2"
+        className="bg-green-600 hover:bg-green-700 text-white p-1 h-7 w-7"
         onClick={handleJoinClick}
         title="Join Offer"
       >
-        <ArrowUpRight className="w-4 h-4" />
+        <ArrowUpRight className="w-3 h-3" />
       </Button>
     );
   }
 
   return (
     <Button
-      className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md"
+      className="bg-green-600 hover:bg-green-700 text-white font-medium py-1 px-3 h-8 rounded-md text-sm"
       onClick={handleJoinClick}
     >
       Join Offer
@@ -483,37 +483,37 @@ const NetworkPage = ({
   return (
     <div className="min-h-screen text-white bg-cover bg-center">
       {/* Back Button */}
-      <div className="bg-gray-900 border-b border-gray-700 px-6 py-4">
+      <div className="bg-gray-900 border-b border-gray-700 px-4 py-3">
         <Button
           onClick={onBack}
           variant="outline"
-          className="flex items-center gap-2 bg-gray-800 text-white border-gray-700 hover:bg-gray-700"
+          className="flex items-center gap-2 bg-gray-800 text-white border-gray-700 hover:bg-gray-700 h-8 text-sm"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-3 h-3" />
           Back to All Networks
         </Button>
       </div>
 
       {/* Network Header */}
-      <div className="bg-gray-900/80 backdrop-blur-sm border-b border-gray-700 px-6 py-8">
+      <div className="bg-gray-900/80 backdrop-blur-sm border-b border-gray-700 px-4 py-6">
         <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
             <img
-              src={network.logo_url || `https://placehold.co/120x120/333333/666666?text=${network.name.charAt(0)}`}
+              src={network.logo_url || `https://placehold.co/80x80/333333/666666?text=${network.name.charAt(0)}`}
               alt={network.name}
-              className="w-24 h-24 rounded-lg object-cover"
+              className="w-16 h-16 rounded-lg object-cover"
             />
             <div className="flex-1">
-              <div className="flex items-center gap-4 mb-2">
-                <h1 className="text-3xl font-bold text-white">{network.name}</h1>
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-2xl font-bold text-white">{network.name}</h1>
                 {network.rating && (
-                  <StarRating rating={network.rating} totalRatings={network.total_ratings} size={20} />
+                  <StarRating rating={network.rating} totalRatings={network.total_ratings} size={16} />
                 )}
               </div>
               
-              <p className="text-gray-300 mb-4">{network.description || "No description available."}</p>
+              <p className="text-gray-300 mb-3 text-sm">{network.description || "No description available."}</p>
               
-              <div className="flex flex-wrap gap-4 text-sm text-gray-400">
+              <div className="flex flex-wrap gap-3 text-xs text-gray-400">
                 {network.payment_frequency && (
                   <div>
                     <span className="font-medium text-white">Payment:</span> {network.payment_frequency}
@@ -535,10 +535,10 @@ const NetworkPage = ({
             {network.website_link && (
               <Button
                 onClick={() => window.location.href = network.website_link}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+                className="bg-blue-600 hover:bg-blue-700 text-white h-8 text-sm"
               >
                 Visit Website
-                <ExternalLink className="w-4 h-4 ml-2" />
+                <ExternalLink className="w-3 h-3 ml-1" />
               </Button>
             )}
           </div>
@@ -546,47 +546,47 @@ const NetworkPage = ({
       </div>
 
       {/* Network Offers */}
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-white">
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-white">
             Offers from {network.name} ({networkOffers.length})
           </h2>
         </div>
 
         {networkOffers.length === 0 ? (
-          <div className="text-center py-12 text-gray-400">
-            <p className="text-lg">No offers available for this network.</p>
+          <div className="text-center py-8 text-gray-400">
+            <p className="text-sm">No offers available for this network.</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {networkOffers.map((offer) => (
               <Card
                 key={offer.id}
-                className={`p-4 w-full hover:shadow-md transition-shadow border-gray-800 cursor-pointer ${
+                className={`p-3 w-full hover:shadow-md transition-shadow border-gray-800 cursor-pointer ${
                   offer.is_active ? "bg-gray-900 hover:bg-gray-850" : "bg-gray-800"
                 }`}
                 onClick={() => handleOfferClick(offer.id)}
               >
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center justify-between gap-3">
                   {/* Left Side - Offer Info */}
-                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
                     {offer.image_url && (
                       <img
                         src={offer.image_url}
                         alt={offer.name}
-                        className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+                        className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
                       />
                     )}
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-white text-lg truncate">
+                        <h3 className="font-semibold text-white text-base truncate">
                           {offer.name}
                         </h3>
                         {!offer.is_active && (
                           <Badge
                             variant="secondary"
-                            className="text-xs bg-gray-700 text-white px-2 py-0"
+                            className="text-xs bg-gray-700 text-white px-1 py-0 h-4"
                           >
                             Inactive
                           </Badge>
@@ -594,19 +594,19 @@ const NetworkPage = ({
                         {offer.is_featured && (
                           <Badge
                             variant="default"
-                            className="text-xs bg-yellow-600 text-white px-2 py-0"
+                            className="text-xs bg-yellow-600 text-white px-1 py-0 h-4"
                           >
                             Featured
                           </Badge>
                         )}
                       </div>
                       
-                      <div className="flex flex-wrap gap-2 mb-2">
+                      <div className="flex flex-wrap gap-1 mb-2">
                         {offer.geo_targets && Array.isArray(offer.geo_targets) && offer.geo_targets.slice(0, 3).map((geo, idx) => (
                           <Badge
                             key={`geo-${idx}`}
                             variant="outline"
-                            className="text-xs px-2 py-0 border-gray-600 text-gray-300 bg-gray-600/10"
+                            className="text-xs px-1 py-0 h-4 border-gray-600 text-gray-300 bg-gray-600/10"
                           >
                             {geo}
                           </Badge>
@@ -616,7 +616,7 @@ const NetworkPage = ({
                           <Badge
                             key={`vertical-${idx}`}
                             variant="outline"
-                            className="text-xs px-2 py-0 border-green-600 text-green-300 bg-green-600/10"
+                            className="text-xs px-1 py-0 h-4 border-green-600 text-green-300 bg-green-600/10"
                           >
                             {vertical}
                           </Badge>
@@ -625,24 +625,24 @@ const NetworkPage = ({
                         {offer.type && (
                           <Badge
                             variant="outline"
-                            className="text-xs px-2 py-0 border-blue-600 text-blue-300 bg-blue-600/10"
+                            className="text-xs px-1 py-0 h-4 border-blue-600 text-blue-300 bg-blue-600/10"
                           >
                             {offer.type}
                           </Badge>
                         )}
                       </div>
                       
-                      <div className="flex items-center gap-4 text-sm text-gray-400">
+                      <div className="flex items-center gap-3 text-xs text-gray-400">
                         {offer.conversion_rate && (
                           <div className="flex items-center gap-1">
-                            <Target size={12} />
+                            <Target size={10} />
                             <span>{offer.conversion_rate.toFixed(1)}% CR</span>
                           </div>
                         )}
 
                         {offer.last_updated && (
                           <div className="flex items-center gap-1">
-                            <Clock size={12} />
+                            <Clock size={10} />
                             <span>Updated {new Date(offer.last_updated).toLocaleDateString()}</span>
                           </div>
                         )}
@@ -651,42 +651,42 @@ const NetworkPage = ({
                   </div>
 
                   {/* Right Side - Payout and Action Buttons */}
-                  <div className="flex items-center gap-4 flex-shrink-0">
+                  <div className="flex items-center gap-3 flex-shrink-0">
                     <div className="text-right">
-                      <div className="text-xl font-bold text-green-400">
+                      <div className="text-lg font-bold text-green-400">
                         {offer.payout_currency || "USD"} {typeof offer.payout_amount === "number"
                           ? offer.payout_amount.toFixed(2)
                           : offer.payout_amount}
                       </div>
                       
                       {offer.epc && (
-                        <div className="text-sm text-blue-400 mt-1">
+                        <div className="text-xs text-blue-400 mt-1">
                           EPC: ${offer.epc.toFixed(2)}
                         </div>
                       )}
                     </div>
                     
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-1">
                       <Button
                         size="sm"
                         variant="outline"
-                        className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600 p-2"
+                        className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600 p-1 h-7 w-7"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleOfferClick(offer.id);
                         }}
                         title="Details"
                       >
-                        <MoreHorizontal className="w-4 h-4" />
+                        <MoreHorizontal className="w-3 h-3" />
                       </Button>
                       
                       <Button
                         size="sm"
-                        className="bg-green-600 hover:bg-green-700 text-white p-2"
+                        className="bg-green-600 hover:bg-green-700 text-white p-1 h-7 w-7"
                         onClick={(e) => handleJoinClick(offer, e)}
                         title="Join Offer"
                       >
-                        <ArrowUpRight className="w-4 h-4" />
+                        <ArrowUpRight className="w-3 h-3" />
                       </Button>
                     </div>
                   </div>
@@ -1564,7 +1564,7 @@ const Browse = () => {
       <div className="relative group" onClick={(e) => e.stopPropagation()}>
         <Button 
           variant="outline" 
-          className="flex items-center gap-1 px-2 py-1 bg-gray-900 border-gray-700 text-white hover:bg-gray-800 transition-colors text-xs sm:text-sm"
+          className="flex items-center gap-1 px-2 py-1 bg-gray-900 border-gray-700 text-white hover:bg-gray-800 transition-colors text-xs h-8"
         >
           <span className="text-xs font-medium">{selected || title}</span>
           <ChevronDown className="w-3 h-3 text-white" />
@@ -1575,7 +1575,7 @@ const Browse = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input 
                 placeholder={`Search ${title.toLowerCase()}`}
-                className="pl-10 h-8 text-sm bg-gray-800 border-gray-700 text-white"
+                className="pl-10 h-7 text-sm bg-gray-800 border-gray-700 text-white"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -1584,13 +1584,13 @@ const Browse = () => {
               {filteredOptions.map((option: string, idx: number) => (
                 <div
                   key={idx}
-                  className="flex items-center justify-between px-3 py-2 hover:bg-gray-800 cursor-pointer rounded text-sm text-white"
+                  className="flex items-center justify-between px-3 py-1 hover:bg-gray-800 cursor-pointer rounded text-sm text-white"
                   onClick={() => onSelect(option)}
                 >
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input 
                       type="checkbox" 
-                      className="w-4 h-4"
+                      className="w-3 h-3"
                       checked={selected === option}
                       readOnly
                     />
@@ -1610,7 +1610,7 @@ const Browse = () => {
       <div className="relative group" onClick={(e) => e.stopPropagation()}>
         <Button 
           variant="outline" 
-          className="flex items-center gap-1 px-2 py-1 bg-gray-900 border-gray-700 text-white hover:bg-gray-800 transition-colors text-xs sm:text-sm"
+          className="flex items-center gap-1 px-2 py-1 bg-gray-900 border-gray-700 text-white hover:bg-gray-800 transition-colors text-xs h-8"
         >
           <span className="text-xs font-medium">
             {sortOptions.find(opt => opt.value === sortBy)?.label || "Sort By"}
@@ -1623,13 +1623,13 @@ const Browse = () => {
               {sortOptions.map((option) => (
                 <div
                   key={option.value}
-                  className="flex items-center justify-between px-3 py-2 hover:bg-gray-800 cursor-pointer rounded text-sm text-white"
+                  className="flex items-center justify-between px-3 py-1 hover:bg-gray-800 cursor-pointer rounded text-sm text-white"
                   onClick={() => handleSortChange(option.value)}
                 >
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input 
                       type="radio" 
-                      className="w-4 h-4"
+                      className="w-3 h-3"
                       checked={sortBy === option.value}
                       readOnly
                     />
@@ -1648,15 +1648,15 @@ const Browse = () => {
     if (totalPages <= 1) return null;
 
     return (
-      <div className="flex justify-center items-center mt-6 space-x-2">
+      <div className="flex justify-center items-center mt-4 space-x-2">
         <Button
           onClick={() => paginate(currentPage - 1)}
           disabled={currentPage === 1}
           variant="outline"
           size="sm"
-          className="flex items-center gap-1 bg-gray-800 text-white border-gray-700"
+          className="flex items-center gap-1 bg-gray-800 text-white border-gray-700 h-8 px-2"
         >
-          <ChevronLeft className="w-4 h-4" />
+          <ChevronLeft className="w-3 h-3" />
           Previous
         </Button>
         
@@ -1678,7 +1678,7 @@ const Browse = () => {
               onClick={() => paginate(pageNum)}
               variant={currentPage === pageNum ? "default" : "outline"}
               size="sm"
-              className={currentPage === pageNum ? "bg-blue-600 text-white" : "bg-gray-800 text-white border-gray-700"}
+              className={`h-8 px-2 min-w-[2rem] ${currentPage === pageNum ? "bg-blue-600 text-white" : "bg-gray-800 text-white border-gray-700"}`}
             >
               {pageNum}
             </Button>
@@ -1694,7 +1694,7 @@ const Browse = () => {
             onClick={() => paginate(totalPages)}
             variant="outline"
             size="sm"
-            className="bg-gray-800 text-white border-gray-700"
+            className="bg-gray-800 text-white border-gray-700 h-8 px-2"
           >
             {totalPages}
           </Button>
@@ -1705,10 +1705,10 @@ const Browse = () => {
           disabled={currentPage === totalPages}
           variant="outline"
           size="sm"
-          className="flex items-center gap-1 bg-gray-800 text-white border-gray-700"
+          className="flex items-center gap-1 bg-gray-800 text-white border-gray-700 h-8 px-2"
           >
           Next
-          <ChevronRight className="w-4 h-4" />
+          <ChevronRight className="w-3 h-3" />
         </Button>
       </div>
     );
@@ -1738,11 +1738,11 @@ const Browse = () => {
       >
         <TopBar />
         {/* Logo positioned in top left corner */}
-        <div className="absolute top-16 left-4 sm:top-20 sm:left-10 z-50">
+        <div className="absolute top-14 left-4 sm:top-16 sm:left-8 z-50">
           <img 
             src="https://pepeleads.com/uploads/1756199032-7299397.png"
             alt="AffiTitans Logo" 
-            className="h-10 sm:h-12 w-auto object-contain"
+            className="h-8 sm:h-10 w-auto object-contain"
           />
         </div>
       </div>
@@ -1763,7 +1763,7 @@ const Browse = () => {
       </div>
       
       {/* Top Banners - Now aligned to the right with proper spacing */}
-      <div className="flex justify-end px-6 pt-4">
+      <div className="flex justify-end px-4 pt-3">
         {rotationGroupsBySection["top"].map((rotation) => (
           <BannerDisplay
             key={rotation.id}
@@ -1778,8 +1778,8 @@ const Browse = () => {
       </div>
       
       {/* Header with Filters and Global Search */}
-      <div className="bg-gray-900 border-b border-gray-700 px-6 py-3" onClick={(e) => e.stopPropagation()}>
-        <div className="flex flex-row flex-wrap items-center gap-2 sm:gap-3">
+      <div className="bg-gray-900 border-b border-gray-700 px-4 py-2" onClick={(e) => e.stopPropagation()}>
+        <div className="flex flex-row flex-wrap items-center gap-2">
           <FilterDropdown 
             title="Networks" 
             options={networksOptions}
@@ -1803,11 +1803,11 @@ const Browse = () => {
           <SortDropdown />
           
           {/* Global Search Bar */}
-          <div className="relative w-[50%] max-w-[400px]">
+          <div className="relative w-[50%] max-w-[350px]">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
               placeholder="Search networks and offers..."
-              className="pl-10 bg-gray-800 border-gray-700 text-white h-9"
+              className="pl-10 bg-gray-800 border-gray-700 text-white h-8 text-sm"
               value={globalSearchTerm}
               onChange={(e) => setGlobalSearchTerm(e.target.value)}
             />
@@ -1815,15 +1815,15 @@ const Browse = () => {
         </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-4 p-3 sm:p-6">
+      <div className="flex flex-col lg:flex-row gap-3 p-3">
         {/* Main Content Area */}
         <div className="flex-1">
           {/* Premium Quick Filter Buttons - Single Line Layout with Better Spacing */}
-          <div className="mb-4 flex flex-nowrap gap-1 overflow-x-auto scrollbar-hide pb-2" onClick={(e) => e.stopPropagation()}>
+          <div className="mb-3 flex flex-nowrap gap-1 overflow-x-auto scrollbar-hide pb-1" onClick={(e) => e.stopPropagation()}>
             {quickFilterOptions.map((filter) => (
               <button
                 key={filter}
-                className={`text-xs px-2 py-1 rounded-full transition-all duration-200 ease-in-out transform hover:scale-105 whitespace-nowrap flex-shrink-0 min-w-max ${
+                className={`text-xs px-2 py-0.5 rounded-full transition-all duration-200 ease-in-out transform hover:scale-105 whitespace-nowrap flex-shrink-0 min-w-max ${
                   selectedQuickFilter === filter 
                     ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg" 
                     : "bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700 hover:text-white shadow-md"
@@ -1836,14 +1836,14 @@ const Browse = () => {
           </div>
 
           {/* Offers List with Pagination */}
-          <div className="space-y-4">
+          <div className="space-y-3">
             {/* Offer Search Input */}
             {selectedNetworkFilter && (
-              <div className="flex flex-col sm:flex-row justify-between items-center mb-3 gap-3" onClick={(e) => e.stopPropagation()}>
+              <div className="flex flex-col sm:flex-row justify-between items-center mb-2 gap-2" onClick={(e) => e.stopPropagation()}>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto px-4 py-2 text-sm"
+                  className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto px-3 py-1 h-7 text-xs"
                   onClick={(e) => {
                     e.stopPropagation();
                     setSelectedNetworkFilter(null);
@@ -1852,10 +1852,10 @@ const Browse = () => {
                   Back to All Offers
                 </Button>
                 <div className="relative w-full sm:w-auto flex-grow">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
                   <Input
                     placeholder={`Search offers for ${selectedNetworkFilter}...`}
-                    className="pl-10 h-8 text-sm bg-gray-800 border-gray-700 text-white w-full"
+                    className="pl-8 h-7 text-xs bg-gray-800 border-gray-700 text-white w-full"
                     value={offerSearchTerm}
                     onChange={(e) => setOfferSearchTerm(e.target.value)}
                   />
@@ -1864,7 +1864,7 @@ const Browse = () => {
             )}
             
             <div className="flex justify-between items-center">
-              <h2 className="text-lg font-bold text-white">
+              <h2 className="text-base font-bold text-white">
                 {selectedQuickFilter === "All Offers" 
                   ? "All Offers" 
                   : selectedQuickFilter === "insurance"
@@ -1884,9 +1884,9 @@ const Browse = () => {
             </div>
 
             {loadingOffers ? (
-              <div className="text-center py-8 text-gray-400">Loading offers...</div>
+              <div className="text-center py-6 text-gray-400 text-sm">Loading offers...</div>
             ) : currentOffers.length === 0 ? (
-              <div className="text-center py-8 text-gray-400">
+              <div className="text-center py-6 text-gray-400 text-sm">
                 No offers found. Try adjusting your filters.
               </div>
             ) : (
@@ -1895,7 +1895,7 @@ const Browse = () => {
                 {currentOffers.map((offer) => (
                   <Card
                     key={offer.id}
-                    className={`p-3 w-full hover:shadow-md transition-shadow border-gray-800 cursor-pointer ${
+                    className={`p-2 w-full hover:shadow-md transition-shadow border-gray-800 cursor-pointer ${
                       offer.is_active ? "bg-gray-900 hover:bg-gray-850" : "bg-gray-800"
                     } max-w-full sm:max-w-[600px] mx-auto`}
                     onClick={(e) => {
@@ -1903,29 +1903,29 @@ const Browse = () => {
                       navigate(`/offer/${offer.id}`);
                     }}
                   >
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center justify-between gap-2">
                       {/* Left Side - Network Logo and Offer Info */}
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
                         <img
                           src={
                             offer.networks?.logo_url ||
-                            `https://placehold.co/40x40/333333/666666?text=${(
+                            `https://placehold.co/32x32/333333/666666?text=${(
                               offer.networks?.name || "N"
                             ).charAt(0)}`
                           }
                           alt={offer.networks?.name || "Network Logo"}
-                          className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                          className="w-8 h-8 rounded-lg object-cover flex-shrink-0"
                         />
                         
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-semibold text-white text-sm truncate">
+                          <div className="flex items-center gap-1 mb-0.5">
+                            <h3 className="font-semibold text-white text-xs truncate">
                               {getDisplayValue(offer.name, "Unnamed Offer")}
                             </h3>
                             {!offer.is_active && (
                               <Badge
                                 variant="secondary"
-                                className="text-xs bg-gray-700 text-white px-1 py-0"
+                                className="text-[10px] bg-gray-700 text-white px-1 py-0 h-3"
                               >
                                 Inactive
                               </Badge>
@@ -1933,16 +1933,16 @@ const Browse = () => {
                             {offer.is_featured && (
                               <Badge
                                 variant="default"
-                                className="text-xs bg-yellow-600 text-white px-1 py-0"
+                                className="text-[10px] bg-yellow-600 text-white px-1 py-0 h-3"
                               >
                                 Featured
                               </Badge>
                             )}
                           </div>
                           
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-1 mb-0.5">
                             <span 
-                              className="text-xs text-blue-400 cursor-pointer hover:underline font-medium"
+                              className="text-[10px] text-blue-400 cursor-pointer hover:underline font-medium"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 // Navigate to network page instead of filtering
@@ -1960,18 +1960,18 @@ const Browse = () => {
                               <StarRating 
                                 rating={offer.rating} 
                                 totalRatings={offer.total_ratings}
-                                size={12}
+                                size={10}
                               />
                             )}
                           </div>
                           
-                          <div className="flex items-center gap-2 text-xs text-gray-400">
+                          <div className="flex items-center gap-1 text-[10px] text-gray-400">
                             {/* Quick Tags - Only show first 2 */}
                             {toStringArray(offer.geo_targets, false).slice(0, 1).map((geo, idx) => (
                               <Badge
                                 key={`geo-${idx}`}
                                 variant="outline"
-                                className="text-xs px-1 py-0 border-gray-600 text-gray-300 bg-gray-600/10"
+                                className="text-[10px] px-1 py-0 h-3 border-gray-600 text-gray-300 bg-gray-600/10"
                               >
                                 {geo}
                               </Badge>
@@ -1981,7 +1981,7 @@ const Browse = () => {
                               <Badge
                                 key={`vertical-${idx}`}
                                 variant="outline"
-                                className="text-xs px-1 py-0 border-green-600 text-green-300 bg-green-600/10"
+                                className="text-[10px] px-1 py-0 h-3 border-green-600 text-green-300 bg-green-600/10"
                               >
                                 {vertical}
                               </Badge>
@@ -1990,14 +1990,14 @@ const Browse = () => {
                             {/* Additional metrics - Only show if data exists */}
                             {offer.conversion_rate && (
                               <div className="flex items-center gap-1">
-                                <Target size={10} />
+                                <Target size={8} />
                                 <span>{offer.conversion_rate.toFixed(1)}% CR</span>
                               </div>
                             )}
 
                             {offer.last_updated && (
                               <div className="flex items-center gap-1">
-                                <Clock size={10} />
+                                <Clock size={8} />
                                 <span>{formatRelativeTime(offer.last_updated)}</span>
                               </div>
                             )}
@@ -2006,7 +2006,7 @@ const Browse = () => {
                       </div>
 
                       {/* Right Side - Payout and Action Buttons */}
-                      <div className="flex items-center gap-3 flex-shrink-0">
+                      <div className="flex items-center gap-2 flex-shrink-0">
                         <div className="text-right">
                           <div className="text-sm font-bold text-green-400">
                             {getDisplayValue(offer.payout_currency, "USD")}{" "}
@@ -2017,33 +2017,33 @@ const Browse = () => {
                           
                           {/* Show click count if sorting by clicks */}
                           {sortBy === "clicks" && (
-                            <div className="text-xs text-gray-400 mt-1 flex items-center gap-1 justify-end">
-                              <Users size={10} />
+                            <div className="text-[10px] text-gray-400 mt-0.5 flex items-center gap-1 justify-end">
+                              <Users size={8} />
                               {offer.click_count || 0} clicks
                             </div>
                           )}
                           
                           {/* EPC if available */}
                           {offer.epc && (
-                            <div className="text-xs text-blue-400 mt-1">
+                            <div className="text-[10px] text-blue-400 mt-0.5">
                               EPC: ${offer.epc.toFixed(2)}
                             </div>
                           )}
                         </div>
                         
-                        <div className="flex flex-col gap-2">
+                        <div className="flex flex-col gap-1">
                           {/* View Details Button - Now with three dots icon */}
                           <Button
                             size="sm"
                             variant="outline"
-                            className="bg-blue-600 hover:bg-blue-700 text-white text-xs p-2 border-blue-600"
+                            className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] p-1 h-6 w-6 border-blue-600"
                             onClick={(e) => {
                               e.stopPropagation();
                               navigate(`/offer/${offer.id}`);
                             }}
                             title="Details"
                           >
-                            <MoreHorizontal className="w-4 h-4" />
+                            <MoreHorizontal className="w-3 h-3" />
                           </Button>
                           
                           {/* Join Button - Now with titled arrow icon */}
@@ -2075,7 +2075,7 @@ const Browse = () => {
         </div>
 
         {/* Networks Sidebar - Network names are now clickable to open network page */}
-        <div className="w-full lg:w-80 flex-shrink-0 order-last lg:order-none">
+        <div className="w-full lg:w-72 flex-shrink-0 order-last lg:order-none">
           <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden">
             {/* Sidebar Banners */}
             {rotationGroupsBySection["sidebar"].map((rotation) => (
@@ -2091,28 +2091,28 @@ const Browse = () => {
             )}
             
             {/* Network Search Box */}
-            <div className="p-3 border-b border-gray-700" onClick={(e) => e.stopPropagation()}>
+            <div className="p-2 border-b border-gray-700" onClick={(e) => e.stopPropagation()}>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
                 <Input
                   placeholder="Search networks..."
-                  className="pl-10 bg-gray-800 border-gray-700 text-white h-8 text-sm"
+                  className="pl-8 bg-gray-800 border-gray-700 text-white h-7 text-xs"
                   value={networkSearchTerm}
                   onChange={(e) => setNetworkSearchTerm(e.target.value)}
                 />
               </div>
             </div>
             
-            <div className="p-3 border-b border-gray-700">
-              <h2 className="font-medium text-white text-sm">All Networks</h2>
+            <div className="p-2 border-b border-gray-700">
+              <h2 className="font-medium text-white text-xs">All Networks</h2>
             </div>
             
-            <div className="p-3">
-              <div className="grid grid-cols-4 gap-3">
+            <div className="p-2">
+              <div className="grid grid-cols-4 gap-2">
                 {loadingNetworks ? (
-                  <div className="text-center py-4 text-gray-400 col-span-4">Loading networks...</div>
+                  <div className="text-center py-3 text-gray-400 col-span-4 text-xs">Loading networks...</div>
                 ) : networksToDisplay.length === 0 ? (
-                  <div className="text-center py-4 text-gray-400 col-span-4">No networks found.</div>
+                  <div className="text-center py-3 text-gray-400 col-span-4 text-xs">No networks found.</div>
                 ) : (
                   networksToDisplay.map((network) => (
                     <div
@@ -2125,12 +2125,12 @@ const Browse = () => {
                       }}
                     >
                       <img
-                        src={network.logo_url || `https://placehold.co/40x40/333333/666666?text=${network.name.charAt(0)}`}
+                        src={network.logo_url || `https://placehold.co/32x32/333333/666666?text=${network.name.charAt(0)}`}
                         alt={network.name}
-                        className="w-10 h-10 rounded-lg object-cover group-hover:scale-110 transition-transform"
+                        className="w-8 h-8 rounded-lg object-cover group-hover:scale-110 transition-transform"
                       />
-                      <div className="flex items-center gap-1 group-hover:underline mt-1">
-                        <span className="text-xs text-white truncate w-full text-center">
+                      <div className="flex items-center gap-1 group-hover:underline mt-0.5">
+                        <span className="text-[10px] text-white truncate w-full text-center">
                           {network.name}
                         </span>
                       </div>
@@ -2140,7 +2140,7 @@ const Browse = () => {
                         <StarRating 
                           rating={network.rating} 
                           totalRatings={network.total_ratings}
-                          size={10}
+                          size={8}
                         />
                       )}
                     </div>
@@ -2167,7 +2167,7 @@ const Browse = () => {
         )}
       </div>
       
-      {fixedBottomBanners.length > 0 && <div className="h-20" />}
+      {fixedBottomBanners.length > 0 && <div className="h-16" />}
       <div>
         <Footer />
       </div>
