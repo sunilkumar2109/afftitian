@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { ChevronDown, Search, ChevronLeft, ChevronRight, ExternalLink, Star, Users, Clock, Target, ArrowLeft } from "lucide-react";
+import { ChevronDown, Search, ChevronLeft, ChevronRight, ExternalLink, Star, Users, Clock, Target, ArrowLeft, MoreHorizontal, ArrowUpRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Footer from "@/components/Footer";
 import TopBar from "@/components/TopBar";
@@ -350,7 +350,7 @@ const JoinButton = ({
 }: { 
   offer: Offer; 
   network?: Network; 
-  variant?: "default" | "compact"; 
+  variant?: "default" | "compact" | "icon"; 
 }) => {
   const { toast } = useToast();
   
@@ -401,6 +401,19 @@ const JoinButton = ({
         onClick={handleJoinClick}
       >
         Join
+      </Button>
+    );
+  }
+
+  if (variant === "icon") {
+    return (
+      <Button
+        size="sm"
+        className="bg-green-600 hover:bg-green-700 text-white p-2"
+        onClick={handleJoinClick}
+        title="Join Offer"
+      >
+        <ArrowUpRight className="w-4 h-4" />
       </Button>
     );
   }
@@ -657,21 +670,23 @@ const NetworkPage = ({
                       <Button
                         size="sm"
                         variant="outline"
-                        className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
+                        className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600 p-2"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleOfferClick(offer.id);
                         }}
+                        title="Details"
                       >
-                        Details
+                        <MoreHorizontal className="w-4 h-4" />
                       </Button>
                       
                       <Button
                         size="sm"
-                        className="bg-green-600 hover:bg-green-700 text-white"
+                        className="bg-green-600 hover:bg-green-700 text-white p-2"
                         onClick={(e) => handleJoinClick(offer, e)}
+                        title="Join Offer"
                       >
-                        Join Offer
+                        <ArrowUpRight className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
@@ -1214,6 +1229,7 @@ const Browse = () => {
   const getFilteredOffers = () => {
     let filtered = [...allOffers];
 
+    // Apply network filter
     if (selectedNetworkFilter && selectedNetworkFilter !== "All") {
       filtered = filtered.filter(offer => {
         const networkName = getDisplayValue(offer.networks?.name);
@@ -1221,6 +1237,7 @@ const Browse = () => {
       });
     }
 
+    // Apply geo filter
     if (selectedGeo && selectedGeo !== "Worldwide") {
       filtered = filtered.filter(offer => {
         const geoTargets = toStringArray(offer.geo_targets, false);
@@ -1228,6 +1245,7 @@ const Browse = () => {
       });
     }
 
+    // Apply vertical filter
     if (selectedVertical && selectedVertical !== "All") {
       filtered = filtered.filter(offer => {
         const verticals = toStringArray(offer.vertical, false);
@@ -1235,9 +1253,99 @@ const Browse = () => {
       });
     }
 
-    // Apply quick filter if selected
-    if (selectedQuickFilter && selectedQuickFilter !== "All Offers" && selectedQuickFilter !== "Amount" && selectedQuickFilter !== "Date Added" && selectedQuickFilter !== "Duplicates") {
-      filtered = filtered.filter(offer => matchesFilter(offer, selectedQuickFilter));
+    // Apply quick filter if selected - FIXED FILTERING LOGIC
+    if (selectedQuickFilter && selectedQuickFilter !== "All Offers") {
+      if (selectedQuickFilter === "Amount") {
+        // Just sort by amount, no filtering
+        filtered = filtered.sort((a, b) => {
+          const aAmount = typeof a.payout_amount === 'number' ? a.payout_amount : parseFloat(String(a.payout_amount)) || 0;
+          const bAmount = typeof b.payout_amount === 'number' ? b.payout_amount : parseFloat(String(b.payout_amount)) || 0;
+          return bAmount - aAmount;
+        });
+      } else if (selectedQuickFilter === "Date Added") {
+        // Just sort by date, no filtering
+        filtered = filtered.sort((a, b) => {
+          const aDate = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const bDate = b.created_at ? new Date(b.created_at).getTime() : 0;
+          return bDate - aDate;
+        });
+      } else if (selectedQuickFilter === "Duplicates") {
+        // Filter duplicates
+        const duplicateIds = detectDuplicateOffers(filtered);
+        filtered = filtered.filter(offer => duplicateIds.has(offer.id));
+      } else {
+        // Filter by specific criteria
+        filtered = filtered.filter(offer => {
+          const offerType = getDisplayValue(offer.type, "").toLowerCase();
+          const offerVerticals = toStringArray(offer.vertical, false).map(v => v.toLowerCase());
+          const offerTags = toStringArray(offer.tags, false).map(t => t.toLowerCase());
+          
+          switch (selectedQuickFilter.toLowerCase()) {
+            case "soi":
+              return offerType.includes("soi") || 
+                     offerVerticals.some(v => v.includes("soi")) ||
+                     offerTags.some(t => t.includes("soi"));
+            
+            case "doi":
+              return offerType.includes("doi") || 
+                     offerVerticals.some(v => v.includes("doi")) ||
+                     offerTags.some(t => t.includes("doi"));
+            
+            case "cpa":
+              return offerType.includes("cpa") || 
+                     offerVerticals.some(v => v.includes("cpa")) ||
+                     offerTags.some(t => t.includes("cpa"));
+            
+            case "cpl":
+              return offerType.includes("cpl") || 
+                     offerVerticals.some(v => v.includes("cpl")) ||
+                     offerTags.some(t => t.includes("cpl"));
+            
+            case "cpi":
+              return offerType.includes("cpi") || 
+                     offerVerticals.some(v => v.includes("cpi")) ||
+                     offerTags.some(t => t.includes("cpi"));
+            
+            case "insurance":
+              return offerVerticals.some(v => v.includes("insurance")) ||
+                     offerTags.some(t => t.includes("insurance")) ||
+                     getDisplayValue(offer.name, "").toLowerCase().includes("insurance");
+            
+            case "crypto":
+              return offerVerticals.some(v => v.includes("crypto")) ||
+                     offerTags.some(t => t.includes("crypto")) ||
+                     getDisplayValue(offer.name, "").toLowerCase().includes("crypto");
+            
+            case "dating":
+              return offerVerticals.some(v => v.includes("dating")) ||
+                     offerTags.some(t => t.includes("dating")) ||
+                     getDisplayValue(offer.name, "").toLowerCase().includes("dating");
+            
+            case "gambling":
+              return offerVerticals.some(v => v.includes("gambling")) ||
+                     offerTags.some(t => t.includes("gambling")) ||
+                     getDisplayValue(offer.name, "").toLowerCase().includes("gambling");
+            
+            case "game":
+              return offerVerticals.some(v => v.includes("game")) ||
+                     offerTags.some(t => t.includes("game")) ||
+                     getDisplayValue(offer.name, "").toLowerCase().includes("game");
+            
+            case "cod":
+              return offerVerticals.some(v => v.includes("cod")) ||
+                     offerTags.some(t => t.includes("cod")) ||
+                     getDisplayValue(offer.name, "").toLowerCase().includes("cod");
+            
+            case "sweepstakes":
+              return offerVerticals.some(v => v.includes("sweepstakes")) ||
+                     offerTags.some(t => t.includes("sweepstakes")) ||
+                     getDisplayValue(offer.name, "").toLowerCase().includes("sweepstakes");
+            
+            default:
+              return matchesFilter(offer, selectedQuickFilter);
+          }
+        });
+      }
     }
 
     // Handle special cases for filtering and sorting
@@ -1269,57 +1377,30 @@ const Browse = () => {
       });
     }
 
-    // SPECIAL SORTING AND FILTERING FOR AMOUNT, DATE ADDED, AND DUPLICATES
-    if (selectedQuickFilter === "Amount") {
-      filtered = filtered.sort((a, b) => {
-        const aAmount = typeof a.payout_amount === 'number' ? a.payout_amount : parseFloat(String(a.payout_amount)) || 0;
-        const bAmount = typeof b.payout_amount === 'number' ? b.payout_amount : parseFloat(String(b.payout_amount)) || 0;
-        return bAmount - aAmount; // Highest amount first
-      });
-    } else if (selectedQuickFilter === "Date Added") {
-      filtered = filtered.sort((a, b) => {
-        // Sort by created_at date (newest first)
-        const aDate = a.created_at ? new Date(a.created_at).getTime() : 0;
-        const bDate = b.created_at ? new Date(b.created_at).getTime() : 0;
-        return bDate - aDate; // Latest first
-      });
-    } else if (selectedQuickFilter === "Duplicates") {
-      // Filter to show only duplicate offers
-      const duplicateIds = detectDuplicateOffers(filtered);
-      filtered = filtered.filter(offer => duplicateIds.has(offer.id));
-      
-      // Sort duplicates by name for easier comparison
-      filtered = filtered.sort((a, b) => {
-        const aName = getDisplayValue(a.name, "").toLowerCase();
-        const bName = getDisplayValue(b.name, "").toLowerCase();
-        return aName.localeCompare(bName);
-      });
-    }
-
     // Apply sorting based on the sortBy state
     if (sortBy === "payout") {
       filtered = filtered.sort((a, b) => {
         const aAmount = typeof a.payout_amount === 'number' ? a.payout_amount : parseFloat(String(a.payout_amount)) || 0;
         const bAmount = typeof b.payout_amount === 'number' ? b.payout_amount : parseFloat(String(b.payout_amount)) || 0;
-        return bAmount - aAmount; // Highest payout first
+        return bAmount - aAmount;
       });
     } else if (sortBy === "name") {
       filtered = filtered.sort((a, b) => {
         const aName = getDisplayValue(a.name, "").toLowerCase();
         const bName = getDisplayValue(b.name, "").toLowerCase();
-        return aName.localeCompare(bName); // Alphabetical order
+        return aName.localeCompare(bName);
       });
     } else if (sortBy === "date") {
       filtered = filtered.sort((a, b) => {
         const aDate = a.created_at ? new Date(a.created_at).getTime() : 0;
         const bDate = b.created_at ? new Date(b.created_at).getTime() : 0;
-        return bDate - aDate; // Newest first
+        return bDate - aDate;
       });
     } else if (sortBy === "clicks") {
       filtered = filtered.sort((a, b) => {
         const aClicks = a.click_count || 0;
         const bClicks = b.click_count || 0;
-        return bClicks - aClicks; // Highest clicks first
+        return bClicks - aClicks;
       });
     } else if (sortBy === "cpa") {
       filtered = filtered.filter(offer => {
@@ -1328,7 +1409,7 @@ const Browse = () => {
       }).sort((a, b) => {
         const aAmount = typeof a.payout_amount === 'number' ? a.payout_amount : parseFloat(String(a.payout_amount)) || 0;
         const bAmount = typeof b.payout_amount === 'number' ? b.payout_amount : parseFloat(String(b.payout_amount)) || 0;
-        return bAmount - aAmount; // Highest payout first
+        return bAmount - aAmount;
       });
     } else if (sortBy === "cpl") {
       filtered = filtered.filter(offer => {
@@ -1337,31 +1418,13 @@ const Browse = () => {
       }).sort((a, b) => {
         const aAmount = typeof a.payout_amount === 'number' ? a.payout_amount : parseFloat(String(a.payout_amount)) || 0;
         const bAmount = typeof b.payout_amount === 'number' ? b.payout_amount : parseFloat(String(b.payout_amount)) || 0;
-        return bAmount - aAmount; // Highest payout first
+        return bAmount - aAmount;
       });
     } else if (sortBy === "rating") {
       filtered = filtered.sort((a, b) => {
         const aRating = a.rating || 0;
         const bRating = b.rating || 0;
-        return bRating - aRating; // Highest rating first
-      });
-    }
-
-    if (selectedOfferCategory !== "🔥 Top Offers") {
-      // Sort by highest amount first, then by other criteria
-      filtered = filtered.sort((a, b) => {
-        const aAmount = typeof a.payout_amount === 'number' ? a.payout_amount : parseFloat(String(a.payout_amount)) || 0;
-        const bAmount = typeof b.payout_amount === 'number' ? b.payout_amount : parseFloat(String(b.payout_amount)) || 0;
-        
-        // Sort by highest amount first
-        if (aAmount !== bAmount) return bAmount - aAmount;
-        
-        if (a.is_active && !b.is_active) return -1;
-        if (!a.is_active && b.is_active) return 1;
-        
-        const aPriority = typeof a.priority_order === 'number' ? a.priority_order : 0;
-        const bPriority = typeof b.priority_order === 'number' ? b.priority_order : 0;
-        return bPriority - aPriority;
+        return bRating - aRating;
       });
     }
 
@@ -1818,10 +1881,6 @@ const Browse = () => {
                           ? `Offers for ${selectedNetworkFilter}` 
                           : "🔥 Top Offers"}
               </h2>
-              <div className="text-sm text-gray-400">
-                {offersToDisplay.length} offers found
-                {sortBy !== "payout" && ` • Sorted by ${sortOptions.find(opt => opt.value === sortBy)?.label}`}
-              </div>
             </div>
 
             {loadingOffers ? (
@@ -1973,21 +2032,22 @@ const Browse = () => {
                         </div>
                         
                         <div className="flex flex-col gap-2">
-                          {/* View Details Button */}
+                          {/* View Details Button - Now with three dots icon */}
                           <Button
                             size="sm"
                             variant="outline"
-                            className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 border-blue-600"
+                            className="bg-blue-600 hover:bg-blue-700 text-white text-xs p-2 border-blue-600"
                             onClick={(e) => {
                               e.stopPropagation();
                               navigate(`/offer/${offer.id}`);
                             }}
+                            title="Details"
                           >
-                            Details
+                            <MoreHorizontal className="w-4 h-4" />
                           </Button>
                           
-                          {/* Join Button - AffPlus style - Opens in same tab */}
-                          <JoinButton offer={offer} network={offer.networks} variant="compact" />
+                          {/* Join Button - Now with titled arrow icon */}
+                          <JoinButton offer={offer} network={offer.networks} variant="icon" />
                         </div>
                       </div>
                     </div>
