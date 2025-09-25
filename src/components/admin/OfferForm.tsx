@@ -256,7 +256,10 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
         return;
       }
 
-      const { error } = await supabase.from("offers").insert(formattedData as any[]);
+      const { error } = await supabase
+  .from("offers")
+  .upsert(formattedData as any[], { onConflict: "id" }); 
+
       if (error) throw error;
 
       const skipped = notFound.length;
@@ -325,7 +328,10 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
         priority_order: row.priority_order ? parseInt(row.priority_order) : "##",
       }));
       
-      const { error } = await supabase.from("offers").insert(formattedData);
+     const { error } = await supabase
+  .from("offers")
+  .upsert(formattedData, { onConflict: "id" });
+
       if (error) throw error;
 
       toast({

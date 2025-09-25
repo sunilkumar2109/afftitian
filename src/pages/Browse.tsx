@@ -676,15 +676,17 @@ const NetworkPage = ({
                         ))}
                         
                         {/* Vertical Tags - Show up to 2 after geo tags */}
-                        {offer.vertical && Array.isArray(offer.vertical) && offer.vertical.slice(0, 2).map((vertical, idx) => (
-                          <Badge
-                            key={`vertical-${idx}`}
-                            variant="outline"
-                            className="text-xs px-1 py-0 h-4 border-green-600 text-green-300 bg-green-600/10"
-                          >
-                            {vertical}
-                          </Badge>
-                        ))}
+                        {/* Vertical Tags - Show up to 2 after geo tags */}
+{toStringArray(offer.vertical, false).slice(0, 2).map((vertical, idx) => (
+  <Badge
+    key={`vertical-${idx}`}
+    variant="outline"
+    className="text-xs px-1 py-0 h-4 border-green-600 text-green-300 bg-green-600/10"
+  >
+    {vertical}
+  </Badge>
+))}
+
                         
                         {offer.type && (
                           <Badge
@@ -892,23 +894,19 @@ const Browse = () => {
   };
 
   const handleQuickFilterClick = (filter: string) => {
-    if (selectedQuickFilter === filter) {
-      setSelectedQuickFilter("");
-      setSelectedOfferCategory("🔥 Top Offers");
-    } else {
-      setSelectedQuickFilter(filter);
-      // WHEN ALL OFFERS IS SELECTED, SHOW ALL OFFERS
-      if (filter === "All Offers") {
-        setSelectedOfferCategory("All");
-      } else if (filter === "Duplicates") {
-        // For sorting/special filters, keep current category or default to showing all
-        setSelectedOfferCategory("All");
-      } else {
-        setSelectedOfferCategory(filter);
-      }
-      setCurrentPage(1);
-    }
-  };
+  if (selectedQuickFilter === filter) {
+    setSelectedQuickFilter("");
+    setSelectedOfferCategory("🔥 Top Offers");
+  } else {
+    setSelectedQuickFilter(filter);
+    // IMPORTANT: when using quick filters (SOI/DOI/CPA/CPL/CPI/etc.),
+    // do NOT also force selectedOfferCategory to the same value.
+    // That causes double-filtering (quick filter + vertical category) and hides matches.
+    setSelectedOfferCategory("All");
+    setCurrentPage(1);
+  }
+};
+
 
   const handleSortChange = (value: string) => {
     setSortBy(value);
@@ -1302,103 +1300,172 @@ const Browse = () => {
     }
 
     // Apply geo filter
-    if (selectedGeo && selectedGeo !== "Worldwide") {
-      filtered = filtered.filter(offer => {
-        const geoTargets = toStringArray(offer.geo_targets, false);
-        const verticals = toStringArray(offer.vertical, false);
+    // Apply geo filter
+if (selectedGeo && selectedGeo !== "Worldwide") {
+  filtered = filtered.filter(offer => {
+    const geoTargets = toStringArray(offer.geo_targets, false);
+    return geoTargets.includes(selectedGeo);
+  });
+}
 
-        return geoTargets.length === 0 || geoTargets.includes(selectedGeo);
-      });
-    }
 
     // Apply vertical filter
-    if (selectedVertical && selectedVertical !== "All") {
-      filtered = filtered.filter(offer => {
-        const verticals = toStringArray(offer.vertical, false);
-        return verticals.length === 0 || verticals.includes(selectedVertical);
-      });
-    }
+   // Apply vertical filter
+if (selectedVertical && selectedVertical !== "All") {
+  filtered = filtered.filter(offer => {
+    const verticals = toStringArray(offer.vertical, false);
+    return verticals.includes(selectedVertical);
+  });
+}
+
 
     // Apply quick filter if selected - FIXED FILTERING LOGIC
-    if (selectedQuickFilter && selectedQuickFilter !== "All Offers") {
-      if (selectedQuickFilter === "Duplicates") {
-        // Filter duplicates
-        const duplicateIds = detectDuplicateOffers(filtered);
-        filtered = filtered.filter(offer => duplicateIds.has(offer.id));
-      } else {
-        // Filter by specific criteria
-        filtered = filtered.filter(offer => {
-          const offerType = getDisplayValue(offer.type, "").toLowerCase();
-          const offerVerticals = toStringArray(offer.vertical, false).map(v => v.toLowerCase());
-          const offerTags = toStringArray(offer.tags, false).map(t => t.toLowerCase());
-          
-          switch (selectedQuickFilter.toLowerCase()) {
-            case "soi":
-              return offerType.includes("soi") || 
-                     offerVerticals.some(v => v.includes("soi")) ||
-                     offerTags.some(t => t.includes("soi"));
-            
-            case "doi":
-              return offerType.includes("doi") || 
-                     offerVerticals.some(v => v.includes("doi")) ||
-                     offerTags.some(t => t.includes("doi"));
-            
-            case "cpa":
-              return offerType.includes("cpa") || 
-                     offerVerticals.some(v => v.includes("cpa")) ||
-                     offerTags.some(t => t.includes("cpa"));
-            
-            case "cpl":
-              return offerType.includes("cpl") || 
-                     offerVerticals.some(v => v.includes("cpl")) ||
-                     offerTags.some(t => t.includes("cpl"));
-            
-            case "cpi":
-              return offerType.includes("cpi") || 
-                     offerVerticals.some(v => v.includes("cpi")) ||
-                     offerTags.some(t => t.includes("cpi"));
-            
-            case "insurance":
-              return offerVerticals.some(v => v.includes("insurance")) ||
-                     offerTags.some(t => t.includes("insurance")) ||
-                     getDisplayValue(offer.name, "").toLowerCase().includes("insurance");
-            
-            case "crypto":
-              return offerVerticals.some(v => v.includes("crypto")) ||
-                     offerTags.some(t => t.includes("crypto")) ||
-                     getDisplayValue(offer.name, "").toLowerCase().includes("crypto");
-            
-            case "dating":
-              return offerVerticals.some(v => v.includes("dating")) ||
-                     offerTags.some(t => t.includes("dating")) ||
-                     getDisplayValue(offer.name, "").toLowerCase().includes("dating");
-            
-            case "gambling":
-              return offerVerticals.some(v => v.includes("gambling")) ||
-                     offerTags.some(t => t.includes("gambling")) ||
-                     getDisplayValue(offer.name, "").toLowerCase().includes("gambling");
-            
-            case "game":
-              return offerVerticals.some(v => v.includes("game")) ||
-                     offerTags.some(t => t.includes("game")) ||
-                     getDisplayValue(offer.name, "").toLowerCase().includes("game");
-            
-            case "cod":
-              return offerVerticals.some(v => v.includes("cod")) ||
-                     offerTags.some(t => t.includes("cod")) ||
-                     getDisplayValue(offer.name, "").toLowerCase().includes("cod");
-            
-            case "sweepstakes":
-              return offerVerticals.some(v => v.includes("sweepstakes")) ||
-                     offerTags.some(t => t.includes("sweepstakes")) ||
-                     getDisplayValue(offer.name, "").toLowerCase().includes("sweepstakes");
-            
-            default:
-              return matchesFilter(offer, selectedQuickFilter);
-          }
-        });
+   if (selectedQuickFilter && selectedQuickFilter !== "All Offers") {
+  if (selectedQuickFilter === "Duplicates") {
+    // Filter duplicates
+    const duplicateIds = detectDuplicateOffers(filtered);
+    filtered = filtered.filter(offer => duplicateIds.has(offer.id));
+  } else {
+    // Filter by specific criteria
+    filtered = filtered.filter(offer => {
+      const offerType = getDisplayValue(offer.type, "").toLowerCase();
+      const offerVerticals = toStringArray(offer.vertical, false).map(v => v.toLowerCase());
+      const offerTags = toStringArray(offer.tags, false).map(t => t.toLowerCase());
+      const offerName = getDisplayValue(offer.name, "").toLowerCase();
+
+      // normalized name (remove spaces, dashes, etc.)
+      const normalizedName = offerName.replace(/[^a-z0-9]/g, "");
+
+      switch (selectedQuickFilter.toLowerCase()) {
+        case "soi":
+          return (
+            offerType.includes("soi") ||
+            offerVerticals.some(v => v.includes("soi")) ||
+            offerTags.some(t => t.includes("soi")) ||
+            offerName.includes("soi") ||
+            offerName.includes("single opt")
+          );
+
+        case "doi":
+          return (
+            offerType.replace(/[^a-z0-9]/g, "").includes("doi") ||
+            offerVerticals.some(v => v.replace(/[^a-z0-9]/g, "").includes("doi")) ||
+            offerTags.some(t => t.replace(/[^a-z0-9]/g, "").includes("doi")) ||
+            offerName.includes("doi") ||
+            offerName.includes("double opt") ||
+            offerName.includes("double-opt") ||
+            offerName.includes("doubleopt") ||
+            normalizedName.includes("doubleoptin")
+          );
+
+        case "cpa":
+          return (
+            offerType.includes("cpa") ||
+            offerVerticals.some(v => v.includes("cpa")) ||
+            offerTags.some(t => t.includes("cpa")) ||
+            offerName.includes("cpa") ||
+            offerName.includes("cost per action") ||
+            offerName.includes("cost per acquisition")
+          );
+
+        case "cpl":
+          return (
+            offerType.replace(/[^a-z0-9]/g, "").includes("cpl") ||
+            offerVerticals.some(v => v.replace(/[^a-z0-9]/g, "").includes("cpl")) ||
+            offerTags.some(t => t.replace(/[^a-z0-9]/g, "").includes("cpl")) ||
+            offerName.includes("cpl") ||
+            offerName.includes("cost per lead") ||
+            offerName.includes("cost-per-lead") ||
+            offerName.includes("costperlead") ||
+            normalizedName.includes("cploffer")
+          );
+
+        case "cpi":
+          return (
+            offerType.includes("cpi") ||
+            offerVerticals.some(v => v.includes("cpi")) ||
+            offerTags.some(t => t.includes("cpi")) ||
+            offerName.includes("cpi") ||
+            offerName.includes("cost per install")
+          );
+
+        case "sweepstakes":
+          return (
+            offerVerticals.some(v => v.includes("sweepstakes")) ||
+            offerTags.some(t => t.includes("sweepstakes")) ||
+            offerName.includes("sweepstakes") ||
+            offerName.includes("sweeps") ||
+            offerName.includes("giveaway") ||
+            offerName.includes("contest") ||
+            offerName.includes("prize")
+          );
+
+        case "insurance":
+          return (
+            offerVerticals.some(v => v.includes("insurance")) ||
+            offerTags.some(t => t.includes("insurance")) ||
+            offerName.includes("insurance")
+          );
+
+        case "crypto":
+          return (
+            offerVerticals.some(v => v.includes("crypto")) ||
+            offerTags.some(t => t.includes("crypto")) ||
+            offerName.includes("crypto") ||
+            offerName.includes("bitcoin") ||
+            offerName.includes("ethereum") ||
+            offerName.includes("blockchain")
+          );
+
+        case "dating":
+          return (
+            offerVerticals.some(v => v.includes("dating")) ||
+            offerTags.some(t => t.includes("dating")) ||
+            offerName.includes("dating") ||
+            offerName.includes("romance") ||
+            offerName.includes("relationship") ||
+            offerName.includes("singles") ||
+            offerName.includes("match")
+          );
+
+        case "gambling":
+          return (
+            offerVerticals.some(v => v.includes("gambling")) ||
+            offerTags.some(t => t.includes("gambling")) ||
+            offerName.includes("gambling") ||
+            offerName.includes("casino") ||
+            offerName.includes("poker") ||
+            offerName.includes("betting") ||
+            offerName.includes("slots") ||
+            offerName.includes("jackpot")
+          );
+
+        case "game":
+          return (
+            offerVerticals.some(v => v.includes("game")) ||
+            offerTags.some(t => t.includes("game")) ||
+            offerName.includes("game") ||
+            offerName.includes("gaming") ||
+            offerName.includes("video game") ||
+            offerName.includes("mobile game")
+          );
+
+        case "cod":
+          return (
+            offerVerticals.some(v => v.includes("cod")) ||
+            offerTags.some(t => t.includes("cod")) ||
+            offerName.includes("cod") ||
+            offerName.includes("call of duty") ||
+            offerName.includes("cash on delivery")
+          );
+
+        default:
+          return matchesFilter(offer, selectedQuickFilter);
       }
-    }
+    });
+  }
+}
+
 
     // Handle special cases for filtering and sorting
     if (selectedOfferCategory === "🔥 Top Offers") {
@@ -1423,11 +1490,13 @@ const Browse = () => {
     } else if (selectedOfferCategory === "insurance") {
       filtered = filtered.filter(offer => matchesFilter(offer, "insurance"));
     } else if (selectedOfferCategory !== "All") {
-      filtered = filtered.filter(offer => {
-        const verticals = toStringArray(offer.vertical, false);
-        return verticals.length === 0 || verticals.includes(selectedOfferCategory);
-      });
-    }
+  const selectedCatLower = selectedOfferCategory.toLowerCase();
+  filtered = filtered.filter(offer => {
+    const verticals = toStringArray(offer.vertical, false).map(v => v.toLowerCase());
+    return verticals.includes(selectedCatLower);
+  });
+}
+
 
     // Apply sorting based on the sortBy state
     if (sortBy === "payout") {
