@@ -428,7 +428,7 @@ const JoinButton = ({
   );
 };
 
-// Network Page Component
+// Network Page Component - FIXED: Properly filter offers by network ID
 const NetworkPage = ({ 
   network, 
   offers, 
@@ -442,7 +442,11 @@ const NetworkPage = ({
   const { toast } = useToast();
   const [sortBy, setSortBy] = useState<string>("relevance-desc");
 
-  const networkOffers = offers.filter(offer => offer.network_id === network.id);
+  // FIXED: Properly filter offers by network ID
+  const networkOffers = offers.filter(offer => {
+    // Check both network_id and networks.id to ensure we catch all related offers
+    return offer.network_id === network.id || offer.networks?.id === network.id;
+  });
 
   // Sort offers based on selected option
   const getSortedOffers = () => {
@@ -525,6 +529,82 @@ const NetworkPage = ({
         });
       }
     }
+  };
+
+  // Helper function to convert any value to string array
+  const toStringArray = (value: any, includeEmpty: boolean = false): string[] => {
+    if (!value) return [];
+    
+    if (Array.isArray(value)) {
+      const filtered = value.map(v => {
+        let str = String(v);
+        str = str.replace(/^["'\[\]]+|["'\[\]]+$/g, '');
+        str = str.replace(/\\"/g, '"');
+        str = str.trim();
+        return str;
+      }).filter(v => {
+        if (includeEmpty) return true;
+        return v && v !== "##" && v !== "null" && v !== "undefined" && v !== '""' && v !== "''" && v.trim() !== "";
+      });
+      return filtered;
+    }
+    
+    if (typeof value === 'string') {
+      if (value.startsWith('[') && value.endsWith(']')) {
+        try {
+          const parsed = JSON.parse(value);
+          if (Array.isArray(parsed)) {
+            const filtered = parsed.map(v => {
+              let str = String(v);
+              str = str.replace(/^["'\[\]]+|["'\[\]]+$/g, '');
+              str = str.replace(/\\"/g, '"');
+              str = str.trim();
+              return str;
+            }).filter(v => {
+              if (includeEmpty) return true;
+              return v && v !== "##" && v !== "null" && v !== "undefined" && v !== '""' && v !== "''" && v.trim() !== "";
+            });
+            return filtered;
+          }
+        } catch (e) {
+          console.log('JSON parse failed for:', value);
+          const filtered = value.replace(/^\[|\]$/g, '').split(',').map(v => {
+            let str = v.trim();
+            str = str.replace(/^["']+|["']+$/g, '');
+            str = str.replace(/\\"/g, '"');
+            return str.trim();
+          }).filter(v => {
+            if (includeEmpty) return true;
+            return v && v !== "##" && v !== "null" && v !== "undefined" && v !== '""' && v !== "''" && v.trim() !== "";
+          });
+          return filtered;
+        }
+      }
+      
+      if (value.includes(',')) {
+        const filtered = value.split(',').map(v => {
+          let str = v.trim();
+          str = str.replace(/^["'\[\]]+|["'\[\]]+$/g, '');
+          str = str.replace(/\\"/g, '"');
+          return str.trim();
+        }).filter(v => {
+          if (includeEmpty) return true;
+          return v && v !== "##" && v !== "null" && v !== "undefined" && v !== '""' && v !== "''" && v.trim() !== "";
+        });
+        return filtered;
+      }
+      
+      let cleanValue = value.trim();
+      cleanValue = cleanValue.replace(/^["'\[\]]+|["'\[\]]+$/g, '');
+      cleanValue = cleanValue.replace(/\\"/g, '"');
+      cleanValue = cleanValue.trim();
+      
+      if (includeEmpty || (cleanValue !== "##" && cleanValue !== "null" && cleanValue !== "undefined" && cleanValue !== '""' && cleanValue !== "''" && cleanValue !== "")) {
+        return [cleanValue];
+      }
+    }
+    
+    return [];
   };
 
   return (
@@ -626,7 +706,6 @@ const NetworkPage = ({
                 className={`p-3 w-full hover:shadow-md transition-shadow border-gray-800 cursor-pointer ${
                   offer.is_active ? "bg-gray-900 hover:bg-gray-850" : "bg-gray-800"
                 }`}
-
                 onClick={() => handleOfferClick(offer.id)}
               >
                 <div className="flex items-center justify-between gap-3">
@@ -676,17 +755,15 @@ const NetworkPage = ({
                         ))}
                         
                         {/* Vertical Tags - Show up to 2 after geo tags */}
-                        {/* Vertical Tags - Show up to 2 after geo tags */}
-{toStringArray(offer.vertical, false).slice(0, 2).map((vertical, idx) => (
-  <Badge
-    key={`vertical-${idx}`}
-    variant="outline"
-    className="text-xs px-1 py-0 h-4 border-green-600 text-green-300 bg-green-600/10"
-  >
-    {vertical}
-  </Badge>
-))}
-
+                        {toStringArray(offer.vertical, false).slice(0, 2).map((vertical, idx) => (
+                          <Badge
+                            key={`vertical-${idx}`}
+                            variant="outline"
+                            className="text-xs px-1 py-0 h-4 border-green-600 text-green-300 bg-green-600/10"
+                          >
+                            {vertical}
+                          </Badge>
+                        ))}
                         
                         {offer.type && (
                           <Badge
@@ -906,7 +983,6 @@ const Browse = () => {
     setCurrentPage(1);
   }
 };
-
 
   const handleSortChange = (value: string) => {
     setSortBy(value);
@@ -1300,24 +1376,20 @@ const Browse = () => {
     }
 
     // Apply geo filter
-    // Apply geo filter
-if (selectedGeo && selectedGeo !== "Worldwide") {
-  filtered = filtered.filter(offer => {
-    const geoTargets = toStringArray(offer.geo_targets, false);
-    return geoTargets.includes(selectedGeo);
-  });
-}
-
+    if (selectedGeo && selectedGeo !== "Worldwide") {
+      filtered = filtered.filter(offer => {
+        const geoTargets = toStringArray(offer.geo_targets, false);
+        return geoTargets.includes(selectedGeo);
+      });
+    }
 
     // Apply vertical filter
-   // Apply vertical filter
-if (selectedVertical && selectedVertical !== "All") {
-  filtered = filtered.filter(offer => {
-    const verticals = toStringArray(offer.vertical, false);
-    return verticals.includes(selectedVertical);
-  });
-}
-
+    if (selectedVertical && selectedVertical !== "All") {
+      filtered = filtered.filter(offer => {
+        const verticals = toStringArray(offer.vertical, false);
+        return verticals.includes(selectedVertical);
+      });
+    }
 
     // Apply quick filter if selected - FIXED FILTERING LOGIC
    if (selectedQuickFilter && selectedQuickFilter !== "All Offers") {
@@ -1466,7 +1538,6 @@ if (selectedVertical && selectedVertical !== "All") {
   }
 }
 
-
     // Handle special cases for filtering and sorting
     if (selectedOfferCategory === "🔥 Top Offers") {
       // Sort by highest amount first, then by other criteria
@@ -1496,7 +1567,6 @@ if (selectedVertical && selectedVertical !== "All") {
     return verticals.includes(selectedCatLower);
   });
 }
-
 
     // Apply sorting based on the sortBy state
     if (sortBy === "payout") {
