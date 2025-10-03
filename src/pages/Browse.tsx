@@ -850,8 +850,8 @@ const Browse = () => {
   // Add missing clickIndexMap state for main component
   const [clickIndexMap, setClickIndexMap] = useState<Record<string, number>>({});
   
-  // --- Signup popup state (MOVED FROM BannerDisplay to Browse)
-  const [showSignupPopup, setShowSignupPopup] = useState<boolean>(true);
+  // --- Signup popup state (CHANGED from true to false)
+  const [showSignupPopup, setShowSignupPopup] = useState<boolean>(false);
   const [signupName, setSignupName] = useState<string>("");
   const [signupEmail, setSignupEmail] = useState<string>("");
 
@@ -864,6 +864,24 @@ const Browse = () => {
     } catch (e) {
       // ignore localStorage errors
     }
+  }, []);
+
+  // NEW: Show popup after 1 minute
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      // Check if popup hasn't been shown before
+      try {
+        if (!localStorage.getItem("affititans_signup_shown")) {
+          setShowSignupPopup(true);
+        }
+      } catch (e) {
+        // If localStorage fails, still show the popup
+        setShowSignupPopup(true);
+      }
+    }, 60000); // 60000 milliseconds = 1 minute
+
+    // Clean up the timer when component unmounts
+    return () => clearTimeout(timer);
   }, []);
 
   // --- Signup popup submit handler ---
@@ -1989,7 +2007,7 @@ const Browse = () => {
               placeholder="Your Name"
               value={signupName}
               onChange={(e) => setSignupName((e.target as HTMLInputElement).value)}
-              className="mb-2 w-full"
+              className="mb-2 w-full text-black bg-white"
             />
 
             <Input
@@ -1997,7 +2015,7 @@ const Browse = () => {
               placeholder="Email Address"
               value={signupEmail}
               onChange={(e) => setSignupEmail((e.target as HTMLInputElement).value)}
-              className="mb-3 w-full"
+              className="mb-3 w-full text-black bg-white"
             />
 
             <div className="flex gap-2">
