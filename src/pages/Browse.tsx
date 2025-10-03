@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { ChevronDown, Search, ChevronLeft, ChevronRight, ExternalLink, Star, Users, Clock, Target, ArrowLeft, MoreHorizontal, ArrowUpRight } from "lucide-react";
+import { ChevronDown, Search, ChevronLeft, ChevronRight, ExternalLink, Star, Users, Clock, Target, ArrowLeft, MoreHorizontal, ArrowUpRight, Trophy, TrendingUp, Gift, Crown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Footer from "@/components/Footer";
 import TopBar from "@/components/TopBar";
@@ -79,6 +79,16 @@ interface BannerRotation {
   rotation_duration_ms?: number;
   expires_at?: string | null;
   created_at?: string;
+}
+
+// Spin Wheel Prize Interface
+interface SpinPrize {
+  id: string;
+  name: string;
+  type: 'bonus' | 'discount' | 'cashback' | 'premium' | 'voucher';
+  value: string;
+  probability: number;
+  color: string;
 }
 
 // handles: dev proxy (/api), or production full URL (https://...)
@@ -164,6 +174,214 @@ const useRotatingBanners = (banners: Banner[], intervalMs: number = 5000) => {
 };
 
 const SUPABASE_BANNERS_BASE = "https://booohlpwrvqtgvlngzrf.supabase.co/storage/v1/object/public/images/banners/";
+
+// Spin Wheel Component
+const SpinWheel = () => {
+  const [spinning, setSpinning] = useState(false);
+  const [rotation, setRotation] = useState(0);
+  const [wonPrize, setWonPrize] = useState<SpinPrize | null>(null);
+  const [showResult, setShowResult] = useState(false);
+  const { toast } = useToast();
+
+  const prizes: SpinPrize[] = [
+    { id: '1', name: '$5 Bonus', type: 'bonus', value: '$5', probability: 0.1, color: '#FF6B6B' },
+    { id: '2', name: '10% Cashback', type: 'cashback', value: '10%', probability: 0.15, color: '#4ECDC4' },
+    { id: '3', name: 'Premium Access', type: 'premium', value: '7 Days', probability: 0.05, color: '#45B7D1' },
+    { id: '4', name: '$2 Voucher', type: 'voucher', value: '$2', probability: 0.2, color: '#FFA07A' },
+    { id: '5', name: '5% Discount', type: 'discount', value: '5%', probability: 0.25, color: '#98D8C8' },
+    { id: '6', name: 'Better Luck Next Time', type: 'bonus', value: 'Try Again', probability: 0.25, color: '#F7DC6F' },
+  ];
+
+  const spinWheel = () => {
+    if (spinning) return;
+
+    setSpinning(true);
+    setShowResult(false);
+    setWonPrize(null);
+
+    // Calculate total segments (6 segments for 6 prizes)
+    const segments = 6;
+    const segmentAngle = 360 / segments;
+    
+    // Random rotation (multiple full rotations + segment offset)
+    const fullRotations = 5;
+    const randomSegment = Math.floor(Math.random() * segments);
+    const newRotation = fullRotations * 360 + (360 - randomSegment * segmentAngle) + 180;
+    
+    setRotation(newRotation);
+
+    // Determine won prize based on the segment
+    setTimeout(() => {
+      const wonPrizeIndex = randomSegment;
+      const prize = prizes[wonPrizeIndex];
+      setWonPrize(prize);
+      setSpinning(false);
+      setShowResult(true);
+
+      // Show toast notification
+      if (prize.name !== 'Better Luck Next Time') {
+        toast({
+          title: "🎉 Congratulations!",
+          description: `You won: ${prize.name}`,
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "😔 Better Luck Next Time",
+          description: "Keep trying to win amazing rewards!",
+          variant: "destructive",
+        });
+      }
+    }, 4000);
+  };
+
+  return (
+    <div className="bg-gradient-to-br from-purple-900 to-blue-900 rounded-lg p-4 border border-purple-600 shadow-lg">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-white font-bold text-lg flex items-center gap-2">
+          <Gift className="w-5 h-5" />
+          Daily Spin Wheel
+        </h3>
+        <Badge variant="secondary" className="bg-yellow-500 text-black text-xs">
+          Free Spin
+        </Badge>
+      </div>
+
+      <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
+        {/* Wheel Container */}
+        <div className="relative">
+          <div 
+            className="w-48 h-48 rounded-full border-4 border-yellow-400 relative transition-transform duration-4000 ease-out"
+            style={{ 
+              transform: `rotate(${rotation}deg)`,
+              background: 'conic-gradient(from 0deg, #FF6B6B 0deg 60deg, #4ECDC4 60deg 120deg, #45B7D1 120deg 180deg, #FFA07A 180deg 240deg, #98D8C8 240deg 300deg, #F7DC6F 300deg 360deg)'
+            }}
+          >
+            {/* Center circle */}
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white rounded-full border-4 border-yellow-400 flex items-center justify-center">
+              <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+            </div>
+            
+            {/* Pointer */}
+            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1 w-4 h-8">
+              <div className="w-0 h-0 border-l-8 border-r-8 border-b-8 border-l-transparent border-r-transparent border-b-yellow-400"></div>
+            </div>
+          </div>
+          
+          {/* Spin Button */}
+          <Button
+            onClick={spinWheel}
+            disabled={spinning}
+            className="mt-4 w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-105"
+          >
+            {spinning ? 'Spinning...' : 'SPIN NOW!'}
+          </Button>
+        </div>
+
+        {/* Prizes List */}
+        <div className="flex-1">
+          <h4 className="text-white font-semibold mb-2 text-sm">Today's Prizes:</h4>
+          <div className="grid grid-cols-2 gap-2">
+            {prizes.slice(0, 4).map((prize) => (
+              <div
+                key={prize.id}
+                className="flex items-center gap-2 p-2 bg-black/30 rounded-lg border border-white/10"
+              >
+                <div 
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: prize.color }}
+                ></div>
+                <span className="text-white text-xs">{prize.name}</span>
+              </div>
+            ))}
+          </div>
+          
+          {/* Result Display */}
+          {showResult && wonPrize && (
+            <div className="mt-3 p-3 bg-black/40 rounded-lg border border-white/20">
+              <div className="text-center">
+                <div className="text-yellow-400 font-bold text-sm mb-1">You Won:</div>
+                <div className="text-white font-bold text-lg">{wonPrize.name}</div>
+                <div className="text-gray-300 text-xs mt-1">Check your account for details</div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Top Networks of the Month Component
+const TopNetworksOfMonth = ({ networks }: { networks: Network[] }) => {
+  const topNetworks = networks
+    .filter(n => n.rating && n.rating >= 4)
+    .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+    .slice(0, 3);
+
+  if (topNetworks.length === 0) return null;
+
+  return (
+    <div className="bg-gradient-to-br from-amber-900 to-orange-800 rounded-lg p-4 border border-amber-600 shadow-lg">
+      <div className="flex items-center gap-2 mb-3">
+        <Trophy className="w-5 h-5 text-yellow-400" />
+        <h3 className="text-white font-bold text-lg">Top Networks This Month</h3>
+      </div>
+      
+      <div className="space-y-3">
+        {topNetworks.map((network, index) => (
+          <div key={network.id} className="flex items-center gap-3 p-2 bg-black/30 rounded-lg">
+            <div className="flex items-center justify-center w-6 h-6 bg-yellow-500 rounded-full text-black text-xs font-bold">
+              {index + 1}
+            </div>
+            <img
+              src={network.logo_url || `https://placehold.co/32x32/333333/666666?text=${network.name.charAt(0)}`}
+              alt={network.name}
+              className="w-8 h-8 rounded-lg object-cover"
+            />
+            <div className="flex-1">
+              <div className="text-white font-medium text-sm">{network.name}</div>
+              <StarRating rating={network.rating || 0} totalRatings={network.total_ratings} size={12} />
+            </div>
+            <Badge variant="secondary" className="bg-green-600 text-white text-xs">
+              {network.rating?.toFixed(1)}
+            </Badge>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Top Searched Networks Component
+const TopSearchedNetworks = ({ networks }: { networks: Network[] }) => {
+  // Simulate search popularity (in real app, this would come from analytics)
+  const popularNetworks = networks
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 4);
+
+  return (
+    <div className="bg-gradient-to-br from-green-900 to-emerald-800 rounded-lg p-4 border border-green-600 shadow-lg">
+      <div className="flex items-center gap-2 mb-3">
+        <TrendingUp className="w-5 h-5 text-green-400" />
+        <h3 className="text-white font-bold text-lg">Trending Searches</h3>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-2">
+        {popularNetworks.map((network) => (
+          <div key={network.id} className="flex items-center gap-2 p-2 bg-black/30 rounded-lg">
+            <img
+              src={network.logo_url || `https://placehold.co/24x24/333333/666666?text=${network.name.charAt(0)}`}
+              alt={network.name}
+              className="w-6 h-6 rounded object-cover"
+            />
+            <span className="text-white text-xs truncate">{network.name}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const BannerDisplay = ({
   banners,
@@ -2387,9 +2605,18 @@ const Browse = () => {
           )}
         </div>
 
-        {/* Networks Sidebar - Network names are now clickable to open network page */}
-        <div className="w-full lg:w-72 flex-shrink-0 order-last lg:order-none">
-          <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden">
+        {/* Right Sidebar - Networks and New Features */}
+        <div className="w-full lg:w-80 flex-shrink-0 order-last lg:order-none">
+          <div className="space-y-4">
+            {/* Spin Wheel Section */}
+            <SpinWheel />
+
+            {/* Top Networks of the Month */}
+            <TopNetworksOfMonth networks={allNetworks} />
+
+            {/* Top Searched Networks */}
+            <TopSearchedNetworks networks={allNetworks} />
+
             {/* Sidebar Banners */}
             {rotationGroupsBySection["sidebar"].map((rotation) => (
               <BannerDisplay
@@ -2404,61 +2631,63 @@ const Browse = () => {
             )}
             
             {/* Network Search Box */}
-            <div className="p-2 border-b border-gray-700" onClick={(e) => e.stopPropagation()}>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
-                <Input
-                  placeholder="Search networks..."
-                  className="pl-8 bg-gray-800 border-gray-700 text-white h-7 text-xs"
-                  value={networkSearchTerm}
-                  onChange={(e) => setNetworkSearchTerm(e.target.value)}
-                />
+            <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden">
+              <div className="p-2 border-b border-gray-700" onClick={(e) => e.stopPropagation()}>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
+                  <Input
+                    placeholder="Search networks..."
+                    className="pl-8 bg-gray-800 border-gray-700 text-white h-7 text-xs"
+                    value={networkSearchTerm}
+                    onChange={(e) => setNetworkSearchTerm(e.target.value)}
+                  />
+                </div>
               </div>
-            </div>
-            
-            <div className="p-2 border-b border-gray-700">
-              <h2 className="font-medium text-white text-xs">All Networks</h2>
-            </div>
-            
-            <div className="p-2">
-              <div className="grid grid-cols-4 gap-2">
-                {loadingNetworks ? (
-                  <div className="text-center py-3 text-gray-400 col-span-4 text-xs">Loading networks...</div>
-                ) : networksToDisplay.length === 0 ? (
-                  <div className="text-center py-3 text-gray-400 col-span-4 text-xs">No networks found.</div>
-                ) : (
-                  networksToDisplay.map((network) => (
-                    <div
-                      key={network.id}
-                      className="flex flex-col items-center cursor-pointer group"
-                      title={network.name}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleNetworkPageClick(network);
-                      }}
-                    >
-                      <img
-                        src={network.logo_url || `https://placehold.co/32x32/333333/666666?text=${network.name.charAt(0)}`}
-                        alt={network.name}
-                        className="w-8 h-8 rounded-lg object-cover group-hover:scale-110 transition-transform"
-                      />
-                      <div className="flex items-center gap-1 group-hover:underline mt-0.5">
-                        <span className="text-[10px] text-white truncate w-full text-center">
-                          {network.name}
-                        </span>
-                      </div>
-                      
-                      {/* Network Rating - Only show if data exists */}
-                      {network.rating && (
-                        <StarRating 
-                          rating={network.rating} 
-                          totalRatings={network.total_ratings}
-                          size={8}
+              
+              <div className="p-2 border-b border-gray-700">
+                <h2 className="font-medium text-white text-xs">All Networks</h2>
+              </div>
+              
+              <div className="p-2">
+                <div className="grid grid-cols-4 gap-2">
+                  {loadingNetworks ? (
+                    <div className="text-center py-3 text-gray-400 col-span-4 text-xs">Loading networks...</div>
+                  ) : networksToDisplay.length === 0 ? (
+                    <div className="text-center py-3 text-gray-400 col-span-4 text-xs">No networks found.</div>
+                  ) : (
+                    networksToDisplay.map((network) => (
+                      <div
+                        key={network.id}
+                        className="flex flex-col items-center cursor-pointer group"
+                        title={network.name}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleNetworkPageClick(network);
+                        }}
+                      >
+                        <img
+                          src={network.logo_url || `https://placehold.co/32x32/333333/666666?text=${network.name.charAt(0)}`}
+                          alt={network.name}
+                          className="w-8 h-8 rounded-lg object-cover group-hover:scale-110 transition-transform"
                         />
-                      )}
-                    </div>
-                  ))
-                )}
+                        <div className="flex items-center gap-1 group-hover:underline mt-0.5">
+                          <span className="text-[10px] text-white truncate w-full text-center">
+                            {network.name}
+                          </span>
+                        </div>
+                        
+                        {/* Network Rating - Only show if data exists */}
+                        {network.rating && (
+                          <StarRating 
+                            rating={network.rating} 
+                            totalRatings={network.total_ratings}
+                            size={8}
+                          />
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           </div>
