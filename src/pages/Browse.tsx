@@ -236,9 +236,9 @@ const SpinWheel = () => {
   };
 
   return (
-    <div className="bg-gradient-to-br from-purple-900 to-blue-900 rounded-lg p-4 border border-purple-600 shadow-lg">
+    <div className="bg-white rounded-lg p-4 border border-gray-300 shadow-lg">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-white font-bold text-lg flex items-center gap-2">
+        <h3 className="text-black font-bold text-lg flex items-center gap-2">
           <Gift className="w-5 h-5" />
           Daily Spin Wheel
         </h3>
@@ -280,29 +280,29 @@ const SpinWheel = () => {
 
         {/* Prizes List */}
         <div className="flex-1">
-          <h4 className="text-white font-semibold mb-2 text-sm">Today's Prizes:</h4>
+          <h4 className="text-black font-semibold mb-2 text-sm">Today's Prizes:</h4>
           <div className="grid grid-cols-2 gap-2">
             {prizes.slice(0, 4).map((prize) => (
               <div
                 key={prize.id}
-                className="flex items-center gap-2 p-2 bg-black/30 rounded-lg border border-white/10"
+                className="flex items-center gap-2 p-2 bg-gray-100 rounded-lg border border-gray-300"
               >
                 <div 
                   className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: prize.color }}
                 ></div>
-                <span className="text-white text-xs">{prize.name}</span>
+                <span className="text-black text-xs">{prize.name}</span>
               </div>
             ))}
           </div>
           
           {/* Result Display */}
           {showResult && wonPrize && (
-            <div className="mt-3 p-3 bg-black/40 rounded-lg border border-white/20">
+            <div className="mt-3 p-3 bg-gray-100 rounded-lg border border-gray-300">
               <div className="text-center">
-                <div className="text-yellow-400 font-bold text-sm mb-1">You Won:</div>
-                <div className="text-white font-bold text-lg">{wonPrize.name}</div>
-                <div className="text-gray-300 text-xs mt-1">Check your account for details</div>
+                <div className="text-yellow-600 font-bold text-sm mb-1">You Won:</div>
+                <div className="text-black font-bold text-lg">{wonPrize.name}</div>
+                <div className="text-gray-600 text-xs mt-1">Check your account for details</div>
               </div>
             </div>
           )}
@@ -2591,6 +2591,13 @@ const Browse = () => {
             )}
           </div>
 
+          {/* Spinner Wheel Section - Added in the white area */}
+          <div className="bg-white rounded-lg p-6 my-6 border border-gray-300 shadow-lg">
+            <div className="flex justify-center">
+              <SpinWheel />
+            </div>
+          </div>
+
           {/* Footer Banners */}
           {rotationGroupsBySection["footer"].map((rotation) => (
             <BannerDisplay
@@ -2608,9 +2615,6 @@ const Browse = () => {
         {/* Right Sidebar - Networks and New Features */}
         <div className="w-full lg:w-80 flex-shrink-0 order-last lg:order-none">
           <div className="space-y-4">
-            {/* Spin Wheel Section */}
-            <SpinWheel />
-
             {/* Top Networks of the Month */}
             <TopNetworksOfMonth networks={allNetworks} />
 
