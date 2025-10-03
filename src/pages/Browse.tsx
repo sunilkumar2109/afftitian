@@ -850,6 +850,56 @@ const Browse = () => {
   // Add missing clickIndexMap state for main component
   const [clickIndexMap, setClickIndexMap] = useState<Record<string, number>>({});
   
+  // --- Signup popup state (MOVED FROM BannerDisplay to Browse)
+  const [showSignupPopup, setShowSignupPopup] = useState<boolean>(true);
+  const [signupName, setSignupName] = useState<string>("");
+  const [signupEmail, setSignupEmail] = useState<string>("");
+
+  // Remember if already shown (optional: hides popup after first submit)
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("affititans_signup_shown")) {
+        setShowSignupPopup(false);
+      }
+    } catch (e) {
+      // ignore localStorage errors
+    }
+  }, []);
+
+  // --- Signup popup submit handler ---
+  const handleSignupSubmit = () => {
+    // simple validation
+    if (!signupName.trim() || !/^\S+@\S+\.\S+$/.test(signupEmail)) {
+      toast({
+        title: "Invalid input",
+        description: "Please enter a valid name and email.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Do something with the data: console, toast, or send to API/Supabase
+    console.log("Signup captured:", { name: signupName, email: signupEmail });
+
+    // mark as shown (so we don't show again)
+    try {
+      localStorage.setItem("affititans_signup_shown", "1");
+    } catch (e) {
+      // ignore localStorage errors
+    }
+
+    setShowSignupPopup(false);
+
+    toast({
+      title: "Thanks!",
+      description: "We received your details!",
+      variant: "default",
+    });
+
+    // OPTIONAL: send to Supabase here later if needed
+    // e.g. await supabase.from('leads').insert({ name: signupName, email: signupEmail })
+  };
+
   const [selectedNetworkFilter, setSelectedNetworkFilter] = useState<string | null>(null);
   const [selectedGeo, setSelectedGeo] = useState<string | null>(null);
   const [selectedVertical, setSelectedVertical] = useState<string | null>(null);
@@ -932,6 +982,7 @@ const Browse = () => {
     setSelectedNetwork(network);
     setViewMode("network");
   };
+  
 
   // Function to go back to browse view
   const handleBackToBrowse = () => {
@@ -1922,6 +1973,50 @@ const Browse = () => {
       style={{ backgroundImage: `url('${backgroundUrl}')` }}
       onClick={handleBackgroundClick}
     >
+      {/* --- Signup Popup Starts --- */}
+      {showSignupPopup && (
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60"
+          style={{ zIndex: 9999 }}
+        >
+          <div
+            className="bg-gray-900 text-white rounded-xl p-6 w-80 shadow-xl"
+            onClick={(e) => e.stopPropagation()} // stop background click
+          >
+            <h3 className="text-lg font-semibold mb-3 text-center">Welcome to AffiTitans</h3>
+
+            <Input
+              placeholder="Your Name"
+              value={signupName}
+              onChange={(e) => setSignupName((e.target as HTMLInputElement).value)}
+              className="mb-2 w-full"
+            />
+
+            <Input
+              type="email"
+              placeholder="Email Address"
+              value={signupEmail}
+              onChange={(e) => setSignupEmail((e.target as HTMLInputElement).value)}
+              className="mb-3 w-full"
+            />
+
+            <div className="flex gap-2">
+              <Button onClick={handleSignupSubmit} className="flex-1">
+                Submit
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowSignupPopup(false)}
+                className="flex-1"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* --- Signup Popup Ends --- */}
+
       {/* TopBar with Logo */}
       <div
         className="relative"
