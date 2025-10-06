@@ -254,7 +254,7 @@ const EmailPopup = ({
             >
               {isSubmitting ? "Claiming..." : submitText}
             </Button>
-           <Button
+            <Button
   variant="outline"
   onClick={onClose}
   className="flex-1 text-black border-gray-400 hover:bg-gray-100"
@@ -345,6 +345,13 @@ const SpinWheel = () => {
     // Log the email submission for claim
     console.log("Email collected for claim:", email);
     
+    // Set flag in localStorage to indicate spin wheel was used
+    try {
+      localStorage.setItem("affititans_spinwheel_used", "true");
+    } catch (e) {
+      console.error("Failed to set spin wheel flag in localStorage:", e);
+    }
+    
     // Show success message for claim
     toast({
       title: "🎉 Reward Claimed!",
@@ -430,22 +437,14 @@ const SpinWheel = () => {
             {/* Text Labels on the Wheel */}
             <div className="absolute inset-0">
               {/* Premium Offer */}
-<div
-  className="absolute top-4 left-1/2 text-white text-xs font-bold text-center w-16"
-  style={{ transform: `translateX(-50%) rotate(${-rotation}deg)` }}
->
-  $50 Credit
-</div>
-
+              <div className="absolute top-4 left-1/2 transform -translate-x-1/2 text-white text-xs font-bold text-center w-16">
+                $50 Credit
+              </div>
               
               {/* Weekly Access */}
-<div
-  className="absolute bottom-4 left-1/2 text-white text-xs font-bold text-center w-20"
-  style={{ transform: `translateX(-50%) rotate(${-rotation}deg)` }}
->
-  1 Week Access
-</div>
-
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-xs font-bold text-center w-20">
+                1 Week Access
+              </div>
               
               {/* Featured Network */}
               <div className="absolute top-1/2 right-4 transform -translate-y-1/2 text-white text-xs font-bold text-center w-12">
@@ -480,11 +479,8 @@ const SpinWheel = () => {
 
             {/* Result Overlay - Shows in the middle of wheel */}
             {showResult && wonPrize && (
-             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-80 rounded-full p-6 text-center">
-
-
-                <div className="text-center text-white p-6 w-52">
-
+              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-80 rounded-full">
+                <div className="text-center text-white p-4">
                   <div className="text-yellow-400 font-bold text-lg mb-2">You Won!</div>
                   <div className="text-white font-bold text-xl">{wonPrize.name}</div>
                   <div className="text-gray-200 text-sm mt-1">{wonPrize.value}</div>
@@ -1320,23 +1316,23 @@ const Browse = () => {
     }
   }, []);
 
-  // NEW: Show popup after 1 minute
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      // Check if popup hasn't been shown before
-      try {
-        if (!localStorage.getItem("affititans_signup_shown")) {
-          setShowSignupPopup(true);
-        }
-      } catch (e) {
-        // If localStorage fails, still show the popup
-        setShowSignupPopup(true);
-      }
-    }, 60000); // 60000 milliseconds = 1 minute
+  // NEW: Show popup after 1 minute ONLY if spin wheel hasn't been used
+ // Show popup immediately if spin wheel not clicked
+useEffect(() => {
+  try {
+    const spinWheelUsed = localStorage.getItem("affititans_spinwheel_used");
+    const signupShown = localStorage.getItem("affititans_signup_shown");
 
-    // Clean up the timer when component unmounts
-    return () => clearTimeout(timer);
-  }, []);
+    // Condition 1: If spin not clicked → show popup
+    if (!signupShown && !spinWheelUsed) {
+      setShowSignupPopup(true);
+    }
+  } catch (e) {
+    // fallback
+    setShowSignupPopup(true);
+  }
+}, []);
+
 
   // --- Signup popup submit handler ---
   const handleSignupSubmit = () => {
@@ -2531,12 +2527,13 @@ const Browse = () => {
                 Submit & Get Bonus
               </Button>
               <Button
-                variant="outline"
-                onClick={() => setShowSignupPopup(false)}
-                className="flex-1 text-white border-gray-400 hover:bg-gray-800"
-              >
-                Close
-              </Button>
+  variant="outline"
+  onClick={() => setShowSignupPopup(false)}
+  className="flex-1 text-black border-gray-400 hover:bg-gray-100"
+>
+  Close
+</Button>
+
             </div>
           </div>
         </div>
