@@ -176,7 +176,7 @@ const useRotatingBanners = (banners: Banner[], intervalMs: number = 5000) => {
 
 const SUPABASE_BANNERS_BASE = "https://booohlpwrvqtgvlngzrf.supabase.co/storage/v1/object/public/images/banners/";
 
-// Spin Wheel Component - UPDATED for B2B Advertiser Rewards with text on wheel
+// Spin Wheel Component - UPDATED for B2B Advertiser Rewards with new prize labels
 const SpinWheel = () => {
   const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
@@ -184,13 +184,13 @@ const SpinWheel = () => {
   const [showResult, setShowResult] = useState(false);
   const { toast } = useToast();
 
-  // Updated prizes for B2B advertisers
+  // Updated prizes for B2B advertisers with new labels
   const prizes: SpinPrize[] = [
     { 
       id: '1', 
       name: 'Top Banner', 
       type: 'top_banner', 
-      value: '1 Month Free', 
+      value: '$50 Free Credit', 
       probability: 0.05, 
       color: '#FF6B6B',
       description: 'Premium top banner placement for 1 month'
@@ -199,7 +199,7 @@ const SpinWheel = () => {
       id: '2', 
       name: 'Bottom Banner', 
       type: 'bottom_banner', 
-      value: '1 Week Free', 
+      value: '1 Week Access', 
       probability: 0.15, 
       color: '#4ECDC4',
       description: 'Bottom banner placement for 1 week'
@@ -208,7 +208,7 @@ const SpinWheel = () => {
       id: '3', 
       name: 'Sidebar', 
       type: 'sidebar_banner', 
-      value: '1 Week Free', 
+      value: 'Top Network', 
       probability: 0.15, 
       color: '#45B7D1',
       description: 'Sidebar banner placement for 1 week'
@@ -217,7 +217,7 @@ const SpinWheel = () => {
       id: '4', 
       name: 'Newsletter', 
       type: 'newsletter', 
-      value: '1 Issue Free', 
+      value: 'Pro Dashboard', 
       probability: 0.2, 
       color: '#FFA07A',
       description: 'Featured in our newsletter for one issue'
@@ -235,7 +235,7 @@ const SpinWheel = () => {
       id: '6', 
       name: 'Contact Admin', 
       type: 'contact_admin', 
-      value: 'Direct Conversation', 
+      value: 'Contact Admin', 
       probability: 0.35, 
       color: '#F7DC6F',
       description: 'Direct conversation with admin for premium opportunities'
@@ -303,27 +303,27 @@ const SpinWheel = () => {
             <div className="absolute inset-0">
               {/* Top Banner */}
               <div className="absolute top-4 left-1/2 transform -translate-x-1/2 text-white text-xs font-bold text-center w-16">
-                Top Banner
+                $50 Free Credit
               </div>
               
               {/* Bottom Banner */}
               <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-xs font-bold text-center w-20">
-                Bottom Banner
+                1 Week Access
               </div>
               
               {/* Sidebar */}
               <div className="absolute top-1/2 right-4 transform -translate-y-1/2 text-white text-xs font-bold text-center w-12">
-                Sidebar
+                Top Network
               </div>
               
               {/* Newsletter */}
               <div className="absolute top-1/2 left-4 transform -translate-y-1/2 text-white text-xs font-bold text-center w-16">
-                Newsletter
+                Pro Dashboard
               </div>
               
               {/* Homepage */}
               <div className="absolute top-12 left-8 transform rotate-45 text-white text-xs font-bold text-center w-16">
-                Homepage
+                Special Highlight
               </div>
               
               {/* Contact Admin */}
@@ -1164,6 +1164,8 @@ const Browse = () => {
   const [showSignupPopup, setShowSignupPopup] = useState<boolean>(false);
   const [signupName, setSignupName] = useState<string>("");
   const [signupEmail, setSignupEmail] = useState<string>("");
+  const [newsletterConsent, setNewsletterConsent] = useState<boolean>(false);
+  const [termsConsent, setTermsConsent] = useState<boolean>(false);
 
   // Remember if already shown (optional: hides popup after first submit)
   useEffect(() => {
@@ -1206,8 +1208,23 @@ const Browse = () => {
       return;
     }
 
+    // Check if terms are accepted
+    if (!termsConsent) {
+      toast({
+        title: "Terms Required",
+        description: "Please accept the Terms of Service and Privacy Policy to continue.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Do something with the data: console, toast, or send to API/Supabase
-    console.log("Signup captured:", { name: signupName, email: signupEmail });
+    console.log("Signup captured:", { 
+      name: signupName, 
+      email: signupEmail,
+      newsletter_consent: newsletterConsent,
+      terms_consent: termsConsent
+    });
 
     // mark as shown (so we don't show again)
     try {
@@ -1219,13 +1236,19 @@ const Browse = () => {
     setShowSignupPopup(false);
 
     toast({
-      title: "Thanks!",
-      description: "We received your details!",
+      title: "Thanks for signing up!",
+      description: "Check your email for the bonus and welcome message.",
       variant: "default",
     });
 
+    // Reset form
+    setSignupName("");
+    setSignupEmail("");
+    setNewsletterConsent(false);
+    setTermsConsent(false);
+
     // OPTIONAL: send to Supabase here later if needed
-    // e.g. await supabase.from('leads').insert({ name: signupName, email: signupEmail })
+    // e.g. await supabase.from('leads').insert({ name: signupName, email: signupEmail, newsletter_consent: newsletterConsent })
   };
 
   const [selectedNetworkFilter, setSelectedNetworkFilter] = useState<string | null>(null);
@@ -2311,7 +2334,7 @@ const Browse = () => {
             className="bg-gray-900 text-white rounded-xl p-6 w-80 shadow-xl"
             onClick={(e) => e.stopPropagation()} // stop background click
           >
-            <h3 className="text-lg font-semibold mb-3 text-center">Welcome to AffiTitans</h3>
+            <h3 className="text-lg font-semibold mb-3 text-center">Sign up and get the bonus</h3>
 
             <Input
               placeholder="Your Name"
@@ -2328,9 +2351,33 @@ const Browse = () => {
               className="mb-3 w-full text-black bg-white"
             />
 
+            {/* Consent Checkboxes */}
+            <div className="space-y-2 mb-4">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={newsletterConsent}
+                  onChange={(e) => setNewsletterConsent(e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <span>I agree to receive newsletters, updates, and special offers</span>
+              </label>
+              
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={termsConsent}
+                  onChange={(e) => setTermsConsent(e.target.checked)}
+                  className="w-4 h-4"
+                  required
+                />
+                <span>I agree to the <a href="/terms" target="_blank" className="text-blue-400 hover:underline">Terms of Service</a> and <a href="/privacy" target="_blank" className="text-blue-400 hover:underline">Privacy Policy</a></span>
+              </label>
+            </div>
+
             <div className="flex gap-2">
-              <Button onClick={handleSignupSubmit} className="flex-1">
-                Submit
+              <Button onClick={handleSignupSubmit} className="flex-1" disabled={!termsConsent}>
+                Submit & Get Bonus
               </Button>
               <Button
                 variant="outline"
