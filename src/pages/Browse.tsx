@@ -81,14 +81,15 @@ interface BannerRotation {
   created_at?: string;
 }
 
-// Spin Wheel Prize Interface
+// Spin Wheel Prize Interface - Updated for B2B Advertiser Rewards
 interface SpinPrize {
   id: string;
   name: string;
-  type: 'bonus' | 'discount' | 'cashback' | 'premium' | 'voucher';
+  type: 'top_banner' | 'bottom_banner' | 'sidebar_banner' | 'newsletter' | 'homepage_feature' | 'contact_admin';
   value: string;
   probability: number;
   color: string;
+  description: string;
 }
 
 // handles: dev proxy (/api), or production full URL (https://...)
@@ -175,7 +176,7 @@ const useRotatingBanners = (banners: Banner[], intervalMs: number = 5000) => {
 
 const SUPABASE_BANNERS_BASE = "https://booohlpwrvqtgvlngzrf.supabase.co/storage/v1/object/public/images/banners/";
 
-// Spin Wheel Component
+// Spin Wheel Component - UPDATED for B2B Advertiser Rewards with text on wheel
 const SpinWheel = () => {
   const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
@@ -183,13 +184,62 @@ const SpinWheel = () => {
   const [showResult, setShowResult] = useState(false);
   const { toast } = useToast();
 
+  // Updated prizes for B2B advertisers
   const prizes: SpinPrize[] = [
-    { id: '1', name: '$5 Bonus', type: 'bonus', value: '$5', probability: 0.1, color: '#FF6B6B' },
-    { id: '2', name: '10% Cashback', type: 'cashback', value: '10%', probability: 0.15, color: '#4ECDC4' },
-    { id: '3', name: 'Premium Access', type: 'premium', value: '7 Days', probability: 0.05, color: '#45B7D1' },
-    { id: '4', name: '$2 Voucher', type: 'voucher', value: '$2', probability: 0.2, color: '#FFA07A' },
-    { id: '5', name: '5% Discount', type: 'discount', value: '5%', probability: 0.25, color: '#98D8C8' },
-    { id: '6', name: 'Better Luck Next Time', type: 'bonus', value: 'Try Again', probability: 0.25, color: '#F7DC6F' },
+    { 
+      id: '1', 
+      name: 'Top Banner', 
+      type: 'top_banner', 
+      value: '1 Month Free', 
+      probability: 0.05, 
+      color: '#FF6B6B',
+      description: 'Premium top banner placement for 1 month'
+    },
+    { 
+      id: '2', 
+      name: 'Bottom Banner', 
+      type: 'bottom_banner', 
+      value: '1 Week Free', 
+      probability: 0.15, 
+      color: '#4ECDC4',
+      description: 'Bottom banner placement for 1 week'
+    },
+    { 
+      id: '3', 
+      name: 'Sidebar', 
+      type: 'sidebar_banner', 
+      value: '1 Week Free', 
+      probability: 0.15, 
+      color: '#45B7D1',
+      description: 'Sidebar banner placement for 1 week'
+    },
+    { 
+      id: '4', 
+      name: 'Newsletter', 
+      type: 'newsletter', 
+      value: '1 Issue Free', 
+      probability: 0.2, 
+      color: '#FFA07A',
+      description: 'Featured in our newsletter for one issue'
+    },
+    { 
+      id: '5', 
+      name: 'Homepage', 
+      type: 'homepage_feature', 
+      value: 'Special Highlight', 
+      probability: 0.1, 
+      color: '#98D8C8',
+      description: 'Special highlight on homepage rotation'
+    },
+    { 
+      id: '6', 
+      name: 'Contact Admin', 
+      type: 'contact_admin', 
+      value: 'Direct Conversation', 
+      probability: 0.35, 
+      color: '#F7DC6F',
+      description: 'Direct conversation with admin for premium opportunities'
+    },
   ];
 
   const spinWheel = () => {
@@ -219,19 +269,11 @@ const SpinWheel = () => {
       setShowResult(true);
 
       // Show toast notification
-      if (prize.name !== 'Better Luck Next Time') {
-        toast({
-          title: "🎉 Congratulations!",
-          description: `You won: ${prize.name}`,
-          variant: "default",
-        });
-      } else {
-        toast({
-          title: "😔 Better Luck Next Time",
-          description: "Keep trying to win amazing rewards!",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "🎉 Congratulations!",
+        description: `You won: ${prize.name} - ${prize.value}`,
+        variant: "default",
+      });
     }, 4000);
   };
 
@@ -240,7 +282,7 @@ const SpinWheel = () => {
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-black font-bold text-lg flex items-center gap-2">
           <Gift className="w-5 h-5" />
-          Daily Spin Wheel
+          Advertiser Rewards Wheel
         </h3>
         <Badge variant="secondary" className="bg-yellow-500 text-black text-xs">
           Free Spin
@@ -248,23 +290,56 @@ const SpinWheel = () => {
       </div>
 
       <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-        {/* Wheel Container */}
+        {/* Wheel Container with Text Labels */}
         <div className="relative">
           <div 
-            className="w-48 h-48 rounded-full border-4 border-yellow-400 relative transition-transform duration-4000 ease-out"
+            className="w-64 h-64 rounded-full border-4 border-yellow-400 relative transition-transform duration-4000 ease-out overflow-hidden"
             style={{ 
               transform: `rotate(${rotation}deg)`,
               background: 'conic-gradient(from 0deg, #FF6B6B 0deg 60deg, #4ECDC4 60deg 120deg, #45B7D1 120deg 180deg, #FFA07A 180deg 240deg, #98D8C8 240deg 300deg, #F7DC6F 300deg 360deg)'
             }}
           >
+            {/* Text Labels on the Wheel */}
+            <div className="absolute inset-0">
+              {/* Top Banner */}
+              <div className="absolute top-4 left-1/2 transform -translate-x-1/2 text-white text-xs font-bold text-center w-16">
+                Top Banner
+              </div>
+              
+              {/* Bottom Banner */}
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-xs font-bold text-center w-20">
+                Bottom Banner
+              </div>
+              
+              {/* Sidebar */}
+              <div className="absolute top-1/2 right-4 transform -translate-y-1/2 text-white text-xs font-bold text-center w-12">
+                Sidebar
+              </div>
+              
+              {/* Newsletter */}
+              <div className="absolute top-1/2 left-4 transform -translate-y-1/2 text-white text-xs font-bold text-center w-16">
+                Newsletter
+              </div>
+              
+              {/* Homepage */}
+              <div className="absolute top-12 left-8 transform rotate-45 text-white text-xs font-bold text-center w-16">
+                Homepage
+              </div>
+              
+              {/* Contact Admin */}
+              <div className="absolute top-12 right-8 transform -rotate-45 text-white text-xs font-bold text-center w-20">
+                Contact Admin
+              </div>
+            </div>
+
             {/* Center circle */}
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white rounded-full border-4 border-yellow-400 flex items-center justify-center">
-              <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-white rounded-full border-4 border-yellow-400 flex items-center justify-center">
+              <div className="w-4 h-4 bg-yellow-400 rounded-full"></div>
             </div>
             
             {/* Pointer */}
-            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1 w-4 h-8">
-              <div className="w-0 h-0 border-l-8 border-r-8 border-b-8 border-l-transparent border-r-transparent border-b-yellow-400"></div>
+            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1 w-6 h-10">
+              <div className="w-0 h-0 border-l-10 border-r-10 border-b-10 border-l-transparent border-r-transparent border-b-yellow-400"></div>
             </div>
           </div>
           
@@ -274,24 +349,27 @@ const SpinWheel = () => {
             disabled={spinning}
             className="mt-4 w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-105"
           >
-            {spinning ? 'Spinning...' : 'SPIN NOW!'}
+            {spinning ? 'Spinning...' : 'SPIN FOR REWARDS!'}
           </Button>
         </div>
 
         {/* Prizes List */}
         <div className="flex-1">
-          <h4 className="text-black font-semibold mb-2 text-sm">Today's Prizes:</h4>
-          <div className="grid grid-cols-2 gap-2">
-            {prizes.slice(0, 4).map((prize) => (
+          <h4 className="text-black font-semibold mb-2 text-sm">Advertiser Rewards:</h4>
+          <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
+            {prizes.map((prize) => (
               <div
                 key={prize.id}
                 className="flex items-center gap-2 p-2 bg-gray-100 rounded-lg border border-gray-300"
               >
                 <div 
-                  className="w-3 h-3 rounded-full"
+                  className="w-3 h-3 rounded-full flex-shrink-0"
                   style={{ backgroundColor: prize.color }}
                 ></div>
-                <span className="text-black text-xs">{prize.name}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-black text-xs font-medium truncate">{prize.name}</div>
+                  <div className="text-gray-600 text-xs truncate">{prize.value}</div>
+                </div>
               </div>
             ))}
           </div>
@@ -302,7 +380,21 @@ const SpinWheel = () => {
               <div className="text-center">
                 <div className="text-yellow-600 font-bold text-sm mb-1">You Won:</div>
                 <div className="text-black font-bold text-lg">{wonPrize.name}</div>
-                <div className="text-gray-600 text-xs mt-1">Check your account for details</div>
+                <div className="text-gray-600 text-xs mt-1">{wonPrize.value}</div>
+                <div className="text-gray-500 text-xs mt-2">{wonPrize.description}</div>
+                <Button 
+                  className="mt-2 bg-blue-600 hover:bg-blue-700 text-white text-xs"
+                  onClick={() => {
+                    // Handle prize redemption - could open contact form or email
+                    toast({
+                      title: "Contact Admin",
+                      description: "Our team will contact you shortly to claim your reward!",
+                      variant: "default",
+                    });
+                  }}
+                >
+                  Claim Reward
+                </Button>
               </div>
             </div>
           )}
@@ -2591,7 +2683,7 @@ const Browse = () => {
             )}
           </div>
 
-          {/* Spinner Wheel Section - Added in the white area */}
+          {/* Spinner Wheel Section - Added in the white area with updated B2B prizes and text on wheel */}
           <div className="bg-white rounded-lg p-6 my-6 border border-gray-300 shadow-lg">
             <div className="flex justify-center">
               <SpinWheel />
