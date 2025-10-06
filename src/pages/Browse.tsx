@@ -81,7 +81,7 @@ interface BannerRotation {
   created_at?: string;
 }
 
-// Spin Wheel Prize Interface - Updated for B2B Advertiser Rewards
+// Spin Wheel Prize Interface - Updated with offer names
 interface SpinPrize {
   id: string;
   name: string;
@@ -176,73 +176,191 @@ const useRotatingBanners = (banners: Banner[], intervalMs: number = 5000) => {
 
 const SUPABASE_BANNERS_BASE = "https://booohlpwrvqtgvlngzrf.supabase.co/storage/v1/object/public/images/banners/";
 
-// Spin Wheel Component - UPDATED for B2B Advertiser Rewards with new prize labels
+// Email Popup Component for Claim Reward
+const EmailPopup = ({ 
+  isOpen, 
+  onClose, 
+  onSubmit, 
+  title = "Enter Your Email to Claim Reward",
+  submitText = "Claim Reward"
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (email: string) => void;
+  title?: string;
+  submitText?: string;
+}) => {
+  const [email, setEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email.trim()) {
+      toast({
+        title: "Email Required",
+        description: "Please enter your email address to claim your reward.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    try {
+      await onSubmit(email);
+      setEmail("");
+    } catch (error) {
+      console.error("Error submitting email:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
+      <div className="bg-gray-900 text-white rounded-xl p-6 w-80 shadow-xl">
+        <h3 className="text-lg font-semibold mb-3 text-center">{title}</h3>
+        
+        <form onSubmit={handleSubmit}>
+          <Input
+            type="email"
+            placeholder="Enter your email address"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="mb-3 w-full text-black bg-white"
+            disabled={isSubmitting}
+          />
+
+          <div className="flex gap-2">
+            <Button 
+              type="submit" 
+              className="flex-1" 
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Claiming..." : submitText}
+            </Button>
+           <Button
+  variant="outline"
+  onClick={onClose}
+  className="flex-1 text-black border-gray-400 hover:bg-gray-100"
+  disabled={isSubmitting}
+>
+  Cancel
+</Button>
+
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Spin Wheel Component - UPDATED with simplified prize names and email only for claiming
 const SpinWheel = () => {
   const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [wonPrize, setWonPrize] = useState<SpinPrize | null>(null);
   const [showResult, setShowResult] = useState(false);
+  const [showEmailForClaim, setShowEmailForClaim] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
   const { toast } = useToast();
 
-  // Updated prizes for B2B advertisers with new labels
+  // Updated prizes with simplified names (removed banner references)
   const prizes: SpinPrize[] = [
     { 
       id: '1', 
-      name: 'Top Banner', 
+      name: 'Premium Offer', 
       type: 'top_banner', 
       value: '$50 Free Credit', 
       probability: 0.05, 
       color: '#FF6B6B',
-      description: 'Premium top banner placement for 1 month'
+      description: 'Premium placement for 1 month'
     },
     { 
       id: '2', 
-      name: 'Bottom Banner', 
+      name: 'Weekly Access', 
       type: 'bottom_banner', 
       value: '1 Week Access', 
       probability: 0.15, 
       color: '#4ECDC4',
-      description: 'Bottom banner placement for 1 week'
+      description: 'Special access for 1 week'
     },
     { 
       id: '3', 
-      name: 'Sidebar', 
+      name: 'Featured Network', 
       type: 'sidebar_banner', 
       value: 'Top Network', 
       probability: 0.15, 
       color: '#45B7D1',
-      description: 'Sidebar banner placement for 1 week'
+      description: 'Featured network placement'
     },
     { 
       id: '4', 
-      name: 'Newsletter', 
+      name: 'Newsletter Feature', 
       type: 'newsletter', 
       value: 'Pro Dashboard', 
       probability: 0.2, 
       color: '#FFA07A',
-      description: 'Featured in our newsletter for one issue'
+      description: 'Featured in our newsletter'
     },
     { 
       id: '5', 
-      name: 'Homepage', 
+      name: 'Homepage Spotlight', 
       type: 'homepage_feature', 
       value: 'Special Highlight', 
       probability: 0.1, 
       color: '#98D8C8',
-      description: 'Special highlight on homepage rotation'
+      description: 'Spotlight on homepage rotation'
     },
     { 
       id: '6', 
-      name: 'Contact Admin', 
+      name: 'Admin Support', 
       type: 'contact_admin', 
       value: 'Contact Admin', 
       probability: 0.35, 
       color: '#F7DC6F',
-      description: 'Direct conversation with admin for premium opportunities'
+      description: 'Direct conversation with admin'
     },
   ];
 
-  const spinWheel = () => {
+  const handleEmailForClaim = async (email: string) => {
+    setUserEmail(email);
+    setShowEmailForClaim(false);
+    
+    // Log the email submission for claim
+    console.log("Email collected for claim:", email);
+    
+    // Show success message for claim
+    toast({
+      title: "🎉 Reward Claimed!",
+      description: `Thank you ${email}! Your reward "${wonPrize?.name}" has been claimed. Our team will contact you shortly!`,
+      variant: "default",
+    });
+
+    // Reset the wheel after claiming
+    setTimeout(() => {
+      setWonPrize(null);
+      setShowResult(false);
+      setRotation(0);
+    }, 3000);
+  };
+
+  const startSpinning = () => {
     if (spinning) return;
 
     setSpinning(true);
@@ -277,6 +395,16 @@ const SpinWheel = () => {
     }, 4000);
   };
 
+  const spinWheel = () => {
+    // Start spinning directly without email
+    startSpinning();
+  };
+
+  const claimReward = () => {
+    // Show email popup for claim
+    setShowEmailForClaim(true);
+  };
+
   return (
     <div className="bg-white rounded-lg p-4 border border-gray-300 shadow-lg">
       <div className="flex items-center justify-between mb-3">
@@ -301,34 +429,42 @@ const SpinWheel = () => {
           >
             {/* Text Labels on the Wheel */}
             <div className="absolute inset-0">
-              {/* Top Banner */}
-              <div className="absolute top-4 left-1/2 transform -translate-x-1/2 text-white text-xs font-bold text-center w-16">
-                $50 Free Credit
-              </div>
+              {/* Premium Offer */}
+<div
+  className="absolute top-4 left-1/2 text-white text-xs font-bold text-center w-16"
+  style={{ transform: `translateX(-50%) rotate(${-rotation}deg)` }}
+>
+  $50 Credit
+</div>
+
               
-              {/* Bottom Banner */}
-              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-xs font-bold text-center w-20">
-                1 Week Access
-              </div>
+              {/* Weekly Access */}
+<div
+  className="absolute bottom-4 left-1/2 text-white text-xs font-bold text-center w-20"
+  style={{ transform: `translateX(-50%) rotate(${-rotation}deg)` }}
+>
+  1 Week Access
+</div>
+
               
-              {/* Sidebar */}
+              {/* Featured Network */}
               <div className="absolute top-1/2 right-4 transform -translate-y-1/2 text-white text-xs font-bold text-center w-12">
                 Top Network
               </div>
               
-              {/* Newsletter */}
+              {/* Newsletter Feature */}
               <div className="absolute top-1/2 left-4 transform -translate-y-1/2 text-white text-xs font-bold text-center w-16">
                 Pro Dashboard
               </div>
               
-              {/* Homepage */}
+              {/* Homepage Spotlight */}
               <div className="absolute top-12 left-8 transform rotate-45 text-white text-xs font-bold text-center w-16">
-                Special Highlight
+                Spotlight
               </div>
               
-              {/* Contact Admin */}
+              {/* Admin Support */}
               <div className="absolute top-12 right-8 transform -rotate-45 text-white text-xs font-bold text-center w-20">
-                Contact Admin
+                Admin Support
               </div>
             </div>
 
@@ -341,6 +477,27 @@ const SpinWheel = () => {
             <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1 w-6 h-10">
               <div className="w-0 h-0 border-l-10 border-r-10 border-b-10 border-l-transparent border-r-transparent border-b-yellow-400"></div>
             </div>
+
+            {/* Result Overlay - Shows in the middle of wheel */}
+            {showResult && wonPrize && (
+             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-80 rounded-full p-6 text-center">
+
+
+                <div className="text-center text-white p-6 w-52">
+
+                  <div className="text-yellow-400 font-bold text-lg mb-2">You Won!</div>
+                  <div className="text-white font-bold text-xl">{wonPrize.name}</div>
+                  <div className="text-gray-200 text-sm mt-1">{wonPrize.value}</div>
+                  <div className="text-gray-300 text-xs mt-2 max-w-[180px] mx-auto">{wonPrize.description}</div>
+                  <Button 
+                    className="mt-3 bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2"
+                    onClick={claimReward}
+                  >
+                    Claim Reward
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
           
           {/* Spin Button */}
@@ -355,7 +512,7 @@ const SpinWheel = () => {
 
         {/* Prizes List */}
         <div className="flex-1">
-          <h4 className="text-black font-semibold mb-2 text-sm">Advertiser Rewards:</h4>
+          <h4 className="text-black font-semibold mb-2 text-sm">Available Rewards:</h4>
           <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
             {prizes.map((prize) => (
               <div
@@ -373,33 +530,17 @@ const SpinWheel = () => {
               </div>
             ))}
           </div>
-          
-          {/* Result Display */}
-          {showResult && wonPrize && (
-            <div className="mt-3 p-3 bg-gray-100 rounded-lg border border-gray-300">
-              <div className="text-center">
-                <div className="text-yellow-600 font-bold text-sm mb-1">You Won:</div>
-                <div className="text-black font-bold text-lg">{wonPrize.name}</div>
-                <div className="text-gray-600 text-xs mt-1">{wonPrize.value}</div>
-                <div className="text-gray-500 text-xs mt-2">{wonPrize.description}</div>
-                <Button 
-                  className="mt-2 bg-blue-600 hover:bg-blue-700 text-white text-xs"
-                  onClick={() => {
-                    // Handle prize redemption - could open contact form or email
-                    toast({
-                      title: "Contact Admin",
-                      description: "Our team will contact you shortly to claim your reward!",
-                      variant: "default",
-                    });
-                  }}
-                >
-                  Claim Reward
-                </Button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
+
+      {/* Email Popup for Claim */}
+      <EmailPopup
+        isOpen={showEmailForClaim}
+        onClose={() => setShowEmailForClaim(false)}
+        onSubmit={handleEmailForClaim}
+        title="Enter Your Email to Claim Your Reward"
+        submitText="Claim Reward"
+      />
     </div>
   );
 };
@@ -1162,7 +1303,8 @@ const Browse = () => {
   
   // --- Signup popup state (CHANGED from true to false)
   const [showSignupPopup, setShowSignupPopup] = useState<boolean>(false);
-  const [signupName, setSignupName] = useState<string>("");
+  const [signupFirstName, setSignupFirstName] = useState<string>("");
+  const [signupLastName, setSignupLastName] = useState<string>("");
   const [signupEmail, setSignupEmail] = useState<string>("");
   const [newsletterConsent, setNewsletterConsent] = useState<boolean>(false);
   const [termsConsent, setTermsConsent] = useState<boolean>(false);
@@ -1199,10 +1341,10 @@ const Browse = () => {
   // --- Signup popup submit handler ---
   const handleSignupSubmit = () => {
     // simple validation
-    if (!signupName.trim() || !/^\S+@\S+\.\S+$/.test(signupEmail)) {
+    if (!signupFirstName.trim() || !signupLastName.trim() || !/^\S+@\S+\.\S+$/.test(signupEmail)) {
       toast({
         title: "Invalid input",
-        description: "Please enter a valid name and email.",
+        description: "Please enter a valid first name, last name and email.",
         variant: "destructive",
       });
       return;
@@ -1220,7 +1362,8 @@ const Browse = () => {
 
     // Do something with the data: console, toast, or send to API/Supabase
     console.log("Signup captured:", { 
-      name: signupName, 
+      first_name: signupFirstName,
+      last_name: signupLastName,
       email: signupEmail,
       newsletter_consent: newsletterConsent,
       terms_consent: termsConsent
@@ -1242,13 +1385,14 @@ const Browse = () => {
     });
 
     // Reset form
-    setSignupName("");
+    setSignupFirstName("");
+    setSignupLastName("");
     setSignupEmail("");
     setNewsletterConsent(false);
     setTermsConsent(false);
 
     // OPTIONAL: send to Supabase here later if needed
-    // e.g. await supabase.from('leads').insert({ name: signupName, email: signupEmail, newsletter_consent: newsletterConsent })
+    // e.g. await supabase.from('leads').insert({ first_name: signupFirstName, last_name: signupLastName, email: signupEmail, newsletter_consent: newsletterConsent })
   };
 
   const [selectedNetworkFilter, setSelectedNetworkFilter] = useState<string | null>(null);
@@ -2337,9 +2481,16 @@ const Browse = () => {
             <h3 className="text-lg font-semibold mb-3 text-center">Sign up and get the bonus</h3>
 
             <Input
-              placeholder="Your Name"
-              value={signupName}
-              onChange={(e) => setSignupName((e.target as HTMLInputElement).value)}
+              placeholder="First Name"
+              value={signupFirstName}
+              onChange={(e) => setSignupFirstName((e.target as HTMLInputElement).value)}
+              className="mb-2 w-full text-black bg-white"
+            />
+
+            <Input
+              placeholder="Last Name"
+              value={signupLastName}
+              onChange={(e) => setSignupLastName((e.target as HTMLInputElement).value)}
               className="mb-2 w-full text-black bg-white"
             />
 
@@ -2382,7 +2533,7 @@ const Browse = () => {
               <Button
                 variant="outline"
                 onClick={() => setShowSignupPopup(false)}
-                className="flex-1"
+                className="flex-1 text-white border-gray-400 hover:bg-gray-800"
               >
                 Close
               </Button>
@@ -2730,7 +2881,7 @@ const Browse = () => {
             )}
           </div>
 
-          {/* Spinner Wheel Section - Added in the white area with updated B2B prizes and text on wheel */}
+          {/* Spinner Wheel Section - Added in the white area with updated prizes and email collection */}
           <div className="bg-white rounded-lg p-6 my-6 border border-gray-300 shadow-lg">
             <div className="flex justify-center">
               <SpinWheel />
