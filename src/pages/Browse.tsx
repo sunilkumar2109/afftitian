@@ -336,7 +336,7 @@ const ClaimRewardPopup = ({
   );
 };
 
-// Spin Wheel Component - UPDATED with new claim reward popup
+// Spin Wheel Component - UPDATED with straight text labels
 const SpinWheel = () => {
   const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
@@ -489,42 +489,45 @@ const SpinWheel = () => {
               background: 'conic-gradient(from 0deg, #FF6B6B 0deg 60deg, #4ECDC4 60deg 120deg, #45B7D1 120deg 180deg, #FFA07A 180deg 240deg, #98D8C8 240deg 300deg, #F7DC6F 300deg 360deg)'
             }}
           >
-            {/* Text Labels on the Wheel */}
-            <div className="absolute inset-0">
-             {/* Text Labels on the Wheel */}
-{/* Text Labels on the Wheel */}
-<div className="absolute inset-0">
+           {/* Text Labels on the Wheel - Stay Straight During Spin */}
+<div
+  className="absolute inset-0"
+  style={{
+    transform: `rotate(-${rotation}deg)`,
+    transition: 'transform 4s ease-out',
+  }}
+>
   {/* Premium Offer (Top) */}
-  <div className="absolute top-4 left-1/2 transform -translate-x-1/2 text-white text-xs font-bold text-center w-24">
+  <div className="absolute top-3 left-1/2 -translate-x-1/2 text-white text-xs font-bold text-center w-24">
     $50 Credit
   </div>
 
-  {/* Weekly Access (Bottom) */}
-  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-xs font-bold text-center w-24">
-    1 Week Access
-  </div>
-
-  {/* Featured Network (Right) */}
-  <div className="absolute top-1/2 right-3 transform -translate-y-1/2 text-white text-xs font-bold text-center w-20">
+  {/* Top Network (Top Right) */}
+  <div className="absolute top-1/4 right-4 -translate-y-1/2 text-white text-xs font-bold text-center w-20">
     Top Network
   </div>
 
-  {/* Newsletter Feature (Left) — you mentioned this one */}
-  <div className="absolute top-1/2 left-3 transform -translate-y-1/2 text-white text-xs font-bold text-center w-20">
-    Pro Dashboard
+  {/* Admin Support (Bottom Right) */}
+  <div className="absolute bottom-1/4 right-4 translate-y-1/2 text-white text-xs font-bold text-center w-24">
+    Admin Support
   </div>
 
-  {/* Homepage Spotlight (Top-Left) */}
-  <div className="absolute top-8 left-8 text-white text-xs font-bold text-center w-20">
+  {/* Weekly Access (Bottom) */}
+  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-white text-xs font-bold text-center w-24">
+    1 Week Access
+  </div>
+
+  {/* Spotlight (Bottom Left) */}
+  <div className="absolute bottom-1/4 left-4 translate-y-1/2 text-white text-xs font-bold text-center w-20">
     Spotlight
   </div>
 
-  {/* Admin Support (Top-Right) */}
-  <div className="absolute top-8 right-8 text-white text-xs font-bold text-center w-24">
-    Admin Support
+  {/* Pro Dashboard (Top Left) */}
+  <div className="absolute top-1/4 left-4 -translate-y-1/2 text-white text-xs font-bold text-center w-20">
+    Pro Dashboard
   </div>
 </div>
-</div>
+
 
             {/* Center circle */}
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-white rounded-full border-4 border-yellow-400 flex items-center justify-center">
@@ -537,22 +540,31 @@ const SpinWheel = () => {
             </div>
 
             {/* Result Overlay - Shows in the middle of wheel */}
-            {showResult && wonPrize && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-80 rounded-full">
-                <div className="text-center text-white p-4">
-                  <div className="text-yellow-400 font-bold text-lg mb-2">You Won!</div>
-                  <div className="text-white font-bold text-xl">{wonPrize.name}</div>
-                  <div className="text-gray-200 text-sm mt-1">{wonPrize.value}</div>
-                  <div className="text-gray-300 text-xs mt-2 max-w-[180px] mx-auto">{wonPrize.description}</div>
-                  <Button 
-                    className="mt-3 bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2"
-                    onClick={claimReward}
-                  >
-                    Claim Reward
-                  </Button>
-                </div>
-              </div>
-            )}
+          {showResult && wonPrize && (
+  <div
+    className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-80 rounded-full"
+    style={{
+      transform: `rotate(-${rotation}deg)`,
+      transition: 'transform 0.5s ease-out',
+      transformOrigin: 'center center',
+      willChange: 'transform',
+    }}
+  >
+    <div className="text-center text-white p-4">
+      <div className="text-yellow-400 font-bold text-lg mb-2">You Won!</div>
+      <div className="text-white font-bold text-xl">{wonPrize.name}</div>
+      <div className="text-gray-200 text-sm mt-1">{wonPrize.value}</div>
+      <div className="text-gray-300 text-xs mt-2 max-w-[180px] mx-auto">{wonPrize.description}</div>
+      <Button 
+        className="mt-3 bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2"
+        onClick={claimReward}
+      >
+        Claim Reward
+      </Button>
+    </div>
+  </div>
+)}
+
           </div>
           
           {/* Spin Button */}
