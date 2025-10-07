@@ -176,31 +176,33 @@ const useRotatingBanners = (banners: Banner[], intervalMs: number = 5000) => {
 
 const SUPABASE_BANNERS_BASE = "https://booohlpwrvqtgvlngzrf.supabase.co/storage/v1/object/public/images/banners/";
 
-// Email Popup Component for Claim Reward
-const EmailPopup = ({ 
+// Claim Reward Popup Component - NEW: Collects first name, last name, and email
+const ClaimRewardPopup = ({ 
   isOpen, 
   onClose, 
   onSubmit, 
-  title = "Enter Your Email to Claim Reward",
-  submitText = "Claim Reward"
+  prize
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (email: string) => void;
-  title?: string;
-  submitText?: string;
+  onSubmit: (data: { firstName: string; lastName: string; email: string; newsletterConsent: boolean; termsConsent: boolean }) => void;
+  prize: SpinPrize | null;
 }) => {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [newsletterConsent, setNewsletterConsent] = useState(false);
+  const [termsConsent, setTermsConsent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email.trim()) {
+    if (!firstName.trim() || !lastName.trim() || !email.trim()) {
       toast({
-        title: "Email Required",
-        description: "Please enter your email address to claim your reward.",
+        title: "All Fields Required",
+        description: "Please enter your first name, last name and email address to claim your reward.",
         variant: "destructive",
       });
       return;
@@ -217,13 +219,28 @@ const EmailPopup = ({
       return;
     }
 
+    // Check if terms are accepted
+    if (!termsConsent) {
+      toast({
+        title: "Terms Required",
+        description: "Please accept the Terms of Service and Privacy Policy to claim your reward.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     
     try {
-      await onSubmit(email);
+      await onSubmit({ firstName, lastName, email, newsletterConsent, termsConsent });
+      // Reset form
+      setFirstName("");
+      setLastName("");
       setEmail("");
+      setNewsletterConsent(false);
+      setTermsConsent(false);
     } catch (error) {
-      console.error("Error submitting email:", error);
+      console.error("Error submitting claim:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -233,10 +250,36 @@ const EmailPopup = ({
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
-      <div className="bg-gray-900 text-white rounded-xl p-6 w-80 shadow-xl">
-        <h3 className="text-lg font-semibold mb-3 text-center">{title}</h3>
+      <div className="bg-gray-900 text-white rounded-xl p-6 w-96 shadow-xl">
+        <h3 className="text-lg font-semibold mb-3 text-center">Claim Your Reward!</h3>
+        
+        {prize && (
+          <div className="mb-4 p-3 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg text-center">
+            <div className="text-white font-bold text-lg">{prize.name}</div>
+            <div className="text-white text-sm">{prize.value}</div>
+          </div>
+        )}
         
         <form onSubmit={handleSubmit}>
+          <div className="grid grid-cols-2 gap-2 mb-2">
+            <Input
+              type="text"
+              placeholder="First Name"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              className="text-black bg-white"
+              disabled={isSubmitting}
+            />
+            <Input
+              type="text"
+              placeholder="Last Name"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              className="text-black bg-white"
+              disabled={isSubmitting}
+            />
+          </div>
+          
           <Input
             type="email"
             placeholder="Enter your email address"
@@ -246,23 +289,46 @@ const EmailPopup = ({
             disabled={isSubmitting}
           />
 
+          {/* Consent Checkboxes */}
+          <div className="space-y-2 mb-4">
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={newsletterConsent}
+                onChange={(e) => setNewsletterConsent(e.target.checked)}
+                className="w-4 h-4"
+              />
+              <span>I agree to receive newsletters and special offers</span>
+            </label>
+            
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={termsConsent}
+                onChange={(e) => setTermsConsent(e.target.checked)}
+                className="w-4 h-4"
+                required
+              />
+              <span>I agree to the <a href="/terms" target="_blank" className="text-blue-400 hover:underline">Terms</a> and <a href="/privacy" target="_blank" className="text-blue-400 hover:underline">Privacy Policy</a></span>
+            </label>
+          </div>
+
           <div className="flex gap-2">
             <Button 
               type="submit" 
               className="flex-1" 
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Claiming..." : submitText}
+              {isSubmitting ? "Claiming..." : "Claim Reward"}
             </Button>
             <Button
-  variant="outline"
-  onClick={onClose}
-  className="flex-1 text-black border-gray-400 hover:bg-gray-100"
-  disabled={isSubmitting}
->
-  Cancel
-</Button>
-
+              variant="outline"
+              onClick={onClose}
+              className="flex-1 text-black border-gray-400 hover:bg-gray-100"
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
           </div>
         </form>
       </div>
@@ -270,14 +336,13 @@ const EmailPopup = ({
   );
 };
 
-// Spin Wheel Component - UPDATED with simplified prize names and email only for claiming
-const SpinWheel = ({ onSpinButtonClick }: { onSpinButtonClick: () => void }) => {
+// Spin Wheel Component - UPDATED with new claim reward popup
+const SpinWheel = () => {
   const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [wonPrize, setWonPrize] = useState<SpinPrize | null>(null);
   const [showResult, setShowResult] = useState(false);
-  const [showEmailForClaim, setShowEmailForClaim] = useState(false);
-  const [userEmail, setUserEmail] = useState("");
+  const [showClaimPopup, setShowClaimPopup] = useState(false);
   const { toast } = useToast();
 
   // Updated prizes with simplified names (removed banner references)
@@ -338,20 +403,22 @@ const SpinWheel = ({ onSpinButtonClick }: { onSpinButtonClick: () => void }) => 
     },
   ];
 
-  const handleEmailForClaim = async (email: string) => {
-    setUserEmail(email);
-    setShowEmailForClaim(false);
-    
-    // Log the email submission for claim
-    console.log("Email collected for claim:", email);
+  const handleClaimSubmit = async (data: { firstName: string; lastName: string; email: string; newsletterConsent: boolean; termsConsent: boolean }) => {
+    // Log the claim submission
+    console.log("Reward claim submitted:", {
+      ...data,
+      prize: wonPrize
+    });
     
     // Show success message for claim
     toast({
       title: "🎉 Reward Claimed!",
-      description: `Thank you ${email}! Your reward "${wonPrize?.name}" has been claimed. Our team will contact you shortly!`,
+      description: `Thank you ${data.firstName}! Your reward "${wonPrize?.name}" has been claimed. Our team will contact you shortly!`,
       variant: "default",
     });
 
+    setShowClaimPopup(false);
+    
     // Reset the wheel after claiming
     setTimeout(() => {
       setWonPrize(null);
@@ -395,16 +462,9 @@ const SpinWheel = ({ onSpinButtonClick }: { onSpinButtonClick: () => void }) => 
     }, 4000);
   };
 
-  const spinWheel = () => {
-    // Call the parent function to track spin wheel click
-    onSpinButtonClick();
-    // Start spinning directly without email
-    startSpinning();
-  };
-
   const claimReward = () => {
-    // Show email popup for claim
-    setShowEmailForClaim(true);
+    // Show claim popup
+    setShowClaimPopup(true);
   };
 
   return (
@@ -431,36 +491,40 @@ const SpinWheel = ({ onSpinButtonClick }: { onSpinButtonClick: () => void }) => 
           >
             {/* Text Labels on the Wheel */}
             <div className="absolute inset-0">
-              {/* Premium Offer */}
-              <div className="absolute top-4 left-1/2 transform -translate-x-1/2 text-white text-xs font-bold text-center w-16">
-                $50 Credit
-              </div>
-              
-              {/* Weekly Access */}
-              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-xs font-bold text-center w-20">
-                1 Week Access
-              </div>
-              
-              {/* Featured Network */}
-              <div className="absolute top-1/2 right-4 transform -translate-y-1/2 text-white text-xs font-bold text-center w-12">
-                Top Network
-              </div>
-              
-              {/* Newsletter Feature */}
-              <div className="absolute top-1/2 left-4 transform -translate-y-1/2 text-white text-xs font-bold text-center w-16">
-                Pro Dashboard
-              </div>
-              
-              {/* Homepage Spotlight */}
-              <div className="absolute top-12 left-8 transform rotate-45 text-white text-xs font-bold text-center w-16">
-                Spotlight
-              </div>
-              
-              {/* Admin Support */}
-              <div className="absolute top-12 right-8 transform -rotate-45 text-white text-xs font-bold text-center w-20">
-                Admin Support
-              </div>
-            </div>
+             {/* Text Labels on the Wheel */}
+{/* Text Labels on the Wheel */}
+<div className="absolute inset-0">
+  {/* Premium Offer (Top) */}
+  <div className="absolute top-4 left-1/2 transform -translate-x-1/2 text-white text-xs font-bold text-center w-24">
+    $50 Credit
+  </div>
+
+  {/* Weekly Access (Bottom) */}
+  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-xs font-bold text-center w-24">
+    1 Week Access
+  </div>
+
+  {/* Featured Network (Right) */}
+  <div className="absolute top-1/2 right-3 transform -translate-y-1/2 text-white text-xs font-bold text-center w-20">
+    Top Network
+  </div>
+
+  {/* Newsletter Feature (Left) — you mentioned this one */}
+  <div className="absolute top-1/2 left-3 transform -translate-y-1/2 text-white text-xs font-bold text-center w-20">
+    Pro Dashboard
+  </div>
+
+  {/* Homepage Spotlight (Top-Left) */}
+  <div className="absolute top-8 left-8 text-white text-xs font-bold text-center w-20">
+    Spotlight
+  </div>
+
+  {/* Admin Support (Top-Right) */}
+  <div className="absolute top-8 right-8 text-white text-xs font-bold text-center w-24">
+    Admin Support
+  </div>
+</div>
+</div>
 
             {/* Center circle */}
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-white rounded-full border-4 border-yellow-400 flex items-center justify-center">
@@ -493,7 +557,7 @@ const SpinWheel = ({ onSpinButtonClick }: { onSpinButtonClick: () => void }) => 
           
           {/* Spin Button */}
           <Button
-            onClick={spinWheel}
+            onClick={startSpinning}
             disabled={spinning}
             className="mt-4 w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-105"
           >
@@ -524,13 +588,12 @@ const SpinWheel = ({ onSpinButtonClick }: { onSpinButtonClick: () => void }) => 
         </div>
       </div>
 
-      {/* Email Popup for Claim */}
-      <EmailPopup
-        isOpen={showEmailForClaim}
-        onClose={() => setShowEmailForClaim(false)}
-        onSubmit={handleEmailForClaim}
-        title="Enter Your Email to Claim Your Reward"
-        submitText="Claim Reward"
+      {/* Claim Reward Popup */}
+      <ClaimRewardPopup
+        isOpen={showClaimPopup}
+        onClose={() => setShowClaimPopup(false)}
+        onSubmit={handleClaimSubmit}
+        prize={wonPrize}
       />
     </div>
   );
@@ -1291,127 +1354,6 @@ const Browse = () => {
 
   // Add missing clickIndexMap state for main component
   const [clickIndexMap, setClickIndexMap] = useState<Record<string, number>>({});
-  
-  // --- Signup popup state (CHANGED from true to false)
-  const [showSignupPopup, setShowSignupPopup] = useState<boolean>(false);
-  const [signupFirstName, setSignupFirstName] = useState<string>("");
-  const [signupLastName, setSignupLastName] = useState<string>("");
-  const [signupEmail, setSignupEmail] = useState<string>("");
-  const [newsletterConsent, setNewsletterConsent] = useState<boolean>(false);
-  const [termsConsent, setTermsConsent] = useState<boolean>(false);
-
-  // Track if spin wheel was clicked
-  const [spinWheelClicked, setSpinWheelClicked] = useState<boolean>(false);
-
-  // Remember if already shown (optional: hides popup after first submit)
-  useEffect(() => {
-    try {
-      if (localStorage.getItem("affititans_signup_shown")) {
-        setShowSignupPopup(false);
-      }
-    } catch (e) {
-      // ignore localStorage errors
-    }
-  }, []);
-
-  // NEW: Show popup after 1 minute ONLY if spin wheel wasn't clicked
-  // ✅ New logic:
-// Popup shows immediately if user clicks spin wheel.
-// If user never clicks, show popup after 1 minute.
-useEffect(() => {
-  let timer: NodeJS.Timeout | null = null;
-
-  // Start a 1-minute timer when component loads
-  timer = setTimeout(() => {
-    // Show popup only if spin wheel was not clicked before 1 minute
-    if (!spinWheelClicked) {
-      setShowSignupPopup(true);
-    }
-  }, 60000);
-
-  // If spin wheel is clicked before 1 minute, cancel the timer
-  if (spinWheelClicked && timer) {
-    clearTimeout(timer);
-    // Immediately show popup when clicked
-    setShowSignupPopup(true);
-  }
-
-  return () => {
-    if (timer) clearTimeout(timer);
-  };
-}, [spinWheelClicked]);
-
-  // Handle spin wheel button click
-  const handleSpinWheelClick = () => {
-    setSpinWheelClicked(true);
-    
-    // Show popup immediately when spin wheel is clicked
-    try {
-      if (!localStorage.getItem("affititans_signup_shown")) {
-        setShowSignupPopup(true);
-      }
-    } catch (e) {
-      // If localStorage fails, still show the popup
-      setShowSignupPopup(true);
-    }
-  };
-
-  // --- Signup popup submit handler ---
-  const handleSignupSubmit = () => {
-    // simple validation
-    if (!signupFirstName.trim() || !signupLastName.trim() || !/^\S+@\S+\.\S+$/.test(signupEmail)) {
-      toast({
-        title: "Invalid input",
-        description: "Please enter a valid first name, last name and email.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Check if terms are accepted
-    if (!termsConsent) {
-      toast({
-        title: "Terms Required",
-        description: "Please accept the Terms of Service and Privacy Policy to continue.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Do something with the data: console, toast, or send to API/Supabase
-    console.log("Signup captured:", { 
-      first_name: signupFirstName,
-      last_name: signupLastName,
-      email: signupEmail,
-      newsletter_consent: newsletterConsent,
-      terms_consent: termsConsent
-    });
-
-    // mark as shown (so we don't show again)
-    try {
-      localStorage.setItem("affititans_signup_shown", "1");
-    } catch (e) {
-      // ignore localStorage errors
-    }
-
-    setShowSignupPopup(false);
-
-    toast({
-      title: "Thanks for signing up!",
-      description: "Check your email for the bonus and welcome message.",
-      variant: "default",
-    });
-
-    // Reset form
-    setSignupFirstName("");
-    setSignupLastName("");
-    setSignupEmail("");
-    setNewsletterConsent(false);
-    setTermsConsent(false);
-
-    // OPTIONAL: send to Supabase here later if needed
-    // e.g. await supabase.from('leads').insert({ first_name: signupFirstName, last_name: signupLastName, email: signupEmail, newsletter_consent: newsletterConsent })
-  };
 
   const [selectedNetworkFilter, setSelectedNetworkFilter] = useState<string | null>(null);
   const [selectedGeo, setSelectedGeo] = useState<string | null>(null);
@@ -2486,82 +2428,6 @@ useEffect(() => {
       style={{ backgroundImage: `url('${backgroundUrl}')` }}
       onClick={handleBackgroundClick}
     >
-      {/* --- Signup Popup Starts --- */}
-      {showSignupPopup && (
-        <div
-          className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60"
-          style={{ zIndex: 9999 }}
-        >
-          <div
-            className="bg-gray-900 text-white rounded-xl p-6 w-80 shadow-xl"
-            onClick={(e) => e.stopPropagation()} // stop background click
-          >
-            <h3 className="text-lg font-semibold mb-3 text-center">Sign up and get the bonus</h3>
-
-            <Input
-              placeholder="First Name"
-              value={signupFirstName}
-              onChange={(e) => setSignupFirstName((e.target as HTMLInputElement).value)}
-              className="mb-2 w-full text-black bg-white"
-            />
-
-            <Input
-              placeholder="Last Name"
-              value={signupLastName}
-              onChange={(e) => setSignupLastName((e.target as HTMLInputElement).value)}
-              className="mb-2 w-full text-black bg-white"
-            />
-
-            <Input
-              type="email"
-              placeholder="Email Address"
-              value={signupEmail}
-              onChange={(e) => setSignupEmail((e.target as HTMLInputElement).value)}
-              className="mb-3 w-full text-black bg-white"
-            />
-
-            {/* Consent Checkboxes */}
-            <div className="space-y-2 mb-4">
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  checked={newsletterConsent}
-                  onChange={(e) => setNewsletterConsent(e.target.checked)}
-                  className="w-4 h-4"
-                />
-                <span>I agree to receive newsletters, updates, and special offers</span>
-              </label>
-              
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  checked={termsConsent}
-                  onChange={(e) => setTermsConsent(e.target.checked)}
-                  className="w-4 h-4"
-                  required
-                />
-                <span>I agree to the <a href="/terms" target="_blank" className="text-blue-400 hover:underline">Terms of Service</a> and <a href="/privacy" target="_blank" className="text-blue-400 hover:underline">Privacy Policy</a></span>
-              </label>
-            </div>
-
-            <div className="flex gap-2">
-              <Button onClick={handleSignupSubmit} className="flex-1" disabled={!termsConsent}>
-                Submit & Get Bonus
-              </Button>
-              <Button
-  variant="outline"
-  onClick={() => setShowSignupPopup(false)}
-  className="flex-1 text-black border-gray-400 hover:bg-gray-100"
->
-  Close
-</Button>
-
-            </div>
-          </div>
-        </div>
-      )}
-      {/* --- Signup Popup Ends --- */}
-
       {/* TopBar with Logo */}
       <div
         className="relative"
@@ -2903,7 +2769,7 @@ useEffect(() => {
           {/* Spinner Wheel Section - Added in the white area with updated prizes and email collection */}
           <div className="bg-white rounded-lg p-6 my-6 border border-gray-300 shadow-lg">
             <div className="flex justify-center">
-              <SpinWheel onSpinButtonClick={handleSpinWheelClick} />
+              <SpinWheel />
             </div>
           </div>
 
