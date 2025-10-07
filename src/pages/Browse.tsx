@@ -1314,14 +1314,47 @@ const Browse = () => {
     }
   }, []);
 
-  // ✅ New logic: popup shows immediately on spin click,
-// or after 1 minute if user never clicks
+  // NEW: Show popup after 1 minute ONLY if spin wheel wasn't clicked
+  // ✅ New logic:
+// Popup shows immediately if user clicks spin wheel.
+// If user never clicks, show popup after 1 minute.
+useEffect(() => {
+  let timer: NodeJS.Timeout | null = null;
+
+  // Start a 1-minute timer when component loads
+  timer = setTimeout(() => {
+    // Show popup only if spin wheel was not clicked before 1 minute
+    if (!spinWheelClicked) {
+      setShowSignupPopup(true);
+    }
+  }, 60000);
+
+  // If spin wheel is clicked before 1 minute, cancel the timer
+  if (spinWheelClicked && timer) {
+    clearTimeout(timer);
+    // Immediately show popup when clicked
+    setShowSignupPopup(true);
+  }
+
+  return () => {
+    if (timer) clearTimeout(timer);
+  };
+}, [spinWheelClicked]);
 
   // Handle spin wheel button click
- const handleSpinWheelClick = () => {
-  // Always show signup popup when spin wheel button is clicked
-  setShowSignupPopup(true);
-};
+  const handleSpinWheelClick = () => {
+    setSpinWheelClicked(true);
+    
+    // Show popup immediately when spin wheel is clicked
+    try {
+      if (!localStorage.getItem("affititans_signup_shown")) {
+        setShowSignupPopup(true);
+      }
+    } catch (e) {
+      // If localStorage fails, still show the popup
+      setShowSignupPopup(true);
+    }
+  };
 
   // --- Signup popup submit handler ---
   const handleSignupSubmit = () => {
@@ -2867,30 +2900,12 @@ const Browse = () => {
             )}
           </div>
 
-          {/* Spinner Wheel Section - User must sign up before spinning */}
-<div className="bg-white rounded-lg p-6 my-6 border border-gray-300 shadow-lg">
-  <div className="flex justify-center">
-    {!localStorage.getItem("affititans_signup_shown") ? (
-      <div className="text-center">
-        <h3 className="text-lg font-semibold text-gray-800 mb-3">
-          🎁 Sign Up to Unlock the Spin Wheel
-        </h3>
-        <p className="text-gray-600 mb-4">
-          Please enter your details in the popup form to access the rewards.
-        </p>
-        <Button 
-          onClick={() => setShowSignupPopup(true)} 
-          className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2 rounded-lg"
-        >
-          Sign Up Now
-        </Button>
-      </div>
-    ) : (
-      <SpinWheel onSpinButtonClick={handleSpinWheelClick} />
-    )}
-  </div>
-</div>
-
+          {/* Spinner Wheel Section - Added in the white area with updated prizes and email collection */}
+          <div className="bg-white rounded-lg p-6 my-6 border border-gray-300 shadow-lg">
+            <div className="flex justify-center">
+              <SpinWheel onSpinButtonClick={handleSpinWheelClick} />
+            </div>
+          </div>
 
           {/* Footer Banners */}
           {rotationGroupsBySection["footer"].map((rotation) => (
