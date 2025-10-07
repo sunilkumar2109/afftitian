@@ -254,14 +254,7 @@ const EmailPopup = ({
             >
               {isSubmitting ? "Claiming..." : submitText}
             </Button>
-            <Button
-  variant="outline"
-  onClick={onClose}
-  className="flex-1 text-black border-gray-400 hover:bg-gray-100"
-  disabled={isSubmitting}
->
-  Cancel
-</Button>
+          
 
           </div>
         </form>
@@ -271,7 +264,7 @@ const EmailPopup = ({
 };
 
 // Spin Wheel Component - UPDATED with simplified prize names and email only for claiming
-const SpinWheel = () => {
+const SpinWheel = ({ onSpinButtonClick }: { onSpinButtonClick: () => void }) => {
   const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [wonPrize, setWonPrize] = useState<SpinPrize | null>(null);
@@ -345,13 +338,6 @@ const SpinWheel = () => {
     // Log the email submission for claim
     console.log("Email collected for claim:", email);
     
-    // Set flag in localStorage to indicate spin wheel was used
-    try {
-      localStorage.setItem("affititans_spinwheel_used", "true");
-    } catch (e) {
-      console.error("Failed to set spin wheel flag in localStorage:", e);
-    }
-    
     // Show success message for claim
     toast({
       title: "🎉 Reward Claimed!",
@@ -403,6 +389,8 @@ const SpinWheel = () => {
   };
 
   const spinWheel = () => {
+    // Call the parent function to track spin wheel click
+    onSpinButtonClick();
     // Start spinning directly without email
     startSpinning();
   };
@@ -1305,6 +1293,9 @@ const Browse = () => {
   const [newsletterConsent, setNewsletterConsent] = useState<boolean>(false);
   const [termsConsent, setTermsConsent] = useState<boolean>(false);
 
+  // Track if spin wheel was clicked
+  const [spinWheelClicked, setSpinWheelClicked] = useState<boolean>(false);
+
   // Remember if already shown (optional: hides popup after first submit)
   useEffect(() => {
     try {
@@ -1316,23 +1307,32 @@ const Browse = () => {
     }
   }, []);
 
-  // NEW: Show popup after 1 minute ONLY if spin wheel hasn't been used
- // Show popup immediately if spin wheel not clicked
+  // ✅ New logic: popup shows immediately on spin click,
+// or after 1 minute if user never clicks
 useEffect(() => {
-  try {
-    const spinWheelUsed = localStorage.getItem("affititans_spinwheel_used");
-    const signupShown = localStorage.getItem("affititans_signup_shown");
+  let timer: NodeJS.Timeout | null = null;
 
-    // Condition 1: If spin not clicked → show popup
-    if (!signupShown && !spinWheelUsed) {
+  timer = setTimeout(() => {
+    if (!spinWheelClicked) {
       setShowSignupPopup(true);
     }
-  } catch (e) {
-    // fallback
+  }, 60000); // 1 minute
+
+  if (spinWheelClicked && timer) {
+    clearTimeout(timer);
     setShowSignupPopup(true);
   }
-}, []);
 
+  return () => {
+    if (timer) clearTimeout(timer);
+  };
+}, [spinWheelClicked]);
+
+  // Handle spin wheel button click
+ const handleSpinWheelClick = () => {
+  // Always show signup popup when spin wheel button is clicked
+  setShowSignupPopup(true);
+};
 
   // --- Signup popup submit handler ---
   const handleSignupSubmit = () => {
@@ -2526,13 +2526,7 @@ useEffect(() => {
               <Button onClick={handleSignupSubmit} className="flex-1" disabled={!termsConsent}>
                 Submit & Get Bonus
               </Button>
-              <Button
-  variant="outline"
-  onClick={() => setShowSignupPopup(false)}
-  className="flex-1 text-black border-gray-400 hover:bg-gray-100"
->
-  Close
-</Button>
+              
 
             </div>
           </div>
@@ -2878,12 +2872,30 @@ useEffect(() => {
             )}
           </div>
 
-          {/* Spinner Wheel Section - Added in the white area with updated prizes and email collection */}
-          <div className="bg-white rounded-lg p-6 my-6 border border-gray-300 shadow-lg">
-            <div className="flex justify-center">
-              <SpinWheel />
-            </div>
-          </div>
+          {/* Spinner Wheel Section - User must sign up before spinning */}
+<div className="bg-white rounded-lg p-6 my-6 border border-gray-300 shadow-lg">
+  <div className="flex justify-center">
+    {!localStorage.getItem("affititans_signup_shown") ? (
+      <div className="text-center">
+        <h3 className="text-lg font-semibold text-gray-800 mb-3">
+          🎁 Sign Up to Unlock the Spin Wheel
+        </h3>
+        <p className="text-gray-600 mb-4">
+          Please enter your details in the popup form to access the rewards.
+        </p>
+        <Button 
+          onClick={() => setShowSignupPopup(true)} 
+          className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2 rounded-lg"
+        >
+          Sign Up Now
+        </Button>
+      </div>
+    ) : (
+      <SpinWheel onSpinButtonClick={handleSpinWheelClick} />
+    )}
+  </div>
+</div>
+
 
           {/* Footer Banners */}
           {rotationGroupsBySection["footer"].map((rotation) => (
