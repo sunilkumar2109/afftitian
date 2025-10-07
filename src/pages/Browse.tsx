@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -1296,9 +1296,6 @@ const Browse = () => {
   // Track if spin wheel was clicked
   const [spinWheelClicked, setSpinWheelClicked] = useState<boolean>(false);
 
-  // Use ref to track if timer has been set
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-
   // Remember if already shown (optional: hides popup after first submit)
   useEffect(() => {
     try {
@@ -1309,36 +1306,25 @@ const Browse = () => {
       // ignore localStorage errors
     }
   }, []);
+// 🕒 Show signup popup only once — either on spin click OR after 1 minute
+useEffect(() => {
+  const alreadySignedUp = localStorage.getItem("affititans_signup_shown");
+  if (alreadySignedUp) return; // if user already signed up, do nothing
 
-  // 🕒 Show signup popup only once — either on spin click OR after 1 minute
-  useEffect(() => {
-    const alreadySignedUp = localStorage.getItem("affititans_signup_shown");
-    if (alreadySignedUp) return; // if user already signed up, do nothing
-
-    // Clear any existing timer
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
+  // Only set timer if user hasn't clicked spin wheel yet
+  const timer = setTimeout(() => {
+    // Only show popup if user didn't click spin wheel within 1 minute
+    if (!spinWheelClicked) {
+      setShowSignupPopup(true);
     }
+  }, 60000); // 1 minute (60,000 ms)
 
-    // Only set timer if user hasn't clicked spin wheel yet
-    timerRef.current = setTimeout(() => {
-      // Only show popup if user didn't click spin wheel within 1 minute
-      if (!spinWheelClicked) {
-        setShowSignupPopup(true);
-      }
-    }, 60000); // 1 minute (60,000 ms)
-
-    // cleanup timer on unmount
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-    };
-  }, [spinWheelClicked]);
+  // cleanup timer on unmount
+  return () => clearTimeout(timer);
+}, [spinWheelClicked]);
 
   // Handle spin wheel button click
  const handleSpinWheelClick = () => {
-  setSpinWheelClicked(true);
   // Always show signup popup when spin wheel button is clicked
   setShowSignupPopup(true);
 };
