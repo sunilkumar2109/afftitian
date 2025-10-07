@@ -254,7 +254,14 @@ const EmailPopup = ({
             >
               {isSubmitting ? "Claiming..." : submitText}
             </Button>
-          
+            <Button
+  variant="outline"
+  onClick={onClose}
+  className="flex-1 text-black border-gray-400 hover:bg-gray-100"
+  disabled={isSubmitting}
+>
+  Cancel
+</Button>
 
           </div>
         </form>
@@ -1306,22 +1313,9 @@ const Browse = () => {
       // ignore localStorage errors
     }
   }, []);
-// 🕒 Show signup popup only once — either on spin click OR after 1 minute
-useEffect(() => {
-  const alreadySignedUp = localStorage.getItem("affititans_signup_shown");
-  if (alreadySignedUp) return; // if user already signed up, do nothing
 
-  // Only set timer if user hasn't clicked spin wheel yet
-  const timer = setTimeout(() => {
-    // Only show popup if user didn't click spin wheel within 1 minute
-    if (!spinWheelClicked) {
-      setShowSignupPopup(true);
-    }
-  }, 60000); // 1 minute (60,000 ms)
-
-  // cleanup timer on unmount
-  return () => clearTimeout(timer);
-}, [spinWheelClicked]);
+  // ✅ New logic: popup shows immediately on spin click,
+// or after 1 minute if user never clicks
 
   // Handle spin wheel button click
  const handleSpinWheelClick = () => {
@@ -2521,7 +2515,13 @@ useEffect(() => {
               <Button onClick={handleSignupSubmit} className="flex-1" disabled={!termsConsent}>
                 Submit & Get Bonus
               </Button>
-              
+              <Button
+  variant="outline"
+  onClick={() => setShowSignupPopup(false)}
+  className="flex-1 text-black border-gray-400 hover:bg-gray-100"
+>
+  Close
+</Button>
 
             </div>
           </div>
