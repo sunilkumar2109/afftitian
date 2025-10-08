@@ -35,6 +35,8 @@ export interface Offer {
   updated_at: string;
   networks?: {
     name: string;
+    offer_number?: number;
+
   };
 }
 

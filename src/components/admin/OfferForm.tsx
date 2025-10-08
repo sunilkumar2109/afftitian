@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -30,13 +29,11 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
   const [loading, setLoading] = useState(false);
   const [fileLoading, setFileLoading] = useState(false);
 
-  // Offer type options - updated with requested country codes
   const offerTypeOptions = [
     "UA", "KE", "ES", "DE", "RU", "GR", "IT", "PL", "RO", "GE", "TR", "QA", 
     "SK", "PH", "BE", "EG", "PT"
   ];
 
-  // Vertical options - updated with requested values including nutra and health
   const verticalOptions = [
     "Crypto", "Dating", "Gambling", "Game", "COD", "Sweepstakes", "Insurance",
     "Incent", "Loan", "App", "Streaming", "Subscription", "Shopping", "HealthFree",
@@ -44,13 +41,11 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
     "Supplement", "Nutra", "Health"
   ];
 
-  // Load XLSX from CDN if it's not already loaded
+  // Load XLSX if needed
   useEffect(() => {
     if (typeof XLSX === 'undefined') {
       const script = document.createElement('script');
       script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js';
-      script.onload = () => console.log('XLSX loaded from CDN');
-      script.onerror = (e) => console.error('Error loading XLSX:', e);
       document.head.appendChild(script);
     }
   }, []);
@@ -72,46 +67,59 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
     priority_order: offer?.priority_order || 0,
   });
 
-  // Helper function to clean and process string data
   const cleanAndSplit = (value: string): string[] => {
     if (!value || value.trim() === "" || value === "##") return [];
-    return value.split(",")
-      .map(s => s.trim())
-      .map(s => s.replace(/^["'\[\]]+|["'\[\]]+$/g, '')) // Remove quotes and brackets from start/end
-      .map(s => s.replace(/\\"/g, '"')) // Unescape quotes
-      .filter(s => s && s !== "##" && s !== '""' && s !== "''");
+    return value.split(",").map(s => s.trim()).filter(Boolean);
   };
 
-  // NAME → ID mapping helpers
-  const networkNameToId = new Map(
-    networks.map(n => [n.name.trim().toLowerCase(), n.id])
-  );
+  const networkNameToId = new Map(networks.map(n => [n.name.trim().toLowerCase(), n.id]));
   const networkIds = new Set(networks.map(n => n.id));
 
-  /**
-   * Accepts either a network id or a network name.
-   * - If it's already a known id -> return it.
-   * - Else try to map by name (case-insensitive).
-   * - If nothing matches -> return null and remember the name for reporting.
-   */
   const resolveNetworkId = (raw: any): { id: string | null; usedName?: string } => {
     const value = String(raw ?? "").trim();
     if (!value) return { id: null };
-
-    // If it exactly matches a known id, use it.
     if (networkIds.has(value)) return { id: value };
-
-    // Otherwise, try name → id
     const byName = networkNameToId.get(value.toLowerCase());
     return { id: byName ?? null, usedName: value };
   };
 
+  /** Generate next unique offer_id like "OFR-000001" */
+  const generateNextOfferId = async (): Promise<string> => {
+    const { data, error } = await supabase
+      .from("offers")
+      .select("offer_id")
+      .order("offer_id", { ascending: false })
+      .limit(1);
+
+    if (error) {
+      console.error("Error fetching offer_id:", error);
+      return "OFR-000001";
+    }
+
+    if (!data || data.length === 0 || !data[0].offer_id) {
+      return "OFR-000001";
+    }
+
+    const lastId = data[0].offer_id;
+    const numericPart = parseInt(lastId.replace(/\D/g, ""), 10);
+    const nextNumber = numericPart + 1;
+    return `OFR-${String(nextNumber).padStart(6, "0")}`;
+  };
+
+  /** Handle manual form submission */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      let newOfferId = offer?.offer_id;
+
+      if (!offer) {
+        newOfferId = await generateNextOfferId();
+      }
+
       const offerData = {
+        offer_id: newOfferId,
         name: formData.name,
         network_id: formData.network_id,
         type: formData.type,
@@ -130,21 +138,16 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
 
       let result;
       if (offer) {
-        result = await supabase
-          .from('offers')
-          .update(offerData)
-          .eq('id', offer.id);
+        result = await supabase.from("offers").update(offerData).eq("id", offer.id);
       } else {
-        result = await supabase
-          .from('offers')
-          .insert([offerData]);
+        result = await supabase.from("offers").insert([offerData]);
       }
 
       if (result.error) throw result.error;
 
       toast({
         title: "Success",
-        description: `Offer ${offer ? 'updated' : 'created'} successfully`,
+        description: `Offer ${offer ? "updated" : "created"} successfully.`,
       });
 
       if (!offer) {
@@ -168,10 +171,10 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
 
       onSuccess();
     } catch (error) {
-      console.error('Error:', error);
+      console.error("Error saving offer:", error);
       toast({
         title: "Error",
-        description: `Failed to ${offer ? 'update' : 'create'} offer`,
+        description: "Failed to save offer.",
         variant: "destructive",
       });
     } finally {
@@ -179,11 +182,11 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
     }
   };
 
+  /** Handle import from Google Sheet */
   const handleGoogleSheetImport = async () => {
     setFileLoading(true);
     try {
       if (typeof XLSX === "undefined") {
-        console.error("XLSX is not loaded. Please wait or check CDN.");
         toast({
           title: "Error",
           description: "Spreadsheet library not loaded. Please try again.",
@@ -198,35 +201,22 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
 
       const response = await fetch(CSV_URL);
       const csvText = await response.text();
-
       const workbook = XLSX.read(csvText, { type: "string" });
       const sheetName = workbook.SheetNames[0];
-      const jsonData: any[] = XLSX.utils.sheet_to_json(
-        workbook.Sheets[sheetName]
-      );
+      const jsonData: any[] = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
-      const notFound: { row: number; network_name: string }[] = [];
+      const formattedData = await Promise.all(
+        jsonData.map(async (row) => {
+          const { id: resolvedId } = resolveNetworkId(
+            row.network_id ?? row.NetworkID ?? row.network_name ?? row.Network ?? row.NetworkName ?? ""
+          );
 
-      const formattedData = jsonData
-        .map((row, idx) => {
-          // Accept network_id, NetworkID, network_name, Network, NetworkName
-          const rawNetwork =
-            row.network_id ??
-            row.NetworkID ??
-            row.network_name ??
-            row.Network ??
-            row.NetworkName ??
-            "";
-
-          const { id: resolvedId, usedName } = resolveNetworkId(rawNetwork);
-          if (!resolvedId) {
-            notFound.push({ row: idx + 2, network_name: usedName || "" }); // +2 to include header row
-            return null; // Skip this row
-          }
+          const offer_id = await generateNextOfferId();
 
           return {
+            offer_id,
             name: row.name || row.Name || "",
-            network_id: resolvedId, // ✅ Always save ID to Supabase
+            network_id: resolvedId,
             type: row.type || row.Type || "",
             payout_amount: parseFloat(row.payout_amount) || 0,
             payout_currency: row.payout_currency || "USD",
@@ -241,47 +231,22 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
             priority_order: parseInt(row.priority_order) || 0,
           };
         })
-        .filter(Boolean);
+      );
 
-      if (formattedData.length === 0) {
-        toast({
-          title: "No rows imported",
-          description:
-            notFound.length > 0
-              ? "All rows skipped due to unknown network names. Check your 'network_name' column."
-              : "Sheet is empty or headers don't match.",
-          variant: "destructive",
-        });
-        setFileLoading(false);
-        return;
-      }
-
-      const { error } = await supabase
-  .from("offers")
-  .upsert(formattedData as any[], { onConflict: "id" }); 
-
+      const { error } = await supabase.from("offers").upsert(formattedData);
       if (error) throw error;
 
-      const skipped = notFound.length;
       toast({
         title: "Success",
-        description:
-          `Imported ${formattedData.length} offer(s).` +
-          (skipped ? ` Skipped ${skipped} row(s) with unknown network name.` : ""),
+        description: `Imported ${formattedData.length} offer(s) successfully.`,
       });
-      if (skipped) {
-        console.warn(
-          "Unknown network names (1-based row numbers incl. header):",
-          notFound
-        );
-      }
 
       onSuccess();
     } catch (error) {
       console.error("Google Sheet import error:", error);
       toast({
         title: "Error",
-        description: "Failed to import offers from Google Sheet",
+        description: "Failed to import offers.",
         variant: "destructive",
       });
     } finally {
@@ -289,54 +254,44 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
     }
   };
 
+  /** Handle manual file upload */
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     setFileLoading(true);
     try {
-      if (typeof XLSX === 'undefined') {
-        console.error("XLSX is not loaded. Please wait or check CDN.");
-        toast({
-          title: "Error",
-          description: "Spreadsheet library not loaded. Please try again.",
-          variant: "destructive",
-        });
-        setFileLoading(false);
-        return;
-      }
-      
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data);
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet);
 
-      const formattedData = jsonData.map((row) => ({
-        name: row.name || row.Name || "##",
-        network_id: row.network_id || row.NetworkID || "##",
-        type: row.type || row.Type || "##",
-        payout_amount: row.payout_amount ? parseFloat(row.payout_amount) : "##",
-        payout_currency: row.payout_currency || "##",
-        devices: cleanAndSplit(row.devices || "##"),
-        vertical: cleanAndSplit(row.vertical || "##"),
-        geo_targets: cleanAndSplit(row.geo_targets || "##"),
-        tags: cleanAndSplit(row.tags || "##"),
-        image_url: row.image_url || "##",
-        landing_page_url: row.landing_page_url || "##",
-        is_active: row.is_active?.toString().toLowerCase() === "true",
-        is_featured: row.is_featured?.toString().toLowerCase() === "true",
-        priority_order: row.priority_order ? parseInt(row.priority_order) : "##",
-      }));
-      
-     const { error } = await supabase
-  .from("offers")
-  .upsert(formattedData, { onConflict: "id" });
+      const formattedData = await Promise.all(
+        jsonData.map(async (row) => ({
+          offer_id: await generateNextOfferId(),
+          name: row.name || row.Name || "",
+          network_id: row.network_id || "",
+          type: row.type || "",
+          payout_amount: parseFloat(row.payout_amount) || 0,
+          payout_currency: row.payout_currency || "USD",
+          devices: cleanAndSplit(row.devices || ""),
+          vertical: cleanAndSplit(row.vertical || ""),
+          geo_targets: cleanAndSplit(row.geo_targets || ""),
+          tags: cleanAndSplit(row.tags || ""),
+          image_url: row.image_url || "",
+          landing_page_url: row.landing_page_url || "",
+          is_active: row.is_active?.toString().toLowerCase() === "true",
+          is_featured: row.is_featured?.toString().toLowerCase() === "true",
+          priority_order: parseInt(row.priority_order) || 0,
+        }))
+      );
 
+      const { error } = await supabase.from("offers").upsert(formattedData);
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: "Offers uploaded successfully from file",
+        description: "Offers uploaded successfully.",
       });
 
       onSuccess();
@@ -344,7 +299,7 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
       console.error("File upload error:", error);
       toast({
         title: "Error",
-        description: "Failed to upload offers from file",
+        description: "Failed to upload offers.",
         variant: "destructive",
       });
     } finally {
@@ -356,10 +311,9 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{offer ? 'Edit Offer' : 'Add New Offer'}</CardTitle>
+        <CardTitle>{offer ? "Edit Offer" : "Add New Offer"}</CardTitle>
       </CardHeader>
       <CardContent>
-        {/* Bulk Upload Section - Only for creating new offers */}
         {!offer && (
           <div className="mb-4 space-y-2">
             <Label>Bulk Upload Options</Label>
@@ -378,15 +332,11 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
             >
               {fileLoading ? "Importing..." : "Import from Google Sheet"}
             </Button>
-            {fileLoading && (
-              <p className="text-sm text-gray-500 mt-1">Processing...</p>
-            )}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Offer name */}
             <div>
               <Label htmlFor="name">Offer Name</Label>
               <Input
@@ -396,7 +346,7 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
                 required
               />
             </div>
-            {/* Network */}
+
             <div>
               <Label htmlFor="network_id">Network</Label>
               <Select
@@ -415,7 +365,7 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
                 </SelectContent>
               </Select>
             </div>
-            {/* Offer Type - Updated to use local options instead of masterData */}
+
             <div>
               <Label htmlFor="type">Offer Type</Label>
               <Select
@@ -434,7 +384,7 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
                 </SelectContent>
               </Select>
             </div>
-            {/* Vertical - Updated dropdown for selecting verticals */}
+
             <div>
               <Label htmlFor="vertical">Vertical</Label>
               <Select
@@ -445,15 +395,15 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
                   <SelectValue placeholder="Select vertical" />
                 </SelectTrigger>
                 <SelectContent>
-                  {verticalOptions.map((vertical) => (
-                    <SelectItem key={vertical} value={vertical}>
-                      {vertical}
+                  {verticalOptions.map((v) => (
+                    <SelectItem key={v} value={v}>
+                      {v}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            {/* Payout Amount */}
+
             <div>
               <Label htmlFor="payout_amount">Payout Amount</Label>
               <Input
@@ -461,10 +411,12 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
                 type="number"
                 step="0.01"
                 value={formData.payout_amount}
-                onChange={(e) => setFormData({ ...formData, payout_amount: parseFloat(e.target.value) || 0 })}
+                onChange={(e) =>
+                  setFormData({ ...formData, payout_amount: parseFloat(e.target.value) || 0 })
+                }
               />
             </div>
-            {/* Payout Currency */}
+
             <div>
               <Label htmlFor="payout_currency">Payout Currency</Label>
               <Select
@@ -483,72 +435,35 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
                 </SelectContent>
               </Select>
             </div>
-            {/* Image URL */}
-            <div>
-              <Label htmlFor="image_url">Image URL</Label>
-              <Input
-                id="image_url"
-                type="url"
-                value={formData.image_url}
-                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-              />
-            </div>
-            {/* Landing Page URL */}
-            <div>
-              <Label htmlFor="landing_page_url">Landing Page URL</Label>
-              <Input
-                id="landing_page_url"
-                type="url"
-                value={formData.landing_page_url}
-                onChange={(e) => setFormData({ ...formData, landing_page_url: e.target.value })}
-              />
-            </div>
-            {/* Priority Order */}
-            <div>
-              <Label htmlFor="priority_order">Priority Order</Label>
-              <Input
-                id="priority_order"
-                type="number"
-                value={formData.priority_order}
-                onChange={(e) => setFormData({ ...formData, priority_order: parseInt(e.target.value) || 0 })}
-              />
-            </div>
           </div>
 
-          {/* Devices */}
           <div>
             <Label htmlFor="devices">Devices (comma-separated)</Label>
             <Input
               id="devices"
               value={formData.devices}
               onChange={(e) => setFormData({ ...formData, devices: e.target.value })}
-              placeholder="Desktop, Mobile, Tablet"
             />
           </div>
 
-          {/* Geo Targets */}
           <div>
-            <Label htmlFor="geo_targets">Geo Targets (comma-separated country codes)</Label>
+            <Label htmlFor="geo_targets">Geo Targets</Label>
             <Input
               id="geo_targets"
               value={formData.geo_targets}
               onChange={(e) => setFormData({ ...formData, geo_targets: e.target.value })}
-              placeholder="US, CA, GB, DE"
             />
           </div>
 
-          {/* Tags */}
           <div>
-            <Label htmlFor="tags">Tags (comma-separated)</Label>
+            <Label htmlFor="tags">Tags</Label>
             <Input
               id="tags"
               value={formData.tags}
               onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-              placeholder="high-converting, mobile-friendly, premium"
             />
           </div>
 
-          {/* Switches */}
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <Switch
@@ -569,7 +484,7 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
           </div>
 
           <Button type="submit" disabled={loading} className="w-full">
-            {loading ? "Saving..." : `${offer ? 'Update' : 'Create'} Offer`}
+            {loading ? "Saving..." : offer ? "Update Offer" : "Create Offer"}
           </Button>
         </form>
       </CardContent>

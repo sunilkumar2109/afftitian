@@ -40,13 +40,14 @@ const OfferList = ({ offers, networks, onUpdate, masterData }: OfferListProps) =
   const [searchTerm, setSearchTerm] = useState("");
   const [editingOffer, setEditingOffer] = useState<Offer | null>(null);
 
-  // 🔹 Filtered offers by search
+  // 🔹 Filter offers by search term
   const filteredOffers = useMemo(() => {
     return offers.filter((offer) =>
       offer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       offer.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
       offer.vertical?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      offer.networks?.name.toLowerCase().includes(searchTerm.toLowerCase())
+      offer.networks?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      offer.offer_id?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [offers, searchTerm]);
 
@@ -55,9 +56,8 @@ const OfferList = ({ offers, networks, onUpdate, masterData }: OfferListProps) =
     return [...array].sort(() => Math.random() - 0.5);
   };
 
-  // 🔹 Round robin shuffle by network
+  // 🔹 Round robin offers by network
   const roundRobinOffers = useMemo(() => {
-    // Group offers by network
     const grouped: Record<string, Offer[]> = {};
     filteredOffers.forEach((offer) => {
       const net = offer.networks?.name || "Unknown";
@@ -65,12 +65,10 @@ const OfferList = ({ offers, networks, onUpdate, masterData }: OfferListProps) =
       grouped[net].push(offer);
     });
 
-    // Shuffle inside each network
     Object.keys(grouped).forEach((net) => {
       grouped[net] = shuffle(grouped[net]);
     });
 
-    // Round robin build
     let result: Offer[] = [];
     let hasOffers = true;
     while (hasOffers) {
@@ -160,6 +158,15 @@ const OfferList = ({ offers, networks, onUpdate, masterData }: OfferListProps) =
     }
   };
 
+  // 🔹 Copy Offer ID
+  const copyOfferId = (id: string | number) => {
+    navigator.clipboard.writeText(String(id));
+    toast({
+      title: "Copied!",
+      description: `Offer ID ${id} copied to clipboard.`,
+    });
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -178,44 +185,68 @@ const OfferList = ({ offers, networks, onUpdate, masterData }: OfferListProps) =
           </div>
         </CardTitle>
       </CardHeader>
+
       <CardContent>
         <div className="space-y-4">
-          {roundRobinOffers.map((offer) => (
+          {roundRobinOffers.map((offer, index) => (
             <div
               key={offer.id}
               className="border rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
             >
               {/* Left Content */}
               <div className="flex-1">
-                <div className="flex flex-wrap items-center gap-2 mb-2">
-                  <h3 className="font-semibold">{offer.name}</h3>
+                {/* Offer Number + Name + ID */}
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                 <span className="font-semibold text-gray-400 text-sm w-8">
+  #{offer.offer_number ?? index + 1}
+</span>
+
+
+                  <h3 className="font-semibold text-base flex items-center gap-2">
+                    {offer.name}
+                    {offer.offer_id && (
+                      <span
+                        onClick={() => copyOfferId(offer.offer_id)}
+                        className="text-xs text-gray-500 cursor-pointer hover:underline"
+                        title="Click to copy Offer ID"
+                      >
+                        (ID: {offer.offer_id})
+                      </span>
+                    )}
+                  </h3>
+
                   <Badge variant={offer.is_active ? "default" : "secondary"}>
                     {offer.is_active ? "Active" : "Inactive"}
                   </Badge>
+
                   {offer.is_featured && (
                     <Badge variant="destructive" className="bg-yellow-500 hover:bg-yellow-600">
                       <Star className="h-3 w-3 mr-1" />
                       Featured
                     </Badge>
                   )}
+
                   <Badge variant="outline">{offer.type}</Badge>
-                  {offer.vertical && (
-                    <Badge variant="outline">
-                      {(() => {
-                        try {
-                          const val =
-                            typeof offer.vertical === "string"
-                              ? JSON.parse(offer.vertical)
-                              : offer.vertical;
-                          return Array.isArray(val) ? val.join(", ") : val;
-                        } catch {
-                          return offer.vertical;
-                        }
-                      })()}
-                    </Badge>
-                  )}
                 </div>
 
+                {/* Vertical */}
+                {offer.vertical && (
+                  <Badge variant="outline" className="mb-2">
+                    {(() => {
+                      try {
+                        const val =
+                          typeof offer.vertical === "string"
+                            ? JSON.parse(offer.vertical)
+                            : offer.vertical;
+                        return Array.isArray(val) ? val.join(", ") : val;
+                      } catch {
+                        return offer.vertical;
+                      }
+                    })()}
+                  </Badge>
+                )}
+
+                {/* Network / payout / priority */}
                 <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-2">
                   <span>Network: {offer.networks?.name}</span>
                   {offer.payout_amount && (
@@ -226,6 +257,7 @@ const OfferList = ({ offers, networks, onUpdate, masterData }: OfferListProps) =
                   <span>Priority: {offer.priority_order}</span>
                 </div>
 
+                {/* GEO */}
                 {offer.geo_targets.length > 0 && (
                   <div className="flex flex-wrap gap-1 mb-2">
                     <span className="text-sm text-muted-foreground">GEO:</span>
@@ -242,6 +274,7 @@ const OfferList = ({ offers, networks, onUpdate, masterData }: OfferListProps) =
                   </div>
                 )}
 
+                {/* Devices */}
                 {offer.devices.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     <span className="text-sm text-muted-foreground">Devices:</span>
@@ -253,6 +286,7 @@ const OfferList = ({ offers, networks, onUpdate, masterData }: OfferListProps) =
                   </div>
                 )}
 
+                {/* Landing Page */}
                 {offer.landing_page_url && (
                   <div className="mt-2">
                     <a

@@ -403,29 +403,83 @@ const SpinWheel = () => {
     },
   ];
 
-  const handleClaimSubmit = async (data: { firstName: string; lastName: string; email: string; newsletterConsent: boolean; termsConsent: boolean }) => {
-    // Log the claim submission
-    console.log("Reward claim submitted:", {
-      ...data,
-      prize: wonPrize
-    });
-    
-    // Show success message for claim
-    toast({
-      title: "🎉 Reward Claimed!",
-      description: `Thank you ${data.firstName}! Your reward "${wonPrize?.name}" has been claimed. Our team will contact you shortly!`,
-      variant: "default",
-    });
+  // REPLACE the old handleClaimSubmit with this version
+const handleClaimSubmit = async (data: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  newsletterConsent: boolean;
+  termsConsent: boolean;
+}) => {
+  try {
+    // 1) Insert claim row to reward_claims table
+    const insertPayload = {
+      first_name: data.firstName,
+      last_name: data.lastName,
+      email: data.email,
+      prize_id: wonPrize?.id ?? null,
+      prize_name: wonPrize?.name ?? null,
+      prize_value: wonPrize?.value ?? null,
+      prize_description: wonPrize?.description ?? null,
+      newsletter_consent: data.newsletterConsent,
+      terms_consent: data.termsConsent,
+    };
 
+    const { data: insertedRows, error: insertError } = await supabase
+      .from("reward_claims")
+      .insert([insertPayload])
+      .select()
+      .single();
+
+    if (insertError) throw insertError;
+
+    // 2) Call Edge Function to send the email (server-side)
+    // Use supabase.functions.invoke for auth convenience
+    const { data: fnData, error: fnError } = await supabase.functions.invoke("send-reward-email", {
+      // supabase client automatically sets authorization header
+      body: {
+        ...insertPayload,
+        prize: wonPrize,
+        claim_id: insertedRows?.id,
+      },
+    } as any);
+
+    if (fnError) {
+      console.error("Edge function error:", fnError);
+      // mark email_sent false (optional)
+      await supabase.from("reward_claims").update({ email_sent: false }).eq("id", insertedRows.id);
+      toast({
+        title: "Claim recorded (email failed)",
+        description: "We saved your claim but couldn't send the email. We'll retry.",
+        variant: "destructive",
+      });
+    } else {
+      // mark email_sent true
+      await supabase.from("reward_claims").update({ email_sent: true }).eq("id", insertedRows.id);
+      toast({
+        title: "🎉 Reward Claimed!",
+        description: `Thank you ${data.firstName}! Check your email (${data.email}) for details.`,
+        variant: "default",
+      });
+    }
+
+    // close popup + reset wheel (keeps your existing UX)
     setShowClaimPopup(false);
-    
-    // Reset the wheel after claiming
     setTimeout(() => {
       setWonPrize(null);
       setShowResult(false);
       setRotation(0);
-    }, 3000);
-  };
+    }, 2000);
+  } catch (err: any) {
+    console.error("Claim failed:", err);
+    toast({
+      title: "Submission failed",
+      description: err?.message || "Please try again later.",
+      variant: "destructive",
+    });
+  }
+};
+
 
   const startSpinning = () => {
     if (spinning) return;
