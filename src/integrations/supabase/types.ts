@@ -143,6 +143,7 @@ export type Database = {
           landing_page_url: string | null
           name: string
           network_id: string
+          offer_id: string | null  // ✅ ADD THIS LINE
           payout_amount: number | null
           payout_currency: string | null
           priority_order: number | null
@@ -162,6 +163,7 @@ export type Database = {
           landing_page_url?: string | null
           name: string
           network_id: string
+          offer_id?: string | null  // ✅ ADD THIS LINE
           payout_amount?: number | null
           payout_currency?: string | null
           priority_order?: number | null
@@ -181,6 +183,7 @@ export type Database = {
           landing_page_url?: string | null
           name?: string
           network_id?: string
+          offer_id?: string | null  // ✅ ADD THIS LINE
           payout_amount?: number | null
           payout_currency?: string | null
           priority_order?: number | null
@@ -200,6 +203,47 @@ export type Database = {
         ]
       }
     }
+    click_logs: {
+  Row: {
+    id: string
+    network_id: string
+    offer_id: string
+    clicked_at: string
+    ip_address: string | null
+    user_agent: string | null
+    country: string | null
+    created_at: string
+  }
+  Insert: {
+    id?: string
+    network_id: string
+    offer_id: string
+    clicked_at?: string
+    ip_address?: string | null
+    user_agent?: string | null
+    country?: string | null
+    created_at?: string
+  }
+  Update: {
+    id?: string
+    network_id?: string
+    offer_id?: string
+    clicked_at?: string
+    ip_address?: string | null
+    user_agent?: string | null
+    country?: string | null
+    created_at?: string
+  }
+  Relationships: [
+    {
+      foreignKeyName: "click_logs_network_id_fkey"
+      columns: ["network_id"]
+      isOneToOne: false
+      referencedRelation: "networks"
+      referencedColumns: ["id"]
+    },
+  ]
+}
     Views: {
       [_ in never]: never
     }

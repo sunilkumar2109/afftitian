@@ -1,5 +1,4 @@
-// src/utils/tracker.ts
-import { supabase } from "@/integrations/supabase/client"; // use your existing supabase client
+import { supabase } from "@/integrations/supabase/client";
 
 export interface ClickPayload {
   href: string;
@@ -14,18 +13,35 @@ export interface ClickPayload {
   user_agent?: string;
   language?: string;
   screen_size?: string;
+  visitor_id?: string;
+  event_id?: string;
+  timestamp?: string;
   extra?: any;
 }
 
 export async function trackClick(payload: ClickPayload) {
   try {
-    const row = {
+    const endpoint = `${import.meta.env.VITE_SUPABASE_FUNCTION_URL}/track-offer-click`;
+
+    // Add fallback timestamp
+    const fullPayload = {
       ...payload,
-      created_at: new Date().toISOString()
+      timestamp: payload.timestamp || new Date().toISOString(),
     };
-    // insert into Supabase
-    const { error } = await supabase.from("link_clicks").insert([row]);
-    if (error) console.error("trackClick error:", error);
+
+    // Try using Beacon API for reliability
+    const blob = new Blob([JSON.stringify(fullPayload)], { type: "application/json" });
+    const sent = navigator.sendBeacon(endpoint, blob);
+
+    if (!sent) {
+      // fallback to fetch if beacon fails
+      await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(fullPayload),
+        keepalive: true,
+      });
+    }
   } catch (err) {
     console.error("trackClick exception", err);
   }

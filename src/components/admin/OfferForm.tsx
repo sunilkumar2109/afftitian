@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { generateUniqueOfferId } from "@/lib/generateOfferId";
 import {
   Select,
   SelectContent,
@@ -83,29 +84,6 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
     return { id: byName ?? null, usedName: value };
   };
 
-  /** Generate next unique offer_id like "OFR-000001" */
-  const generateNextOfferId = async (): Promise<string> => {
-    const { data, error } = await supabase
-      .from("offers")
-      .select("offer_id")
-      .order("offer_id", { ascending: false })
-      .limit(1);
-
-    if (error) {
-      console.error("Error fetching offer_id:", error);
-      return "OFR-000001";
-    }
-
-    if (!data || data.length === 0 || !data[0].offer_id) {
-      return "OFR-000001";
-    }
-
-    const lastId = data[0].offer_id;
-    const numericPart = parseInt(lastId.replace(/\D/g, ""), 10);
-    const nextNumber = numericPart + 1;
-    return `OFR-${String(nextNumber).padStart(6, "0")}`;
-  };
-
   /** Handle manual form submission */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,8 +92,9 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
     try {
       let newOfferId = offer?.offer_id;
 
+      // ✅ Generate unique offer_id for NEW offers only
       if (!offer) {
-        newOfferId = await generateNextOfferId();
+        newOfferId = await generateUniqueOfferId();
       }
 
       const offerData = {
@@ -147,7 +126,7 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
 
       toast({
         title: "Success",
-        description: `Offer ${offer ? "updated" : "created"} successfully.`,
+        description: `Offer ${offer ? "updated" : "created"} successfully with ID: ${newOfferId}`,
       });
 
       if (!offer) {
@@ -211,7 +190,8 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
             row.network_id ?? row.NetworkID ?? row.network_name ?? row.Network ?? row.NetworkName ?? ""
           );
 
-          const offer_id = await generateNextOfferId();
+          // ✅ Generate unique offer_id for each row
+          const offer_id = await generateUniqueOfferId();
 
           return {
             offer_id,
@@ -268,7 +248,8 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
 
       const formattedData = await Promise.all(
         jsonData.map(async (row) => ({
-          offer_id: await generateNextOfferId(),
+          // ✅ Generate unique offer_id for each row
+          offer_id: await generateUniqueOfferId(),
           name: row.name || row.Name || "",
           network_id: row.network_id || "",
           type: row.type || "",
