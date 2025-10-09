@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Network, MasterData } from "@/types/admin";
-import { Edit, Trash2, Search, CheckSquare, Square, ChevronLeft, ChevronRight } from "lucide-react";
+import { Edit, Trash2, Search, CheckSquare, Square, ChevronLeft, ChevronRight, Gift } from "lucide-react";
 
 import NetworkForm from "./NetworkForm";
 import BulkNetworkForm from "./BulkNetworkForm";
@@ -37,12 +37,17 @@ interface NetworkListProps {
   masterData: MasterData | null;
 }
 
+interface NetworkOfferCount {
+  [key: string]: number;
+}
+
 const NetworkList = ({ networks, onUpdate, masterData }: NetworkListProps) => {
   const { toast } = useToast();
 
   // ✅ Local State
   const [searchTerm, setSearchTerm] = useState("");
   const [editingNetwork, setEditingNetwork] = useState<Network | null>(null);
+  const [offerCounts, setOfferCounts] = useState<NetworkOfferCount>({});
 
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedNetworks, setSelectedNetworks] = useState<string[]>([]);
@@ -52,12 +57,50 @@ const NetworkList = ({ networks, onUpdate, masterData }: NetworkListProps) => {
   const [currentPage, setCurrentPage] = useState(1);
   const networksPerPage = 8;
 
+  // ✅ Fetch offer counts for networks
+  const fetchOfferCounts = async (networkIds: string[]) => {
+    if (networkIds.length === 0) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('offers')
+        .select('network_id')
+        .in('network_id', networkIds);
+
+      if (error) throw error;
+
+      // Count offers per network
+      const counts: NetworkOfferCount = {};
+      networkIds.forEach(id => {
+        counts[id] = 0;
+      });
+
+      data?.forEach(offer => {
+        if (offer.network_id) {
+          counts[offer.network_id] = (counts[offer.network_id] || 0) + 1;
+        }
+      });
+
+      setOfferCounts(prev => ({ ...prev, ...counts }));
+    } catch (error) {
+      console.error('Failed to fetch offer counts:', error);
+    }
+  };
+
   // ✅ Filtering
   const filteredNetworks = networks.filter(
     (network) =>
       network.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       network.type.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // 🔹 Fetch offer counts when filtered networks change (especially during search)
+  useEffect(() => {
+    if (filteredNetworks.length > 0) {
+      const networkIds = filteredNetworks.map(network => network.id);
+      fetchOfferCounts(networkIds);
+    }
+  }, [filteredNetworks]);
 
   // 🔹 Pagination Logic
   const totalPages = Math.ceil(filteredNetworks.length / networksPerPage);
@@ -163,12 +206,31 @@ const NetworkList = ({ networks, onUpdate, masterData }: NetworkListProps) => {
     return rangeWithDots;
   };
 
+  // Calculate total offers for current search results
+  const totalOffersInSearch = filteredNetworks.reduce((total, network) => {
+    return total + (offerCounts[network.id] || 0);
+  }, 0);
+
   return (
     <Card>
       {/* 🔹 Header */}
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          Networks ({filteredNetworks.length})
+          <div className="flex flex-col gap-2">
+            <div>Networks ({filteredNetworks.length})</div>
+            {/* 🔹 Search Result Count Display with Offer Count */}
+            {searchTerm && (
+              <div className="text-sm font-normal text-muted-foreground">
+                Showing {filteredNetworks.length} network(s) matching "{searchTerm}"
+                {totalOffersInSearch > 0 && (
+                  <span className="ml-2 flex items-center gap-1 text-green-600 font-medium">
+                    <Gift className="h-4 w-4" />
+                    {totalOffersInSearch} offer(s) available
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             {bulkMode && (
               <Button variant="outline" size="sm" onClick={selectAll}>
@@ -229,18 +291,32 @@ const NetworkList = ({ networks, onUpdate, masterData }: NetworkListProps) => {
                     )}
                   </div>
                 )}
-                <div>
+                <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2 mb-2">
                     <h3 className="font-semibold">{network.name}</h3>
                     <Badge variant={network.is_active ? "default" : "secondary"}>
                       {network.is_active ? "Active" : "Inactive"}
                     </Badge>
                     <Badge variant="outline">{network.type}</Badge>
+                    {/* 🔹 Offer Count Badge - Show when searching */}
+                    {searchTerm && offerCounts[network.id] > 0 && (
+                      <Badge variant="secondary" className="flex items-center gap-1">
+                        <Gift className="h-3 w-3" />
+                        {offerCounts[network.id]} offer(s)
+                      </Badge>
+                    )}
                   </div>
                   {network.description && (
                     <p className="text-sm text-muted-foreground mb-2">
                       {network.description}
                     </p>
+                  )}
+                  {/* 🔹 Offer Count for individual network - Show when not searching but has offers */}
+                  {!searchTerm && offerCounts[network.id] > 0 && (
+                    <div className="flex items-center gap-1 text-sm text-green-600">
+                      <Gift className="h-4 w-4" />
+                      <span>{offerCounts[network.id]} offer(s) available</span>
+                    </div>
                   )}
                 </div>
               </div>
@@ -294,6 +370,11 @@ const NetworkList = ({ networks, onUpdate, masterData }: NetworkListProps) => {
                         <AlertDialogTitle>Delete Network</AlertDialogTitle>
                         <AlertDialogDescription>
                           Are you sure you want to delete "{network.name}"?
+                          {offerCounts[network.id] > 0 && (
+                            <span className="block mt-1 text-red-600 font-medium">
+                              This network has {offerCounts[network.id]} active offer(s) that will be affected.
+                            </span>
+                          )}
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -323,6 +404,11 @@ const NetworkList = ({ networks, onUpdate, masterData }: NetworkListProps) => {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t">
             <div className="text-sm text-muted-foreground">
               Showing {startIndex + 1}-{Math.min(endIndex, filteredNetworks.length)} of {filteredNetworks.length} networks
+              {searchTerm && totalOffersInSearch > 0 && (
+                <span className="ml-2 text-green-600 font-medium">
+                  • {totalOffersInSearch} total offers
+                </span>
+              )}
             </div>
             
             <div className="flex items-center gap-2">
