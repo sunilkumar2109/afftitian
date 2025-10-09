@@ -1536,8 +1536,9 @@ const Browse = () => {
   const [offerSearchTerm, setOfferSearchTerm] = useState("");
   const [globalSearchTerm, setGlobalSearchTerm] = useState("");
 
-  // Load More state for main browse view
+  // Load More state for main browse view - CHANGED: Only one load more (15 + 15 = 30 max)
   const [visibleOffersCount, setVisibleOffersCount] = useState(15);
+  const [hasLoadedMore, setHasLoadedMore] = useState(false);
 
   // Quick filter options (removed "Amount" and "Date Added")
   const quickFilterOptions = [
@@ -1588,6 +1589,7 @@ const Browse = () => {
   const handleNetworkClick = (networkId: string, networkName: string) => {
     setSelectedNetworkFilter(networkName);
     setVisibleOffersCount(15); // Reset visible offers when filtering
+    setHasLoadedMore(false); // Reset load more state
   };
 
   // Function to handle network page navigation
@@ -1645,17 +1647,22 @@ const Browse = () => {
     // That causes double-filtering (quick filter + vertical category) and hides matches.
     setSelectedOfferCategory("All");
     setVisibleOffersCount(15); // Reset visible offers when filtering
+    setHasLoadedMore(false); // Reset load more state
   }
 };
 
   const handleSortChange = (value: string) => {
     setSortBy(value);
     setVisibleOffersCount(15); // Reset visible offers when sorting
+    setHasLoadedMore(false); // Reset load more state
   };
 
-  // Load More function for main browse view
+  // Load More function for main browse view - CHANGED: Only one load more allowed
   const handleLoadMore = () => {
-    setVisibleOffersCount(prev => prev + 15);
+    if (!hasLoadedMore) {
+      setVisibleOffersCount(prev => prev + 15);
+      setHasLoadedMore(true);
+    }
   };
 
   useEffect(() => {
@@ -2348,10 +2355,10 @@ const Browse = () => {
     return filtered;
   };
 
-  // Load More logic for main browse view
+  // Load More logic for main browse view - CHANGED: Only one load more (15 + 15 = 30 max)
   const offersToDisplay = getFilteredOffers();
   const currentOffers = offersToDisplay.slice(0, visibleOffersCount);
-  const hasMoreOffers = visibleOffersCount < offersToDisplay.length;
+  const canLoadMore = !hasLoadedMore && offersToDisplay.length > 15 && visibleOffersCount < offersToDisplay.length;
 
   // Background banner logic
   const defaultBg = "https://i.pinimg.com/736x/cf/3a/c8/cf3ac842dcb713c45973de67c44d5e78.jpg";
@@ -2844,8 +2851,8 @@ const Browse = () => {
                   );
                 })}
                 
-                {/* Load More Button - Replaces Pagination */}
-                {hasMoreOffers && (
+                {/* Load More Button - CHANGED: Only shows once */}
+                {canLoadMore && (
                   <div className="flex justify-center mt-6">
                     <Button
                       onClick={handleLoadMore}

@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Network, Offer, MasterData } from "@/types/admin";
-import { Edit, Trash2, Search, Star, ChevronLeft, ChevronRight } from "lucide-react";
+import { Edit, Trash2, Search, Star, ChevronLeft, ChevronRight, Building2 } from "lucide-react";
 import OfferForm from "./OfferForm";
 import {
   Dialog,
@@ -54,6 +54,20 @@ const OfferList = ({ offers, networks, onUpdate, masterData }: OfferListProps) =
       offer.offer_id?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [offers, searchTerm]);
+
+  // 🔹 Calculate network counts for search results
+  const networkCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    filteredOffers.forEach((offer) => {
+      const networkName = offer.networks?.name || "Unknown Network";
+      counts[networkName] = (counts[networkName] || 0) + 1;
+    });
+    
+    // Convert to array and sort by count (descending)
+    return Object.entries(counts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [filteredOffers]);
 
   // 🔹 Shuffle helper
   const shuffle = <T,>(array: T[]): T[] => {
@@ -285,6 +299,48 @@ const OfferList = ({ offers, networks, onUpdate, masterData }: OfferListProps) =
       </CardHeader>
 
       <CardContent>
+        {/* Network Counts Section - Only show when searching */}
+        {searchTerm && networkCounts.length > 0 && (
+          <div className="mb-6 p-4 bg-muted/50 rounded-lg border">
+            <div className="flex items-center gap-2 mb-3">
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+              <h3 className="font-semibold text-sm">Networks in Search Results</h3>
+              <Badge variant="secondary" className="ml-2">
+                {networkCounts.length} network{networkCounts.length > 1 ? 's' : ''}
+              </Badge>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {networkCounts.map(({ name, count }) => (
+                <Badge 
+                  key={name} 
+                  variant="outline" 
+                  className="flex items-center gap-1 px-3 py-1 bg-background"
+                >
+                  <span className="font-medium">{name}</span>
+                  <span className="text-muted-foreground">({count} offer{count > 1 ? 's' : ''})</span>
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Search Summary - Show when searching */}
+        {searchTerm && (
+          <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Search className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <span className="text-sm font-medium text-blue-800 dark:text-blue-300">
+                  Search results for "{searchTerm}"
+                </span>
+              </div>
+              <Badge variant="outline" className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300">
+                {filteredOffers.length} offer{filteredOffers.length !== 1 ? 's' : ''} found
+              </Badge>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-4">
           {currentOffers.map((offer, index) => (
             <div
