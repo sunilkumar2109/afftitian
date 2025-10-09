@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Network, Offer, MasterData } from "@/types/admin";
-import { Edit, Trash2, Search, Star } from "lucide-react";
+import { Edit, Trash2, Search, Star, ChevronLeft, ChevronRight } from "lucide-react";
 import OfferForm from "./OfferForm";
 import {
   Dialog,
@@ -39,6 +39,10 @@ const OfferList = ({ offers, networks, onUpdate, masterData }: OfferListProps) =
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [editingOffer, setEditingOffer] = useState<Offer | null>(null);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [offersPerPage] = useState(10);
 
   // 🔹 Filter offers by search term
   const filteredOffers = useMemo(() => {
@@ -82,6 +86,19 @@ const OfferList = ({ offers, networks, onUpdate, masterData }: OfferListProps) =
     }
     return result;
   }, [filteredOffers]);
+
+  // Pagination logic
+  const indexOfLastOffer = currentPage * offersPerPage;
+  const indexOfFirstOffer = indexOfLastOffer - offersPerPage;
+  const currentOffers = roundRobinOffers.slice(indexOfFirstOffer, indexOfLastOffer);
+  const totalPages = Math.ceil(roundRobinOffers.length / offersPerPage);
+
+  const paginate = (pageNumber: number) => {
+    if (pageNumber < 1) pageNumber = 1;
+    if (pageNumber > totalPages) pageNumber = totalPages;
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const toggleActive = async (offer: Offer) => {
     try {
@@ -167,18 +184,99 @@ const OfferList = ({ offers, networks, onUpdate, masterData }: OfferListProps) =
     });
   };
 
+  // Pagination Component
+  const Pagination = () => {
+    if (totalPages <= 1) return null;
+
+    return (
+      <div className="flex justify-center items-center mt-6 space-x-2">
+        <Button
+          onClick={() => paginate(currentPage - 1)}
+          disabled={currentPage === 1}
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-1 h-8 px-3"
+        >
+          <ChevronLeft className="w-3 h-3" />
+          Previous
+        </Button>
+        
+        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+          let pageNum;
+          if (totalPages <= 5) {
+            pageNum = i + 1;
+          } else if (currentPage <= 3) {
+            pageNum = i + 1;
+          } else if (currentPage >= totalPages - 2) {
+            pageNum = totalPages - 4 + i;
+          } else {
+            pageNum = currentPage - 2 + i;
+          }
+          
+          return (
+            <Button
+              key={pageNum}
+              onClick={() => paginate(pageNum)}
+              variant={currentPage === pageNum ? "default" : "outline"}
+              size="sm"
+              className={`h-8 px-3 min-w-[2.5rem] ${currentPage === pageNum ? "bg-primary text-primary-foreground" : ""}`}
+            >
+              {pageNum}
+            </Button>
+          );
+        })}
+        
+        {totalPages > 5 && currentPage < totalPages - 2 && (
+          <span className="text-muted-foreground">...</span>
+        )}
+        
+        {totalPages > 5 && currentPage < totalPages - 2 && (
+          <Button
+            onClick={() => paginate(totalPages)}
+            variant="outline"
+            size="sm"
+            className="h-8 px-3"
+          >
+            {totalPages}
+          </Button>
+        )}
+        
+        <Button
+          onClick={() => paginate(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-1 h-8 px-3"
+        >
+          Next
+          <ChevronRight className="w-3 h-3" />
+        </Button>
+      </div>
+    );
+  };
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          Offers ({offers.length})
+          <div>
+            Offers ({offers.length})
+            {roundRobinOffers.length > 0 && (
+              <span className="text-sm font-normal text-muted-foreground ml-2">
+                (Showing {indexOfFirstOffer + 1}-{Math.min(indexOfLastOffer, roundRobinOffers.length)} of {roundRobinOffers.length})
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <div className="relative">
               <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 placeholder="Search offers..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1); // Reset to first page when searching
+                }}
                 className="pl-8 w-64"
               />
             </div>
@@ -188,7 +286,7 @@ const OfferList = ({ offers, networks, onUpdate, masterData }: OfferListProps) =
 
       <CardContent>
         <div className="space-y-4">
-          {roundRobinOffers.map((offer, index) => (
+          {currentOffers.map((offer, index) => (
             <div
               key={offer.id}
               className="border rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
@@ -197,10 +295,9 @@ const OfferList = ({ offers, networks, onUpdate, masterData }: OfferListProps) =
               <div className="flex-1">
                 {/* Offer Number + Name + ID */}
                 <div className="flex flex-wrap items-center gap-2 mb-1">
-                 <span className="font-semibold text-gray-400 text-sm w-8">
-  #{offer.offer_number ?? index + 1}
-</span>
-
+                  <span className="font-semibold text-gray-400 text-sm w-8">
+                    #{offer.offer_number ?? (indexOfFirstOffer + index + 1)}
+                  </span>
 
                   <h3 className="font-semibold text-base flex items-center gap-2">
                     {offer.name}
@@ -364,11 +461,14 @@ const OfferList = ({ offers, networks, onUpdate, masterData }: OfferListProps) =
             </div>
           ))}
 
-          {roundRobinOffers.length === 0 && (
+          {currentOffers.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
               {searchTerm ? "No offers found matching your search." : "No offers found."}
             </div>
           )}
+
+          {/* Pagination */}
+          <Pagination />
         </div>
       </CardContent>
     </Card>
