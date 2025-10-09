@@ -457,6 +457,188 @@ app.get("/api/custom-clicks", (req, res) => {
   }
 });
 
+
+// Helper functions for custom offer clicks JSON file
+const OFFER_DATA_FILE = path.join(__dirname, "custom_offer_clicks.json");
+
+function readOfferData() {
+  if (!fs.existsSync(OFFER_DATA_FILE)) {
+    console.log("ℹ️ No offer data file yet, creating empty array");
+    const emptyData = [];
+    writeOfferData(emptyData);
+    return emptyData;
+  }
+  try {
+    const fileContent = fs.readFileSync(OFFER_DATA_FILE, "utf-8");
+    const data = JSON.parse(fileContent);
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    console.error("❌ Failed to read offer JSON:", err);
+    console.log("📝 Creating new empty offer data file");
+    const emptyData = [];
+    writeOfferData(emptyData);
+    return emptyData;
+  }
+}
+
+function writeOfferData(data) {
+  try {
+    const dataToWrite = Array.isArray(data) ? data : [];
+    fs.writeFileSync(OFFER_DATA_FILE, JSON.stringify(dataToWrite, null, 2));
+    console.log("✅ Saved", dataToWrite.length, "offer clicks to file:", OFFER_DATA_FILE);
+  } catch (err) {
+    console.error("❌ Failed to save offer JSON:", err);
+  }
+}
+
+// POST endpoint for tracking custom offer clicks
+app.post("/api/custom-offer-click", async (req, res) => {
+  try {
+    const {
+      offer_id,
+      href,
+      link_text,
+      landing_page,
+      referrer,
+      utm_source,
+      utm_medium,
+      utm_campaign,
+      utm_term,
+      utm_content,
+      user_agent,
+      language,
+      screen_size,
+      visitor_id,
+      event_id,
+      timestamp
+    } = req.body || {};
+
+    console.log("🎯 Processing offer click:", {
+      offer_id: String(offer_id).substring(0, 8) + "...",
+      href: href?.substring(0, 50) + "..."
+    });
+
+    if (!offer_id) {
+      return res.status(400).json({ error: "offer_id is required" });
+    }
+
+    const ua = user_agent || req.headers["user-agent"] || "";
+    const ip = getClientIp(req);
+
+    // Enhanced browser detection
+    const browser = parseBrowser(ua);
+
+    // Get country with better error handling
+    const country = await lookupCountry(ip);
+
+    const clickData = {
+      id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      offer_id: String(offer_id),
+      href: href || null,
+      link_text: link_text || null,
+      landing_page: landing_page || null,
+      referrer: referrer || null,
+      utm_source: utm_source || null,
+      utm_medium: utm_medium || null,
+      utm_campaign: utm_campaign || null,
+      utm_term: utm_term || null,
+      utm_content: utm_content || null,
+      browser,
+      country,
+      ip,
+      language: language || null,
+      screen_size: screen_size || null,
+      visitor_id: visitor_id || null,
+      event_id: event_id || null,
+      clicked_at: timestamp || new Date().toISOString(),
+      user_agent: ua.substring(0, 500), // Limit UA length
+    };
+
+    console.log("📊 Offer click data prepared:", {
+      offer_id: clickData.offer_id.substring(0, 8) + "...",
+      browser: clickData.browser,
+      country: clickData.country,
+      ip: clickData.ip
+    });
+
+    let data = readOfferData();
+
+    // Enhanced deduplication logic for offers
+    const uniqueKey = `${offer_id}|${ip}`;
+    const existingIndex = data.findIndex(
+      (c) => `${c.offer_id}|${c.ip}` === uniqueKey
+    );
+
+    if (existingIndex >= 0) {
+      // Update existing record with latest data
+      data[existingIndex] = {
+        ...data[existingIndex],
+        ...clickData,
+        // Keep the original clicked_at for first visit tracking
+        first_clicked_at: data[existingIndex].first_clicked_at || data[existingIndex].clicked_at,
+        clicked_at: clickData.clicked_at, // Update to latest click
+        click_count: (data[existingIndex].click_count || 1) + 1
+      };
+      console.log("🔄 Updated existing offer click record");
+    } else {
+      // Add new record
+      data.push({
+        ...clickData,
+        first_clicked_at: clickData.clicked_at,
+        click_count: 1
+      });
+      console.log("✨ Added new offer click record");
+    }
+
+    // Keep only the most recent 10,000 records to prevent file from getting too large
+    if (data.length > 10000) {
+      data = data.slice(-10000);
+      console.log("🗂️ Trimmed offer data to 10,000 most recent records");
+    }
+
+    writeOfferData(data);
+
+    res.json({
+      success: true,
+      message: "Offer click tracked successfully",
+      data: {
+        offer_id: clickData.offer_id.substring(0, 8) + "...",
+        country: clickData.country
+      }
+    });
+
+  } catch (error) {
+    console.error("❌ Error processing offer click:", error);
+    res.status(500).json({
+      error: "Failed to track offer click",
+      details: error.message
+    });
+  }
+});
+
+// New GET endpoint for custom offer clicks
+app.get("/api/custom-offer-clicks", (req, res) => {
+  try {
+    const data = readOfferData();
+
+    // Sort by clicked_at descending (most recent first)
+    const sorted = data.slice().sort((a, b) => {
+      const aTime = new Date(a.clicked_at).getTime() || 0;
+      const bTime = new Date(b.clicked_at).getTime() || 0;
+      return bTime - aTime;
+    });
+
+    console.log("📤 Returning", sorted.length, "custom offer clicks");
+    res.json(sorted);
+  } catch (error) {
+    console.error("❌ Error fetching custom offer clicks:", error);
+    res.status(500).json({
+      error: "Failed to fetch custom offer clicks",
+      details: error.message,
+    });
+  }
+});
+
 // Enhanced aggregated IP stats endpoint
 app.get("/api/section-ip-stats", (req, res) => {
   try {
@@ -597,12 +779,14 @@ app.listen(PORT, () => {
   
   // Log available endpoints
   console.log("\n📡 Available endpoints:");
-  console.log("  POST /api/custom-click       - Track banner clicks");
-  console.log("  GET  /api/custom-clicks      - Get all tracked clicks");
-  console.log("  GET  /api/section-ip-stats   - Get section-IP statistics");
-  console.log("  GET  /api/health             - Health check");
-  console.log("  POST /api/clear-data         - Clear all tracking data");
-  console.log("  POST /api/parse-network-text - Parse network text with OpenAI");
+  console.log("  POST /api/custom-click         - Track banner clicks");
+  console.log("  GET  /api/custom-clicks        - Get all tracked clicks");
+  console.log("  POST /api/custom-offer-click   - Track offer clicks");
+  console.log("  GET  /api/custom-offer-clicks  - Get all tracked offer clicks");
+  console.log("  GET  /api/section-ip-stats     - Get section-IP statistics");
+  console.log("  GET  /api/health               - Health check");
+  console.log("  POST /api/clear-data           - Clear all tracking data");
+  console.log("  POST /api/parse-network-text   - Parse network text with OpenAI");
   
   // Initialize data file if it doesn't exist
   const initialData = readData();

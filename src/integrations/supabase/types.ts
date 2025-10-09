@@ -203,47 +203,345 @@ export type Database = {
         ]
       }
     }
-    click_logs: {
-  Row: {
-    id: string
-    network_id: string
-    offer_id: string
-    clicked_at: string
-    ip_address: string | null
-    user_agent: string | null
-    country: string | null
-    created_at: string
-  }
-  Insert: {
-    id?: string
-    network_id: string
-    offer_id: string
-    clicked_at?: string
-    ip_address?: string | null
-    user_agent?: string | null
-    country?: string | null
-    created_at?: string
-  }
-  Update: {
-    id?: string
-    network_id?: string
-    offer_id?: string
-    clicked_at?: string
-    ip_address?: string | null
-    user_agent?: string | null
-    country?: string | null
-    created_at?: string
-  }
-  Relationships: [
-    {
-      foreignKeyName: "click_logs_network_id_fkey"
-      columns: ["network_id"]
-      isOneToOne: false
-      referencedRelation: "networks"
-      referencedColumns: ["id"]
-    },
-  ]
-}
+      banners: {
+        Row: {
+          id: string
+          name: string
+          image_url: string | null
+          link_url: string | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          image_url?: string | null
+          link_url?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          image_url?: string | null
+          link_url?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      banner_rotations: {
+        Row: {
+          id: string
+          banner_id: string
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          banner_id: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          banner_id?: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "banner_rotations_banner_id_fkey"
+            columns: ["banner_id"]
+            isOneToOne: false
+            referencedRelation: "banners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      banner_clicks: {
+        Row: {
+          id: string
+          banner_id: string
+          clicked_at: string
+          ip_address: string | null
+          user_agent: string | null
+          country: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          banner_id: string
+          clicked_at?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          country?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          banner_id?: string
+          clicked_at?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          country?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "banner_clicks_banner_id_fkey"
+            columns: ["banner_id"]
+            isOneToOne: false
+            referencedRelation: "banners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      banner_click_counts: {
+        Row: {
+          id: string
+          banner_id: string
+          click_count: number
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          banner_id: string
+          click_count?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          banner_id?: string
+          click_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "banner_click_counts_banner_id_fkey"
+            columns: ["banner_id"]
+            isOneToOne: false
+            referencedRelation: "banners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offer_clicks: {
+        Row: {
+          id: string
+          offer_id: string
+          clicked_at: string
+          ip_address: string | null
+          user_agent: string | null
+          country: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          offer_id: string
+          clicked_at?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          country?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          offer_id?: string
+          clicked_at?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          country?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_clicks_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "offers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offer_click_counts: {
+        Row: {
+          id: string
+          offer_id: string
+          click_count: number
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          offer_id: string
+          click_count?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          offer_id?: string
+          click_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_click_counts_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "offers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      network_requests: {
+        Row: {
+          id: string
+          name: string
+          type: string
+          description: string | null
+          logo_url: string | null
+          website_link: string | null
+          payment_frequency: string | null
+          payment_methods: string[] | null
+          categories: string[] | null
+          tags: string[] | null
+          is_active: boolean
+          priority_order: number | null
+          number_of_offers: number | null
+          type_of_commission: string | null
+          minimum_withdrawal: number | null
+          referral_commission: number | null
+          tracking_software: string | null
+          tracking_link: string | null
+          payment_constancy: string | null
+          website_email: string | null
+          facebook_id: string | null
+          twitter_id: string | null
+          linkedin_id: string | null
+          ceo: string | null
+          headquarter: string | null
+          phone_number: string | null
+          affiliate_manager: string | null
+          expiration_date: string | null
+          status: string
+          created_at: string
+          approved_at: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          type: string
+          description?: string | null
+          logo_url?: string | null
+          website_link?: string | null
+          payment_frequency?: string | null
+          payment_methods?: string[] | null
+          categories?: string[] | null
+          tags?: string[] | null
+          is_active?: boolean
+          priority_order?: number | null
+          number_of_offers?: number | null
+          type_of_commission?: string | null
+          minimum_withdrawal?: number | null
+          referral_commission?: number | null
+          tracking_software?: string | null
+          tracking_link?: string | null
+          payment_constancy?: string | null
+          website_email?: string | null
+          facebook_id?: string | null
+          twitter_id?: string | null
+          linkedin_id?: string | null
+          ceo?: string | null
+          headquarter?: string | null
+          phone_number?: string | null
+          affiliate_manager?: string | null
+          expiration_date?: string | null
+          status?: string
+          created_at?: string
+          approved_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          type?: string
+          description?: string | null
+          logo_url?: string | null
+          website_link?: string | null
+          payment_frequency?: string | null
+          payment_methods?: string[] | null
+          categories?: string[] | null
+          tags?: string[] | null
+          is_active?: boolean
+          priority_order?: number | null
+          number_of_offers?: number | null
+          type_of_commission?: string | null
+          minimum_withdrawal?: number | null
+          referral_commission?: number | null
+          tracking_software?: string | null
+          tracking_link?: string | null
+          payment_constancy?: string | null
+          website_email?: string | null
+          facebook_id?: string | null
+          twitter_id?: string | null
+          linkedin_id?: string | null
+          ceo?: string | null
+          headquarter?: string | null
+          phone_number?: string | null
+          affiliate_manager?: string | null
+          expiration_date?: string | null
+          status?: string
+          created_at?: string
+          approved_at?: string | null
+        }
+        Relationships: []
+      }
+      click_logs: {
+        Row: {
+          id: string
+          network_id: string
+          offer_id: string
+          clicked_at: string
+          ip_address: string | null
+          user_agent: string | null
+          country: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          network_id: string
+          offer_id: string
+          clicked_at?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          country?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          network_id?: string
+          offer_id?: string
+          clicked_at?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          country?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "click_logs_network_id_fkey"
+            columns: ["network_id"]
+            isOneToOne: false
+            referencedRelation: "networks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     Views: {
       [_ in never]: never
     }

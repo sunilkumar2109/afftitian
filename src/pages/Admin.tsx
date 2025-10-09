@@ -18,6 +18,28 @@ import NetworkList from "@/components/admin/NetworkList";
 import OfferList from "@/components/admin/OfferList";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { RefreshCw, Users, Clock, MousePointer, TrendingUp, Globe } from 'lucide-react';
+// -------------------------------
+// ✅ Tracking API configuration
+// -------------------------------
+
+// Read from your .env file
+const RAW_TRACKING = (import.meta as any).env?.VITE_TRACKING_API || "";
+
+/**
+ * Build tracking URLs safely.
+ * Example:
+ * buildTrackingUrl("api", "custom-offer-clicks")
+ * -> "http://localhost:3001/api/custom-offer-clicks"
+ */
+export const buildTrackingUrl = (...parts: string[]) => {
+  const base = RAW_TRACKING.replace(/\/$/, "");
+  if (!base) return `/${parts.join("/")}`;
+  return `${base}/${parts.join("/")}`;
+};
+
+// Optional: log for debugging
+console.log("TRACKING_API base:", RAW_TRACKING);
+
 
 const Admin = () => {
   const { toast } = useToast();
@@ -32,9 +54,14 @@ const Admin = () => {
   const [bannerClicks, setBannerClicks] = useState<any[]>([]);
   const [customBannerClicks, setCustomBannerClicks] = useState<any[]>([]);
   const [sectionIpStats, setSectionIpStats] = useState<any[]>([]);
+  const [offerClicks, setOfferClicks] = useState<any[]>([]);
+  const [customOfferClicks, setCustomOfferClicks] = useState<any[]>([]);
+  useEffect(() => {
+  console.log("🔔 [STATE] customOfferClicks changed:", customOfferClicks.length);
+}, [customOfferClicks]);
+
   
   // handles: dev proxy (/api), or production full URL (https://...)
-  const RAW_TRACKING = (import.meta as any).env?.VITE_TRACKING_API;
   const TRACKING_API =
     RAW_TRACKING && RAW_TRACKING !== "/api" ? RAW_TRACKING.replace(/\/$/, "") : "";
 
@@ -203,6 +230,69 @@ const Admin = () => {
     }
   };
 
+  // Load custom offer clicks
+  const loadCustomOfferData = async () => {
+    try {
+      console.log("📡 Fetching custom offer clicks from:", `${TRACKING_API}/api/custom-offer-clicks`);
+      
+      const res = await fetch(`${TRACKING_API}/api/custom-offer-clicks`, {
+        method: "GET",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      }
+
+      const data = await res.json();
+      console.log("📊 Raw custom offer clicks data:", data);
+
+      const clicksArray = Array.isArray(data) ? data : [];
+      
+      // Enhanced IP detection with multiple services
+      const enhancedClicks = await Promise.all(
+        clicksArray.map(async (click) => {
+          let enhancedClick = { ...click };
+          
+          // Always try to get fresh country data for better accuracy
+          if (click.ip && click.ip !== "unknown") {
+            console.log(`🔍 Processing IP: ${click.ip} (current country: ${click.country})`);
+            
+            const countryData = await getCountryFromIP(click.ip);
+            if (countryData) {
+              enhancedClick = {
+                ...enhancedClick,
+                ...countryData,
+                original_country: click.country, // Keep original for comparison
+              };
+              console.log(`✅ Enhanced IP ${click.ip}: ${countryData.country} (${countryData.country_name})`);
+            } else {
+              console.log(`❌ Could not enhance IP ${click.ip}`);
+            }
+          }
+          
+          return enhancedClick;
+        })
+      );
+
+      setCustomOfferClicks(enhancedClicks);
+      console.log("✅ Custom offer clicks loaded and enhanced:", enhancedClicks.length, "items");
+      console.log("🧩 Sample custom offer clicks:", enhancedClicks.slice(0, 3));
+
+      
+    } catch (err) {
+      console.error("❌ Failed to load custom offer clicks:", err);
+      toast({
+        title: "Warning",
+        description: "Failed to load custom offer click data from tracking server",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Enhanced section stats loader with better error handling  
   const loadSectionStats = async () => {
     try {
@@ -248,6 +338,7 @@ const Admin = () => {
     if (user) {
       const interval = setInterval(() => {
         loadCustomData();
+        loadCustomOfferData();
         loadSectionStats();
       }, 60000); // Increased to 1 minute to avoid rate limiting
 
@@ -265,6 +356,7 @@ const Admin = () => {
       if (user) {
         loadData();
         loadCustomData();
+        loadCustomOfferData();
         loadSectionStats();
       }
     };
@@ -277,6 +369,7 @@ const Admin = () => {
       if (session?.user) {
         loadData();
         loadCustomData();
+        loadCustomOfferData();
         loadSectionStats();
       }
     });
@@ -336,29 +429,29 @@ const Admin = () => {
       });
 
       // Load banner click logs
-      const { data: clicks, error: clickError } = await supabase
+      const { data: bannerClicksData, error: bannerClickError } = await supabase
         .from("banner_clicks")
         .select("*")
         .order("clicked_at", { ascending: false });
-      if (clickError) throw clickError;
+      if (bannerClickError) throw bannerClickError;
 
       const { data: bannersRes, error: bannerError } = await supabase
         .from("banners")
         .select("id, image_url");
       if (bannerError) throw bannerError;
 
-      const { data: clickStats, error: statsError } = await supabase
+      const { data: bannerClickStats, error: bannerStatsError } = await supabase
         .from("banner_click_counts")
         .select("*")
         .order("click_count", { ascending: false });
-      if (statsError) throw statsError;
+      if (bannerStatsError) throw bannerStatsError;
 
-      const merged = clickStats?.map((stat) => {
+      const mergedBannerClicks = bannerClickStats?.map((stat) => {
         const banner = bannersRes?.find((b) => b.id === stat.banner_id);
-        const lastClick = clicks?.find((c) => c.banner_id === stat.banner_id);
+        const lastClick = bannerClicksData?.find((c) => c.banner_id === stat.banner_id);
         const cleanIp = (ip: string | null | undefined) =>
           ip ? ip.split(",")[0].trim() : "—";
-        const firstClick = clicks
+        const firstClick = bannerClicksData
           ?.filter((c) => c.banner_id === stat.banner_id)
           .slice(-1)[0];
 
@@ -375,7 +468,45 @@ const Admin = () => {
         };
       });
 
-      setBannerClicks(merged || []);
+      setBannerClicks(mergedBannerClicks || []);
+
+      // Load offer click logs
+      const { data: offerClicksData, error: offerClickError } = await supabase
+        .from("offer_clicks")
+        .select("*")
+        .order("clicked_at", { ascending: false });
+      if (offerClickError) throw offerClickError;
+
+      const { data: offerClickStats, error: offerStatsError } = await supabase
+        .from("offer_click_counts")
+        .select("*")
+        .order("click_count", { ascending: false });
+      if (offerStatsError) throw offerStatsError;
+
+      const mergedOfferClicks = offerClickStats?.map((stat) => {
+        const offer = offersData?.find((o) => o.id === stat.offer_id);
+        const lastClick = offerClicksData?.find((c) => c.offer_id === stat.offer_id);
+        const cleanIp = (ip: string | null | undefined) =>
+          ip ? ip.split(",")[0].trim() : "—";
+        const firstClick = offerClicksData
+          ?.filter((c) => c.offer_id === stat.offer_id)
+          .slice(-1)[0];
+
+        return {
+          offer_id: stat.offer_id,
+          offer_name: offer?.name,
+          network_name: offer?.networks?.name,
+          click_count: stat.click_count,
+          country: lastClick?.country || "Unknown",
+          ip_address: cleanIp(lastClick?.ip_address),
+          clicked_at: lastClick?.clicked_at || null,
+          first_country: firstClick?.country || "Unknown",
+          first_ip: cleanIp(firstClick?.ip_address),
+          first_clicked_at: firstClick?.clicked_at || null,
+        };
+      });
+
+      setOfferClicks(mergedOfferClicks || []);
 
       // Load requests
       const { data: rqData, error: rqError } = await supabase
@@ -409,6 +540,7 @@ const Admin = () => {
       setUser(data.user);
       loadData();
       loadCustomData();
+      loadCustomOfferData();
       loadSectionStats();
     }
   };
@@ -512,7 +644,8 @@ const Admin = () => {
       </header>
 
       <div className="container mx-auto px-2 sm:px-4 py-8">
-        <Tabs defaultValue="networks" className="space-y-6">
+        <Tabs defaultValue="custom-offer-details" className="space-y-6">
+
           <TabsList className="flex flex-wrap gap-2 w-full justify-center sm:justify-start">
             <TabsTrigger value="networks">Networks</TabsTrigger>
             <TabsTrigger value="offers">Offers</TabsTrigger>
@@ -523,6 +656,8 @@ const Admin = () => {
             <TabsTrigger value="affiliate-details">Affiliate Details</TabsTrigger>
             <TabsTrigger value="banner-details">Banner Details</TabsTrigger>
             <TabsTrigger value="custom-banner-details">Custom Banner Details</TabsTrigger>
+            <TabsTrigger value="offer-click-details">Offer Click Details</TabsTrigger>
+            <TabsTrigger value="custom-offer-details">Custom Offer Details</TabsTrigger>
           </TabsList>
 
           {/* Banner Click Details */}
@@ -1099,6 +1234,163 @@ const Admin = () => {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* Offer Click Details */}
+          <TabsContent value="offer-click-details">
+            <Card>
+              <CardHeader>
+                <CardTitle>Offer Click Details</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {offerClicks.length === 0 ? (
+                  <p>No offer clicks found.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm border-collapse">
+                      <thead>
+                        <tr>
+                          <th className="p-2 border">Offer Name</th>
+                          <th className="p-2 border">Network</th>
+                          <th className="p-2 border">Latest Country</th>
+                          <th className="p-2 border">Latest IP</th>
+                          <th className="p-2 border">Latest Clicked Time</th>
+                          <th className="p-2 border">Click Count</th>
+                          <th className="p-2 border">First IP</th>
+                          <th className="p-2 border">First Clicked At</th>
+                          <th className="p-2 border">First Country</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {offerClicks.map((click) => (
+                          <tr key={click.offer_id}>
+                            <td className="p-2 border">{click.offer_name}</td>
+                            <td className="p-2 border">{click.network_name}</td>
+                            <td className="p-2 border">{click.country}</td>
+                            <td className="p-2 border">{click.ip_address}</td>
+                            <td className="p-2 border">
+                              {click.clicked_at
+                                ? new Date(click.clicked_at).toLocaleString()
+                                : "—"}
+                            </td>
+                            <td className="p-2 border">{click.click_count}</td>
+                            <td className="p-2 border">{click.first_ip}</td>
+                            <td className="p-2 border">
+                              {click.first_clicked_at
+                                ? new Date(click.first_clicked_at).toLocaleString()
+                                : "—"}
+                            </td>
+                            <td className="p-2 border">{click.first_country}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Custom Offer Click Details */}
+          <TabsContent value="custom-offer-details">
+            <Card>
+              <CardHeader>
+                <CardTitle>Custom Offer Click Details</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Enhanced tracking with accurate geolocation data for offer clicks
+                </p>
+              </CardHeader>
+              <CardContent>
+              <div className="space-y-4">
+  <div className="flex justify-between items-center">
+    <div className="flex items-center gap-4">
+      <p className="text-sm text-muted-foreground">
+        Total Records: {customOfferClicks.length}
+      </p>
+      <p className="text-sm text-blue-600">
+        Unique Countries: {new Set(customOfferClicks.map(c => c.country_name || c.country || 'Unknown')).size}
+      </p>
+    </div>
+
+    <Button
+      onClick={() => {
+        loadCustomOfferData();
+      }}
+      variant="outline"
+      size="sm"
+    >
+      Refresh Data
+    </Button>
+  </div>
+
+  <div className="mb-4 text-xs text-muted-foreground">
+    <strong>DEBUG DATA (temporary):</strong>
+    <pre style={{ whiteSpace: "pre-wrap", fontSize: 11 }}>
+      {JSON.stringify(customOfferClicks?.slice(0, 10) || [], null, 2)}
+    </pre>
+  </div>
+
+  <div className="overflow-x-auto">
+    <table className="w-full text-sm border-collapse">
+      <thead>
+        <tr>
+          <th className="p-3 border text-left bg-gray-50">Offer ID</th>
+          <th className="p-3 border text-left bg-gray-50">Browser</th>
+          <th className="p-3 border text-left bg-gray-50">IP Address</th>
+          <th className="p-3 border text-left bg-gray-50">Country Info</th>
+          <th className="p-3 border text-left bg-gray-50">Clicked At</th>
+        </tr>
+      </thead>
+      <tbody>
+        {customOfferClicks.map((click, index) => (
+          <tr
+            key={click.id || index}
+            className={`transition-colors hover:bg-gray-50 ${index % 2 === 0 ? "bg-white" : "bg-gray-25"}`}
+          >
+            <td className="p-3 border font-mono text-xs">
+              {String(click.offer_id).substring(0, 8)}...
+            </td>
+            <td className="p-3 border">{click.browser || "—"}</td>
+            <td className="p-3 border font-mono text-xs">{click.ip || "unknown"}</td>
+            <td className="p-3 border">
+              <div className="flex flex-col space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{getCountryFlag(click.country)}</span>
+                  <Badge
+                    variant={!click.country || click.country === "Unknown" ? "secondary" : "default"}
+                    className="text-xs"
+                  >
+                    {click.country || "Unknown"}
+                  </Badge>
+                </div>
+                {click.country_name && (
+                  <span className="text-xs text-blue-600 font-medium">{click.country_name}</span>
+                )}
+                {click.city && (
+                  <span className="text-xs text-gray-600">
+                    {click.city}
+                    {click.region && `, ${click.region}`}
+                  </span>
+                )}
+                {click.original_country && click.original_country !== click.country && (
+                  <span className="text-xs text-orange-600">
+                    (was: {click.original_country})
+                  </span>
+                )}
+              </div>
+            </td>
+            <td className="p-3 border text-xs">
+              {click.clicked_at ? new Date(click.clicked_at).toLocaleString() : "—"}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="networks">

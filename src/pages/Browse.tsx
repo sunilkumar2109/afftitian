@@ -999,7 +999,7 @@ const JoinButton = ({
   );
 };
 
-// Network Page Component - FIXED: Properly filter offers by network ID
+// Network Page Component - UPDATED: Added pagination with 10 offers per page
 const NetworkPage = ({ 
   network, 
   offers, 
@@ -1012,6 +1012,10 @@ const NetworkPage = ({
   const navigate = useNavigate();
   const { toast } = useToast();
   const [sortBy, setSortBy] = useState<string>("relevance-desc");
+  
+  // Pagination state for network page
+  const [currentPage, setCurrentPage] = useState(1);
+  const [offersPerPage] = useState(10);
 
   // FIXED: Properly filter offers by network ID
   const networkOffers = offers.filter(offer => {
@@ -1064,6 +1068,19 @@ const NetworkPage = ({
   };
 
   const sortedOffers = getSortedOffers();
+
+  // Pagination logic for network page
+  const indexOfLastOffer = currentPage * offersPerPage;
+  const indexOfFirstOffer = indexOfLastOffer - offersPerPage;
+  const currentOffers = sortedOffers.slice(indexOfFirstOffer, indexOfLastOffer);
+  const totalPages = Math.ceil(sortedOffers.length / offersPerPage);
+
+  const paginate = (pageNumber: number) => {
+    if (pageNumber < 1) pageNumber = 1;
+    if (pageNumber > totalPages) pageNumber = totalPages;
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const handleOfferClick = (offerId: string) => {
     navigate(`/offer/${offerId}`);
@@ -1178,6 +1195,77 @@ const NetworkPage = ({
     return [];
   };
 
+  // Network Page Pagination Component
+  const NetworkPagination = () => {
+    if (totalPages <= 1) return null;
+
+    return (
+      <div className="flex justify-center items-center mt-6 space-x-2">
+        <Button
+          onClick={() => paginate(currentPage - 1)}
+          disabled={currentPage === 1}
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-1 bg-gray-800 text-white border-gray-700 h-8 px-3"
+        >
+          <ChevronLeft className="w-3 h-3" />
+          Previous
+        </Button>
+        
+        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+          let pageNum;
+          if (totalPages <= 5) {
+            pageNum = i + 1;
+          } else if (currentPage <= 3) {
+            pageNum = i + 1;
+          } else if (currentPage >= totalPages - 2) {
+            pageNum = totalPages - 4 + i;
+          } else {
+            pageNum = currentPage - 2 + i;
+          }
+          
+          return (
+            <Button
+              key={pageNum}
+              onClick={() => paginate(pageNum)}
+              variant={currentPage === pageNum ? "default" : "outline"}
+              size="sm"
+              className={`h-8 px-3 min-w-[2.5rem] ${currentPage === pageNum ? "bg-blue-600 text-white" : "bg-gray-800 text-white border-gray-700"}`}
+            >
+              {pageNum}
+            </Button>
+          );
+        })}
+        
+        {totalPages > 5 && currentPage < totalPages - 2 && (
+          <span className="text-gray-400">...</span>
+        )}
+        
+        {totalPages > 5 && currentPage < totalPages - 2 && (
+          <Button
+            onClick={() => paginate(totalPages)}
+            variant="outline"
+            size="sm"
+            className="bg-gray-800 text-white border-gray-700 h-8 px-3"
+          >
+            {totalPages}
+          </Button>
+        )}
+        
+        <Button
+          onClick={() => paginate(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-1 bg-gray-800 text-white border-gray-700 h-8 px-3"
+        >
+          Next
+          <ChevronRight className="w-3 h-3" />
+        </Button>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen text-white bg-cover bg-center">
       {/* Back Button */}
@@ -1270,144 +1358,149 @@ const NetworkPage = ({
             <p className="text-sm">No offers available for this network.</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {sortedOffers.map((offer) => (
-              <Card
-                key={offer.id}
-                className={`p-3 w-full hover:shadow-md transition-shadow border-gray-800 cursor-pointer ${
-                  offer.is_active ? "bg-gray-900 hover:bg-gray-850" : "bg-gray-800"
-                }`}
-                onClick={() => handleOfferClick(offer.id)}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  {/* Left Side - Offer Info */}
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    {offer.image_url && (
-                      <img
-                        src={offer.image_url}
-                        alt={offer.name}
-                        className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
-                      />
-                    )}
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-white text-base truncate">
-                          {offer.name}
-                        </h3>
-                        {!offer.is_active && (
-                          <Badge
-                            variant="secondary"
-                            className="text-xs bg-gray-700 text-white px-1 py-0 h-4"
-                          >
-                            Inactive
-                          </Badge>
-                        )}
-                        {offer.is_featured && (
-                          <Badge
-                            variant="default"
-                            className="text-xs bg-yellow-600 text-white px-1 py-0 h-4"
-                          >
-                            Featured
-                          </Badge>
-                        )}
-                      </div>
-                      
-                      <div className="flex flex-wrap gap-1 mb-2">
-                        {/* Geo Targets - Show up to 3 */}
-                        {offer.geo_targets && Array.isArray(offer.geo_targets) && offer.geo_targets.slice(0, 3).map((geo, idx) => (
-                          <Badge
-                            key={`geo-${idx}`}
-                            variant="outline"
-                            className="text-xs px-1 py-0 h-4 border-gray-600 text-gray-300 bg-gray-600/10"
-                          >
-                            {geo}
-                          </Badge>
-                        ))}
-                        
-                        {/* Vertical Tags - Show up to 2 after geo tags */}
-                        {toStringArray(offer.vertical, false).slice(0, 2).map((vertical, idx) => (
-                          <Badge
-                            key={`vertical-${idx}`}
-                            variant="outline"
-                            className="text-xs px-1 py-0 h-4 border-green-600 text-green-300 bg-green-600/10"
-                          >
-                            {vertical}
-                          </Badge>
-                        ))}
-                        
-                        {offer.type && (
-                          <Badge
-                            variant="outline"
-                            className="text-xs px-1 py-0 h-4 border-blue-600 text-blue-300 bg-blue-600/10"
-                          >
-                            {offer.type}
-                          </Badge>
-                        )}
-                      </div>
-                      
-                      <div className="flex items-center gap-3 text-xs text-gray-400">
-                        {offer.conversion_rate && (
-                          <div className="flex items-center gap-1">
-                            <Target size={10} />
-                            <span>{offer.conversion_rate.toFixed(1)}% CR</span>
-                          </div>
-                        )}
-
-                        {offer.last_updated && (
-                          <div className="flex items-center gap-1">
-                            <Clock size={10} />
-                            <span>Updated {new Date(offer.last_updated).toLocaleDateString()}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right Side - Payout and Action Buttons */}
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    <div className="text-right">
-                      <div className="text-lg font-bold text-green-400">
-                        {offer.payout_currency || "USD"} {typeof offer.payout_amount === "number"
-                          ? offer.payout_amount.toFixed(2)
-                          : offer.payout_amount}
-                      </div>
-                      
-                      {offer.epc && (
-                        <div className="text-xs text-blue-400 mt-1">
-                          EPC: ${offer.epc.toFixed(2)}
-                        </div>
+          <>
+            <div className="space-y-3">
+              {currentOffers.map((offer) => (
+                <Card
+                  key={offer.id}
+                  className={`p-3 w-full hover:shadow-md transition-shadow border-gray-800 cursor-pointer ${
+                    offer.is_active ? "bg-gray-900 hover:bg-gray-850" : "bg-gray-800"
+                  }`}
+                  onClick={() => handleOfferClick(offer.id)}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    {/* Left Side - Offer Info */}
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      {offer.image_url && (
+                        <img
+                          src={offer.image_url}
+                          alt={offer.name}
+                          className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
+                        />
                       )}
-                    </div>
-                    
-                    <div className="flex flex-col gap-1">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600 p-1 h-7 w-7"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOfferClick(offer.id);
-                        }}
-                        title="Details"
-                      >
-                        <MoreHorizontal className="w-3 h-3" />
-                      </Button>
                       
-                      <Button
-                        size="sm"
-                        className="bg-green-600 hover:bg-green-700 text-white p-1 h-7 w-7"
-                        onClick={(e) => handleJoinClick(offer, e)}
-                        title="Join Offer"
-                      >
-                        <ArrowUpRight className="w-3 h-3" />
-                      </Button>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-white text-base truncate">
+                            {offer.name}
+                          </h3>
+                          {!offer.is_active && (
+                            <Badge
+                              variant="secondary"
+                              className="text-xs bg-gray-700 text-white px-1 py-0 h-4"
+                            >
+                              Inactive
+                            </Badge>
+                          )}
+                          {offer.is_featured && (
+                            <Badge
+                              variant="default"
+                              className="text-xs bg-yellow-600 text-white px-1 py-0 h-4"
+                            >
+                              Featured
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {/* Geo Targets - Show up to 3 */}
+                          {offer.geo_targets && Array.isArray(offer.geo_targets) && offer.geo_targets.slice(0, 3).map((geo, idx) => (
+                            <Badge
+                              key={`geo-${idx}`}
+                              variant="outline"
+                              className="text-xs px-1 py-0 h-4 border-gray-600 text-gray-300 bg-gray-600/10"
+                            >
+                              {geo}
+                            </Badge>
+                          ))}
+                          
+                          {/* Vertical Tags - Show up to 2 after geo tags */}
+                          {toStringArray(offer.vertical, false).slice(0, 2).map((vertical, idx) => (
+                            <Badge
+                              key={`vertical-${idx}`}
+                              variant="outline"
+                              className="text-xs px-1 py-0 h-4 border-green-600 text-green-300 bg-green-600/10"
+                            >
+                              {vertical}
+                            </Badge>
+                          ))}
+                          
+                          {offer.type && (
+                            <Badge
+                              variant="outline"
+                              className="text-xs px-1 py-0 h-4 border-blue-600 text-blue-300 bg-blue-600/10"
+                            >
+                              {offer.type}
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-3 text-xs text-gray-400">
+                          {offer.conversion_rate && (
+                            <div className="flex items-center gap-1">
+                              <Target size={10} />
+                              <span>{offer.conversion_rate.toFixed(1)}% CR</span>
+                            </div>
+                          )}
+
+                          {offer.last_updated && (
+                            <div className="flex items-center gap-1">
+                              <Clock size={10} />
+                              <span>Updated {new Date(offer.last_updated).toLocaleDateString()}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Side - Payout and Action Buttons */}
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <div className="text-right">
+                        <div className="text-lg font-bold text-green-400">
+                          {offer.payout_currency || "USD"} {typeof offer.payout_amount === "number"
+                            ? offer.payout_amount.toFixed(2)
+                            : offer.payout_amount}
+                        </div>
+                        
+                        {offer.epc && (
+                          <div className="text-xs text-blue-400 mt-1">
+                            EPC: ${offer.epc.toFixed(2)}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex flex-col gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600 p-1 h-7 w-7"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOfferClick(offer.id);
+                          }}
+                          title="Details"
+                        >
+                          <MoreHorizontal className="w-3 h-3" />
+                        </Button>
+                        
+                        <Button
+                          size="sm"
+                          className="bg-green-600 hover:bg-green-700 text-white p-1 h-7 w-7"
+                          onClick={(e) => handleJoinClick(offer, e)}
+                          title="Join Offer"
+                        >
+                          <ArrowUpRight className="w-3 h-3" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Card>
-            ))}
-          </div>
+                </Card>
+              ))}
+            </div>
+            
+            {/* Network Page Pagination */}
+            <NetworkPagination />
+          </>
         )}
       </div>
     </div>
@@ -1443,9 +1536,8 @@ const Browse = () => {
   const [offerSearchTerm, setOfferSearchTerm] = useState("");
   const [globalSearchTerm, setGlobalSearchTerm] = useState("");
 
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [offersPerPage] = useState(15);
+  // Load More state for main browse view
+  const [visibleOffersCount, setVisibleOffersCount] = useState(15);
 
   // Quick filter options (removed "Amount" and "Date Added")
   const quickFilterOptions = [
@@ -1495,7 +1587,7 @@ const Browse = () => {
 
   const handleNetworkClick = (networkId: string, networkName: string) => {
     setSelectedNetworkFilter(networkName);
-    setCurrentPage(1);
+    setVisibleOffersCount(15); // Reset visible offers when filtering
   };
 
   // Function to handle network page navigation
@@ -1552,13 +1644,18 @@ const Browse = () => {
     // do NOT also force selectedOfferCategory to the same value.
     // That causes double-filtering (quick filter + vertical category) and hides matches.
     setSelectedOfferCategory("All");
-    setCurrentPage(1);
+    setVisibleOffersCount(15); // Reset visible offers when filtering
   }
 };
 
   const handleSortChange = (value: string) => {
     setSortBy(value);
-    setCurrentPage(1);
+    setVisibleOffersCount(15); // Reset visible offers when sorting
+  };
+
+  // Load More function for main browse view
+  const handleLoadMore = () => {
+    setVisibleOffersCount(prev => prev + 15);
   };
 
   useEffect(() => {
@@ -2251,19 +2348,10 @@ const Browse = () => {
     return filtered;
   };
 
-  // Pagination logic
+  // Load More logic for main browse view
   const offersToDisplay = getFilteredOffers();
-  const indexOfLastOffer = currentPage * offersPerPage;
-  const indexOfFirstOffer = indexOfLastOffer - offersPerPage;
-  const currentOffers = offersToDisplay.slice(indexOfFirstOffer, indexOfLastOffer);
-  const totalPages = Math.ceil(offersToDisplay.length / offersPerPage);
-
-  const paginate = (pageNumber: number) => {
-    if (pageNumber < 1) pageNumber = 1;
-    if (pageNumber > totalPages) pageNumber = totalPages;
-    setCurrentPage(pageNumber);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  const currentOffers = offersToDisplay.slice(0, visibleOffersCount);
+  const hasMoreOffers = visibleOffersCount < offersToDisplay.length;
 
   // Background banner logic
   const defaultBg = "https://i.pinimg.com/736x/cf/3a/c8/cf3ac842dcb713c45973de67c44d5e78.jpg";
@@ -2407,76 +2495,6 @@ const Browse = () => {
     );
   };
 
-  const Pagination = () => {
-    if (totalPages <= 1) return null;
-
-    return (
-      <div className="flex justify-center items-center mt-4 space-x-2">
-        <Button
-          onClick={() => paginate(currentPage - 1)}
-          disabled={currentPage === 1}
-          variant="outline"
-          size="sm"
-          className="flex items-center gap-1 bg-gray-800 text-white border-gray-700 h-8 px-2"
-        >
-          <ChevronLeft className="w-3 h-3" />
-          Previous
-        </Button>
-        
-        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-          let pageNum;
-          if (totalPages <= 5) {
-            pageNum = i + 1;
-          } else if (currentPage <= 3) {
-            pageNum = i + 1;
-          } else if (currentPage >= totalPages - 2) {
-            pageNum = totalPages - 4 + i;
-          } else {
-            pageNum = currentPage - 2 + i;
-          }
-          
-          return (
-            <Button
-              key={pageNum}
-              onClick={() => paginate(pageNum)}
-              variant={currentPage === pageNum ? "default" : "outline"}
-              size="sm"
-              className={`h-8 px-2 min-w-[2rem] ${currentPage === pageNum ? "bg-blue-600 text-white" : "bg-gray-800 text-white border-gray-700"}`}
-            >
-              {pageNum}
-            </Button>
-          );
-        })}
-        
-        {totalPages > 5 && currentPage < totalPages - 2 && (
-          <span className="text-gray-400">...</span>
-        )}
-        
-        {totalPages > 5 && currentPage < totalPages - 2 && (
-          <Button
-            onClick={() => paginate(totalPages)}
-            variant="outline"
-            size="sm"
-            className="bg-gray-800 text-white border-gray-700 h-8 px-2"
-          >
-            {totalPages}
-          </Button>
-        )}
-        
-        <Button
-          onClick={() => paginate(currentPage + 1)}
-          disabled={currentPage === totalPages}
-          variant="outline"
-          size="sm"
-          className="flex items-center gap-1 bg-gray-800 text-white border-gray-700 h-8 px-2"
-          >
-          Next
-          <ChevronRight className="w-3 h-3" />
-        </Button>
-      </div>
-    );
-  };
-
   // If we're in network view mode, show the network page
   if (viewMode === "network" && selectedNetwork) {
     return (
@@ -2598,7 +2616,7 @@ const Browse = () => {
             ))}
           </div>
 
-          {/* Offers List with Pagination */}
+          {/* Offers List with Load More */}
           <div className="space-y-3">
             {/* Offer Search Input */}
             {selectedNetworkFilter && (
@@ -2826,8 +2844,18 @@ const Browse = () => {
                   );
                 })}
                 
-                {/* Pagination Controls */}
-                <Pagination />
+                {/* Load More Button - Replaces Pagination */}
+                {hasMoreOffers && (
+                  <div className="flex justify-center mt-6">
+                    <Button
+                      onClick={handleLoadMore}
+                      variant="outline"
+                      className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600 px-6 py-2"
+                    >
+                      Load More Offers
+                    </Button>
+                  </div>
+                )}
               </>
             )}
           </div>
