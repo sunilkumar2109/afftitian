@@ -39,7 +39,7 @@ const OfferForm = ({ onSuccess, networks, masterData, offer }: OfferFormProps) =
     "Crypto", "Dating", "Gambling", "Game", "COD", "Sweepstakes", "Insurance",
     "Incent", "Loan", "App", "Streaming", "Subscription", "Shopping", "HealthFree",
     "Trial", "RevShare", "Gaming", "Direct", "Email Optin", "Mobile", "Social", 
-    "Supplement", "Nutra", "Health"
+    "Supplement", "Nutra", "Health","sweepsone"
   ];
 
   // Load XLSX if needed

@@ -1985,13 +1985,19 @@ const Browse = () => {
                offerTags.includes("cod");
       
       case "sweepstakes":
+      case "sweepsone":
+      case "sweeps one":
         return searchableText.includes("sweepstakes") || 
                searchableText.includes("sweeps") || 
+               searchableText.includes("sweepsone") || // ADDED: Check for sweepsone
+               searchableText.includes("sweeps one") || // ADDED: Check for "sweeps one"
                searchableText.includes("contest") ||
                searchableText.includes("giveaway") ||
                searchableText.includes("prize") ||
                offerVerticals.includes("sweepstakes") ||
-               offerTags.includes("sweepstakes");
+               offerVerticals.includes("sweepsone") || // ADDED: Check verticals for sweepsone
+               offerTags.includes("sweepstakes") ||
+               offerTags.includes("sweepsone"); // ADDED: Check tags for sweepsone
       
       case "soi":
       case "single opt-in":
@@ -2068,151 +2074,165 @@ const Browse = () => {
     }
 
     // Apply quick filter if selected - FIXED FILTERING LOGIC
-   if (selectedQuickFilter && selectedQuickFilter !== "All Offers") {
-  if (selectedQuickFilter === "Duplicates") {
-    // Filter duplicates
-    const duplicateIds = detectDuplicateOffers(filtered);
-    filtered = filtered.filter(offer => duplicateIds.has(offer.id));
-  } else {
-    // Filter by specific criteria
-    filtered = filtered.filter(offer => {
-      const offerType = getDisplayValue(offer.type, "").toLowerCase();
-      const offerVerticals = toStringArray(offer.vertical, false).map(v => v.toLowerCase());
-      const offerTags = toStringArray(offer.tags, false).map(t => t.toLowerCase());
-      const offerName = getDisplayValue(offer.name, "").toLowerCase();
+    if (selectedQuickFilter && selectedQuickFilter !== "All Offers") {
+      if (selectedQuickFilter === "Duplicates") {
+        // Filter duplicates
+        const duplicateIds = detectDuplicateOffers(filtered);
+        filtered = filtered.filter(offer => duplicateIds.has(offer.id));
+      } else {
+        // Filter by specific criteria
+        filtered = filtered.filter(offer => {
+          const offerType = getDisplayValue(offer.type, "").toLowerCase();
+          const offerVerticals = toStringArray(offer.vertical, false).map(v => v.toLowerCase());
+          const offerTags = toStringArray(offer.tags, false).map(t => t.toLowerCase());
+          const offerName = getDisplayValue(offer.name, "").toLowerCase();
 
-      // normalized name (remove spaces, dashes, etc.)
-      const normalizedName = offerName.replace(/[^a-z0-9]/g, "");
+          // normalized name (remove spaces, dashes, etc.)
+          const normalizedName = offerName.replace(/[^a-z0-9]/g, "");
 
-      switch (selectedQuickFilter.toLowerCase()) {
-        case "soi":
-          return (
-            offerType.includes("soi") ||
-            offerVerticals.some(v => v.includes("soi")) ||
-            offerTags.some(t => t.includes("soi")) ||
-            offerName.includes("soi") ||
-            offerName.includes("single opt")
-          );
+          switch (selectedQuickFilter.toLowerCase()) {
+            case "soi":
+              return (
+                offerType.includes("soi") ||
+                offerVerticals.some(v => v.includes("soi")) ||
+                offerTags.some(t => t.includes("soi")) ||
+                offerName.includes("soi") ||
+                offerName.includes("single opt")
+              );
 
-        case "doi":
-          return (
-            offerType.replace(/[^a-z0-9]/g, "").includes("doi") ||
-            offerVerticals.some(v => v.replace(/[^a-z0-9]/g, "").includes("doi")) ||
-            offerTags.some(t => t.replace(/[^a-z0-9]/g, "").includes("doi")) ||
-            offerName.includes("doi") ||
-            offerName.includes("double opt") ||
-            offerName.includes("double-opt") ||
-            offerName.includes("doubleopt") ||
-            normalizedName.includes("doubleoptin")
-          );
+            case "doi":
+              return (
+                offerType.replace(/[^a-z0-9]/g, "").includes("doi") ||
+                offerVerticals.some(v => v.replace(/[^a-z0-9]/g, "").includes("doi")) ||
+                offerTags.some(t => t.replace(/[^a-z0-9]/g, "").includes("doi")) ||
+                offerName.includes("doi") ||
+                offerName.includes("double opt") ||
+                offerName.includes("double-opt") ||
+                offerName.includes("doubleopt") ||
+                normalizedName.includes("doubleoptin")
+              );
 
-        case "cpa":
-          return (
-            offerType.includes("cpa") ||
-            offerVerticals.some(v => v.includes("cpa")) ||
-            offerTags.some(t => t.includes("cpa")) ||
-            offerName.includes("cpa") ||
-            offerName.includes("cost per action") ||
-            offerName.includes("cost per acquisition")
-          );
+            case "cpa":
+              return (
+                offerType.includes("cpa") ||
+                offerVerticals.some(v => v.includes("cpa")) ||
+                offerTags.some(t => t.includes("cpa")) ||
+                offerName.includes("cpa") ||
+                offerName.includes("cost per action") ||
+                offerName.includes("cost per acquisition")
+              );
 
-        case "cpl":
-          return (
-            offerType.replace(/[^a-z0-9]/g, "").includes("cpl") ||
-            offerVerticals.some(v => v.replace(/[^a-z0-9]/g, "").includes("cpl")) ||
-            offerTags.some(t => t.replace(/[^a-z0-9]/g, "").includes("cpl")) ||
-            offerName.includes("cpl") ||
-            offerName.includes("cost per lead") ||
-            offerName.includes("cost-per-lead") ||
-            offerName.includes("costperlead") ||
-            normalizedName.includes("cploffer")
-          );
+            case "cpl":
+              return (
+                offerType.replace(/[^a-z0-9]/g, "").includes("cpl") ||
+                offerVerticals.some(v => v.replace(/[^a-z0-9]/g, "").includes("cpl")) ||
+                offerTags.some(t => t.replace(/[^a-z0-9]/g, "").includes("cpl")) ||
+                offerName.includes("cpl") ||
+                offerName.includes("cost per lead") ||
+                offerName.includes("cost-per-lead") ||
+                offerName.includes("costperlead") ||
+                normalizedName.includes("cploffer")
+              );
 
-        case "cpi":
-          return (
-            offerType.includes("cpi") ||
-            offerVerticals.some(v => v.includes("cpi")) ||
-            offerTags.some(t => t.includes("cpi")) ||
-            offerName.includes("cpi") ||
-            offerName.includes("cost per install")
-          );
+            case "cpi":
+              return (
+                offerType.includes("cpi") ||
+                offerVerticals.some(v => v.includes("cpi")) ||
+                offerTags.some(t => t.includes("cpi")) ||
+                offerName.includes("cpi") ||
+                offerName.includes("cost per install")
+              );
 
-        case "sweepstakes":
-          return (
-            offerVerticals.some(v => v.includes("sweepstakes")) ||
-            offerTags.some(t => t.includes("sweepstakes")) ||
-            offerName.includes("sweepstakes") ||
-            offerName.includes("sweeps") ||
-            offerName.includes("giveaway") ||
-            offerName.includes("contest") ||
-            offerName.includes("prize")
-          );
+            case "sweepstakes":
+              return (
+                offerVerticals.some(v => 
+                  v.includes("sweepstakes") || 
+                  v.includes("sweeps") ||
+                  v.includes("sweepsone") || // ADDED: Check for sweepsone in verticals
+                  v.includes("sweeps one")
+                ) ||
+                offerTags.some(t => 
+                  t.includes("sweepstakes") || 
+                  t.includes("sweeps") ||
+                  t.includes("sweepsone") || // ADDED: Check for sweepsone in tags
+                  t.includes("sweeps one")
+                ) ||
+                offerName.includes("sweepstakes") ||
+                offerName.includes("sweeps") ||
+                offerName.includes("sweepsone") || // ADDED: Check for sweepsone in name
+                offerName.includes("sweeps one") || // ADDED: Check for "sweeps one" in name
+                normalizedName.includes("sweepsone") || // ADDED: Check normalized name
+                normalizedName.includes("sweepstakes") || // ADDED: Check normalized name
+                offerName.includes("giveaway") ||
+                offerName.includes("contest") ||
+                offerName.includes("prize")
+              );
 
-        case "insurance":
-          return (
-            offerVerticals.some(v => v.includes("insurance")) ||
-            offerTags.some(t => t.includes("insurance")) ||
-            offerName.includes("insurance")
-          );
+            case "insurance":
+              return (
+                offerVerticals.some(v => v.includes("insurance")) ||
+                offerTags.some(t => t.includes("insurance")) ||
+                offerName.includes("insurance")
+              );
 
-        case "crypto":
-          return (
-            offerVerticals.some(v => v.includes("crypto")) ||
-            offerTags.some(t => t.includes("crypto")) ||
-            offerName.includes("crypto") ||
-            offerName.includes("bitcoin") ||
-            offerName.includes("ethereum") ||
-            offerName.includes("blockchain")
-          );
+            case "crypto":
+              return (
+                offerVerticals.some(v => v.includes("crypto")) ||
+                offerTags.some(t => t.includes("crypto")) ||
+                offerName.includes("crypto") ||
+                offerName.includes("bitcoin") ||
+                offerName.includes("ethereum") ||
+                offerName.includes("blockchain")
+              );
 
-        case "dating":
-          return (
-            offerVerticals.some(v => v.includes("dating")) ||
-            offerTags.some(t => t.includes("dating")) ||
-            offerName.includes("dating") ||
-            offerName.includes("romance") ||
-            offerName.includes("relationship") ||
-            offerName.includes("singles") ||
-            offerName.includes("match")
-          );
+            case "dating":
+              return (
+                offerVerticals.some(v => v.includes("dating")) ||
+                offerTags.some(t => t.includes("dating")) ||
+                offerName.includes("dating") ||
+                offerName.includes("romance") ||
+                offerName.includes("relationship") ||
+                offerName.includes("singles") ||
+                offerName.includes("match")
+              );
 
-        case "gambling":
-          return (
-            offerVerticals.some(v => v.includes("gambling")) ||
-            offerTags.some(t => t.includes("gambling")) ||
-            offerName.includes("gambling") ||
-            offerName.includes("casino") ||
-            offerName.includes("poker") ||
-            offerName.includes("betting") ||
-            offerName.includes("slots") ||
-            offerName.includes("jackpot")
-          );
+            case "gambling":
+              return (
+                offerVerticals.some(v => v.includes("gambling")) ||
+                offerTags.some(t => t.includes("gambling")) ||
+                offerName.includes("gambling") ||
+                offerName.includes("casino") ||
+                offerName.includes("poker") ||
+                offerName.includes("betting") ||
+                offerName.includes("slots") ||
+                offerName.includes("jackpot")
+              );
 
-        case "game":
-          return (
-            offerVerticals.some(v => v.includes("game")) ||
-            offerTags.some(t => t.includes("game")) ||
-            offerName.includes("game") ||
-            offerName.includes("gaming") ||
-            offerName.includes("video game") ||
-            offerName.includes("mobile game")
-          );
+            case "game":
+              return (
+                offerVerticals.some(v => v.includes("game")) ||
+                offerTags.some(t => t.includes("game")) ||
+                offerName.includes("game") ||
+                offerName.includes("gaming") ||
+                offerName.includes("video game") ||
+                offerName.includes("mobile game")
+              );
 
-        case "cod":
-          return (
-            offerVerticals.some(v => v.includes("cod")) ||
-            offerTags.some(t => t.includes("cod")) ||
-            offerName.includes("cod") ||
-            offerName.includes("call of duty") ||
-            offerName.includes("cash on delivery")
-          );
+            case "cod":
+              return (
+                offerVerticals.some(v => v.includes("cod")) ||
+                offerTags.some(t => t.includes("cod")) ||
+                offerName.includes("cod") ||
+                offerName.includes("call of duty") ||
+                offerName.includes("cash on delivery")
+              );
 
-        default:
-          return matchesFilter(offer, selectedQuickFilter);
+            default:
+              return matchesFilter(offer, selectedQuickFilter);
+          }
+        });
       }
-    });
-  }
-}
+    }
 
     // Handle special cases for filtering and sorting
     if (selectedOfferCategory === "🔥 Top Offers") {
@@ -2237,12 +2257,12 @@ const Browse = () => {
     } else if (selectedOfferCategory === "insurance") {
       filtered = filtered.filter(offer => matchesFilter(offer, "insurance"));
     } else if (selectedOfferCategory !== "All") {
-  const selectedCatLower = selectedOfferCategory.toLowerCase();
-  filtered = filtered.filter(offer => {
-    const verticals = toStringArray(offer.vertical, false).map(v => v.toLowerCase());
-    return verticals.includes(selectedCatLower);
-  });
-}
+      const selectedCatLower = selectedOfferCategory.toLowerCase();
+      filtered = filtered.filter(offer => {
+        const verticals = toStringArray(offer.vertical, false).map(v => v.toLowerCase());
+        return verticals.includes(selectedCatLower);
+      });
+    }
 
     // Apply sorting based on the sortBy state
     if (sortBy === "payout") {

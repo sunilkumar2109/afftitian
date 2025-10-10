@@ -390,7 +390,7 @@ const Admin = () => {
       // Load offers
       const { data: offersData, error: offersError } = await supabase
         .from("offers")
-        .select(`*, networks!inner(name)`)
+        .select("*")
         .order("priority_order", { ascending: false });
       if (offersError) throw offersError;
       setOffers(offersData || []);
@@ -485,6 +485,7 @@ const Admin = () => {
 
       const mergedOfferClicks = offerClickStats?.map((stat) => {
         const offer = offersData?.find((o) => o.id === stat.offer_id);
+        const network = networksData?.find((n) => n.id === offer?.network_id);
         const lastClick = offerClicksData?.find((c) => c.offer_id === stat.offer_id);
         const cleanIp = (ip: string | null | undefined) =>
           ip ? ip.split(",")[0].trim() : "—";
@@ -495,7 +496,7 @@ const Admin = () => {
         return {
           offer_id: stat.offer_id,
           offer_name: offer?.name,
-          network_name: offer?.networks?.name,
+          network_name: network?.name,
           click_count: stat.click_count,
           country: lastClick?.country || "Unknown",
           ip_address: cleanIp(lastClick?.ip_address),

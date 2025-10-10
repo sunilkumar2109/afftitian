@@ -202,7 +202,6 @@ export type Database = {
           },
         ]
       }
-    }
       banners: {
         Row: {
           id: string
