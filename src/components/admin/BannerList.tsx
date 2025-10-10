@@ -19,6 +19,8 @@ import {
   ChevronRight,
   Eye,
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Banner } from "@/types/admin";
@@ -39,7 +41,6 @@ export const BannerListWrapper = ({ banners, onRefresh }: BannerListWrapperProps
     <div>
       {editingBanner !== null ? (
         <div className="space-y-4">
-          {/* Back Arrow */}
           <div className="flex items-center space-x-2 mb-4">
             <Button
               variant="ghost"
@@ -52,7 +53,6 @@ export const BannerListWrapper = ({ banners, onRefresh }: BannerListWrapperProps
             </Button>
           </div>
 
-          {/* Banner Edit Form */}
           <BannerEditForm
             banner={editingBanner}
             onSave={() => {
@@ -63,11 +63,7 @@ export const BannerListWrapper = ({ banners, onRefresh }: BannerListWrapperProps
           />
         </div>
       ) : (
-        <BannerList
-          banners={banners}
-          onEdit={setEditingBanner}
-          onRefresh={onRefresh}
-        />
+        <BannerList banners={banners} onEdit={setEditingBanner} onRefresh={onRefresh} />
       )}
     </div>
   );
@@ -84,14 +80,19 @@ interface PaginationProps {
   totalItems: number;
 }
 
-const Pagination = ({ currentPage, totalPages, onPageChange, itemsPerPage, totalItems }: PaginationProps) => {
+const Pagination = ({
+  currentPage,
+  totalPages,
+  onPageChange,
+  itemsPerPage,
+  totalItems,
+}: PaginationProps) => {
   const startItem = (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
   const getPageNumbers = () => {
     const pages = [];
     const maxVisiblePages = 5;
-
     if (totalPages <= maxVisiblePages) {
       for (let i = 1; i <= totalPages; i++) pages.push(i);
     } else {
@@ -103,7 +104,6 @@ const Pagination = ({ currentPage, totalPages, onPageChange, itemsPerPage, total
         pages.push(1, "...", currentPage - 1, currentPage, currentPage + 1, "...", totalPages);
       }
     }
-
     return pages;
   };
 
@@ -177,59 +177,44 @@ export const BannerList = ({ banners, onEdit, onRefresh }: BannerListProps) => {
 
   const [activeTab, setActiveTab] = useState<"rotation" | "single">("rotation");
 
-  // Pagination states
   const [rotationCurrentPage, setRotationCurrentPage] = useState(1);
   const [singleCurrentPage, setSingleCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
   const handleDelete = async (banner: Banner) => {
     try {
-      const table = banner.is_rotation ? "banner_rotations" : "banners";
-      const { error } = await supabase.from(table).delete().eq("id", banner.id);
-      if (error) throw error;
-
-      toast({ title: "Success", description: "Banner deleted successfully" });
-      onRefresh();
-    } catch (error) {
-      console.error("Error deleting banner:", error);
-      toast({ title: "Error", description: "Failed to delete", variant: "destructive" });
-    }
-  };
-
-  const handleToggleActive = async (banner: Banner) => {
-    try {
-      const table = banner.is_rotation ? "banner_rotations" : "banners";
-      const { error } = await supabase
-        .from(table)
-        .update({ is_active: !banner.is_active })
-        .eq("id", banner.id);
-
-      if (error) throw error;
+      if (banner.is_rotation) {
+        const { error } = await supabase.from("banner_rotations").delete().eq("id", banner.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("banners").delete().eq("id", banner.id);
+        if (error) throw error;
+      }
       toast({
-        title: `Banner ${!banner.is_active ? "Activated" : "Deactivated"}`,
+        title: "Success",
+        description: banner.is_rotation ? "Rotation deleted successfully" : "Banner deleted successfully",
       });
       onRefresh();
-    } catch (err) {
-      console.error("Error updating banner status:", err);
-      toast({ title: "Error", description: "Failed to update status", variant: "destructive" });
+    } catch (error) {
+      console.error("Error deleting banner/rotation:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete",
+        variant: "destructive",
+      });
     }
   };
 
   const handleSort = (key: string) => {
-    setSortConfig((prev) => {
-      if (prev.key === key) {
-        return { key, direction: prev.direction === "asc" ? "desc" : "asc" };
-      }
-      return { key, direction: "asc" };
-    });
+    setSortConfig((prev) =>
+      prev.key === key ? { key, direction: prev.direction === "asc" ? "desc" : "asc" } : { key, direction: "asc" }
+    );
   };
 
   const sortedBanners = [...banners].sort((a, b) => {
     if (!sortConfig.key || !sortConfig.direction) return 0;
-
     let valA: any = "";
     let valB: any = "";
-
     switch (sortConfig.key) {
       case "position":
         valA = a.section || "";
@@ -244,11 +229,21 @@ export const BannerList = ({ banners, onEdit, onRefresh }: BannerListProps) => {
         valB = b.created_at || "";
         break;
     }
-
     if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
     if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
     return 0;
   });
+
+  const getSortIcon = (key: string) =>
+    sortConfig.key === key ? (
+      sortConfig.direction === "asc" ? (
+        <ChevronUp className="inline h-4 w-4 ml-1" />
+      ) : (
+        <ChevronDown className="inline h-4 w-4 ml-1" />
+      )
+    ) : (
+      <ChevronDown className="inline h-4 w-4 ml-1 text-muted-foreground" />
+    );
 
   const rotationBanners = sortedBanners.filter((b) => b.is_rotation);
   const singleBanners = sortedBanners.filter((b) => !b.is_rotation);
@@ -277,7 +272,6 @@ export const BannerList = ({ banners, onEdit, onRefresh }: BannerListProps) => {
         </Button>
       </div>
 
-      {/* Tabs */}
       <div className="flex space-x-4 border-b pb-2">
         <button
           onClick={() => handleTabChange("rotation")}
@@ -301,20 +295,29 @@ export const BannerList = ({ banners, onEdit, onRefresh }: BannerListProps) => {
         </button>
       </div>
 
-      {/* Active Tab */}
       {activeTab === "rotation" ? (
         <BannerTable
           banners={paginatedRotationBanners}
           onEdit={onEdit}
           onDelete={handleDelete}
-          onToggle={handleToggleActive}
+          type="rotation"
+          totalBanners={rotationBanners.length}
+          currentPage={rotationCurrentPage}
+          totalPages={rotationTotalPages}
+          onPageChange={setRotationCurrentPage}
+          itemsPerPage={itemsPerPage}
         />
       ) : (
         <BannerTable
           banners={paginatedSingleBanners}
           onEdit={onEdit}
           onDelete={handleDelete}
-          onToggle={handleToggleActive}
+          type="single"
+          totalBanners={singleBanners.length}
+          currentPage={singleCurrentPage}
+          totalPages={singleTotalPages}
+          onPageChange={setSingleCurrentPage}
+          itemsPerPage={itemsPerPage}
         />
       )}
     </div>
@@ -322,131 +325,185 @@ export const BannerList = ({ banners, onEdit, onRefresh }: BannerListProps) => {
 };
 
 /* ================================
-   BannerTable + BannerRow
+   BannerTable Component
    ================================ */
 const BannerTable = ({
   banners,
   onEdit,
   onDelete,
-  onToggle,
-}: {
-  banners: Banner[];
-  onEdit: (banner: Banner | null) => void;
-  onDelete: (banner: Banner) => void;
-  onToggle: (banner: Banner) => void;
-}) => (
-  <Table>
-    <TableHeader>
-      <TableRow>
-        <TableHead>Type</TableHead>
-        <TableHead>Image / Name</TableHead>
-        <TableHead>Preview</TableHead>
-        <TableHead>Status</TableHead>
-        <TableHead>Created</TableHead>
-        <TableHead>Actions</TableHead>
-      </TableRow>
-    </TableHeader>
-    <TableBody>
-      {banners.length > 0 ? (
-        banners.map((banner) => (
-          <BannerRow
-            key={banner.id}
-            banner={banner}
-            onEdit={onEdit}
-            onDelete={onDelete}
-            onToggle={onToggle}
-          />
-        ))
-      ) : (
+  type,
+  totalBanners,
+  currentPage,
+  totalPages,
+  onPageChange,
+  itemsPerPage,
+}: any) => (
+  <div className="space-y-4">
+    <Table>
+      <TableHeader>
         <TableRow>
-          <TableCell colSpan={6} className="text-center text-muted-foreground">
-            No banners found.
-          </TableCell>
+          <TableHead>Type</TableHead>
+          <TableHead>Image / Name</TableHead>
+          <TableHead>Position</TableHead>
+          <TableHead>Expiry / Link</TableHead>
+          <TableHead>Created</TableHead>
+          <TableHead>Actions</TableHead>
         </TableRow>
-      )}
-    </TableBody>
-  </Table>
+      </TableHeader>
+      <TableBody>
+        {banners.length > 0 ? (
+          banners.map((banner: Banner) => (
+            <BannerRow key={banner.id} banner={banner} onEdit={onEdit} onDelete={onDelete} />
+          ))
+        ) : (
+          <TableRow>
+            <TableCell colSpan={6} className="text-center text-muted-foreground">
+              No {type} banners found.
+            </TableCell>
+          </TableRow>
+        )}
+      </TableBody>
+    </Table>
+
+    {totalBanners > 0 && (
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={onPageChange}
+        itemsPerPage={itemsPerPage}
+        totalItems={totalBanners}
+      />
+    )}
+  </div>
 );
 
-const BannerRow = ({
-  banner,
-  onEdit,
-  onDelete,
-  onToggle,
-}: {
-  banner: Banner;
-  onEdit: (banner: Banner | null) => void;
-  onDelete: (banner: Banner) => void;
-  onToggle: (banner: Banner) => void;
-}) => {
+/* ================================
+   BannerRow (with preview + toggle)
+   ================================ */
+const BannerRow = ({ banner, onEdit, onDelete }: any) => {
+  const countdown = useCountdown(banner.expires_at);
+  const isExpired = countdown === "Expired";
+  const [isActive, setIsActive] = useState(banner.is_active ?? true);
+  const [showPreview, setShowPreview] = useState(false);
+
+  const handleToggle = async (checked: boolean) => {
+    setIsActive(checked);
+    await supabase
+      .from(banner.is_rotation ? "banner_rotations" : "banners")
+      .update({ is_active: checked })
+      .eq("id", banner.id);
+  };
+
   return (
-    <TableRow>
-      <TableCell>{banner.is_rotation ? "Rotation" : "Single"}</TableCell>
-      <TableCell>
-        {banner.image_url ? (
-          <img src={banner.image_url} alt="Banner" className="h-12 w-20 object-cover rounded" />
-        ) : (
-          "No Image"
-        )}
-      </TableCell>
-      <TableCell>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => window.open(banner.image_url || banner.link_url, "_blank")}
-        >
-          <Eye className="h-4 w-4 mr-1" /> Preview
-        </Button>
-      </TableCell>
-      <TableCell>
-        <Button
-          size="sm"
-          variant={banner.is_active ? "default" : "secondary"}
-          onClick={() => onToggle(banner)}
-        >
-          {banner.is_active ? "Turn Off" : "Turn On"}
-        </Button>
-      </TableCell>
-      <TableCell>{banner.created_at ? new Date(banner.created_at).toLocaleDateString() : "—"}</TableCell>
-      <TableCell>
-        <div className="flex space-x-2">
-          <Button variant="outline" size="sm" onClick={() => onEdit(banner)}>
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => onDelete(banner)}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      </TableCell>
-    </TableRow>
+    <>
+      <TableRow>
+        <TableCell>
+          {banner.is_rotation ? (
+            <span className="text-blue-600 font-medium">Rotation</span>
+          ) : (
+            <span className="text-green-600 font-medium">Single</span>
+          )}
+        </TableCell>
+        <TableCell>
+          {banner.image_url ? (
+            <img
+              src={banner.image_url}
+              alt="Banner"
+              className="h-12 w-20 object-cover rounded cursor-pointer"
+              onClick={() => setShowPreview(true)}
+            />
+          ) : (
+            <span>{banner.name || "—"}</span>
+          )}
+        </TableCell>
+        <TableCell>
+          {banner.section ? (
+            <span className="capitalize">
+              {Array.isArray(banner.section) ? banner.section.join(", ") : banner.section}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">No Position</span>
+          )}
+        </TableCell>
+        <TableCell>
+          <div className="space-y-1">
+            {banner.is_rotation ? (
+              <span className={isExpired ? "text-red-600 font-medium" : "text-blue-600"}>{countdown}</span>
+            ) : banner.link_url ? (
+              <a
+                href={banner.link_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline truncate block"
+              >
+                {banner.link_url}
+              </a>
+            ) : (
+              <span className="text-muted-foreground">No Link</span>
+            )}
+          </div>
+        </TableCell>
+        <TableCell>{banner.created_at ? new Date(banner.created_at).toLocaleDateString() : "—"}</TableCell>
+        <TableCell>
+          <div className="flex items-center space-x-2">
+            <Switch checked={isActive} onCheckedChange={handleToggle} />
+            <Button variant="outline" size="sm" onClick={() => setShowPreview(true)}>
+              <Eye className="h-4 w-4" />
+            </Button>
+            {!banner.is_rotation && (
+              <Button variant="outline" size="sm" onClick={() => onEdit(banner)}>
+                <Edit className="h-4 w-4" />
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={() => onDelete(banner)}>
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </TableCell>
+      </TableRow>
+
+      {/* Preview Modal */}
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Banner Preview</DialogTitle>
+          </DialogHeader>
+          {banner.image_url ? (
+            <img src={banner.image_url} alt="Preview" className="w-full rounded-lg" />
+          ) : (
+            <div className="p-6 text-center text-muted-foreground">No Image Available</div>
+          )}
+          {banner.is_rotation && (
+            <div className="mt-4">
+              <p className="text-sm text-muted-foreground">
+                <strong>Shared With:</strong>{" "}
+                {banner.shared_with?.length
+                  ? banner.shared_with.join(", ")
+                  : "Not shared with anyone"}
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
 /* ================================
    BannerEditForm (sample)
    ================================ */
-const BannerEditForm = ({
-  banner,
-  onSave,
-  onCancel,
-}: {
-  banner: Banner | null;
-  onSave: () => void;
-  onCancel: () => void;
-}) => {
+const BannerEditForm = ({ banner, onSave, onCancel }: any) => {
   return (
     <div className="border rounded p-4 space-y-4">
       <h2 className="text-lg font-semibold">
         {banner ? "Edit Banner" : "Add New Banner"}
       </h2>
-
       <input
         type="text"
         defaultValue={banner?.name || ""}
         placeholder="Banner Name"
         className="w-full border rounded p-2"
       />
-
       <div className="flex space-x-2">
         <Button onClick={onSave}>Save</Button>
         <Button variant="outline" onClick={onCancel}>
