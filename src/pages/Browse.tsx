@@ -249,8 +249,8 @@ const ClaimRewardPopup = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
-      <div className="bg-gray-900 text-white rounded-xl p-6 w-96 shadow-xl">
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50 p-4">
+      <div className="bg-gray-900 text-white rounded-xl p-4 w-full max-w-md shadow-xl">
         <h3 className="text-lg font-semibold mb-3 text-center">Claim Your Reward!</h3>
         
         {prize && (
@@ -267,7 +267,7 @@ const ClaimRewardPopup = ({
               placeholder="First Name"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              className="text-black bg-white"
+              className="text-black bg-white text-sm"
               disabled={isSubmitting}
             />
             <Input
@@ -275,7 +275,7 @@ const ClaimRewardPopup = ({
               placeholder="Last Name"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              className="text-black bg-white"
+              className="text-black bg-white text-sm"
               disabled={isSubmitting}
             />
           </div>
@@ -285,7 +285,7 @@ const ClaimRewardPopup = ({
             placeholder="Enter your email address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mb-3 w-full text-black bg-white"
+            className="mb-3 w-full text-black bg-white text-sm"
             disabled={isSubmitting}
           />
 
@@ -298,7 +298,7 @@ const ClaimRewardPopup = ({
                 onChange={(e) => setNewsletterConsent(e.target.checked)}
                 className="w-4 h-4"
               />
-              <span>I agree to receive newsletters and special offers</span>
+              <span className="text-xs">I agree to receive newsletters and special offers</span>
             </label>
             
             <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -309,14 +309,14 @@ const ClaimRewardPopup = ({
                 className="w-4 h-4"
                 required
               />
-              <span>I agree to the <a href="/terms" target="_blank" className="text-blue-400 hover:underline">Terms</a> and <a href="/privacy" target="_blank" className="text-blue-400 hover:underline">Privacy Policy</a></span>
+              <span className="text-xs">I agree to the <a href="/terms" target="_blank" className="text-blue-400 hover:underline">Terms</a> and <a href="/privacy" target="_blank" className="text-blue-400 hover:underline">Privacy Policy</a></span>
             </label>
           </div>
 
           <div className="flex gap-2">
             <Button 
               type="submit" 
-              className="flex-1" 
+              className="flex-1 text-sm" 
               disabled={isSubmitting}
             >
               {isSubmitting ? "Claiming..." : "Claim Reward"}
@@ -324,7 +324,7 @@ const ClaimRewardPopup = ({
             <Button
               variant="outline"
               onClick={onClose}
-              className="flex-1 text-black border-gray-400 hover:bg-gray-100"
+              className="flex-1 text-black border-gray-400 hover:bg-gray-100 text-sm"
               disabled={isSubmitting}
             >
               Cancel
@@ -336,7 +336,7 @@ const ClaimRewardPopup = ({
   );
 };
 
-// Spin Wheel Component - UPDATED with straight text labels
+// Minimal Spin Wheel Component
 const SpinWheel = () => {
   const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
@@ -345,7 +345,6 @@ const SpinWheel = () => {
   const [showClaimPopup, setShowClaimPopup] = useState(false);
   const { toast } = useToast();
 
-  // Updated prizes with simplified names (removed banner references)
   const prizes: SpinPrize[] = [
     { 
       id: '1', 
@@ -403,83 +402,74 @@ const SpinWheel = () => {
     },
   ];
 
-  // REPLACE the old handleClaimSubmit with this version
-const handleClaimSubmit = async (data: {
-  firstName: string;
-  lastName: string;
-  email: string;
-  newsletterConsent: boolean;
-  termsConsent: boolean;
-}) => {
-  try {
-    // 1) Insert claim row to reward_claims table
-    const insertPayload = {
-      first_name: data.firstName,
-      last_name: data.lastName,
-      email: data.email,
-      prize_id: wonPrize?.id ?? null,
-      prize_name: wonPrize?.name ?? null,
-      prize_value: wonPrize?.value ?? null,
-      prize_description: wonPrize?.description ?? null,
-      newsletter_consent: data.newsletterConsent,
-      terms_consent: data.termsConsent,
-    };
+  const handleClaimSubmit = async (data: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    newsletterConsent: boolean;
+    termsConsent: boolean;
+  }) => {
+    try {
+      const insertPayload = {
+        first_name: data.firstName,
+        last_name: data.lastName,
+        email: data.email,
+        prize_id: wonPrize?.id ?? null,
+        prize_name: wonPrize?.name ?? null,
+        prize_value: wonPrize?.value ?? null,
+        prize_description: wonPrize?.description ?? null,
+        newsletter_consent: data.newsletterConsent,
+        terms_consent: data.termsConsent,
+      };
 
-    const { data: insertedRows, error: insertError } = await supabase
-      .from("reward_claims")
-      .insert([insertPayload])
-      .select()
-      .single();
+      const { data: insertedRows, error: insertError } = await supabase
+        .from("reward_claims")
+        .insert([insertPayload])
+        .select()
+        .single();
 
-    if (insertError) throw insertError;
+      if (insertError) throw insertError;
 
-    // 2) Call Edge Function to send the email (server-side)
-    // Use supabase.functions.invoke for auth convenience
-    const { data: fnData, error: fnError } = await supabase.functions.invoke("send-reward-email", {
-      // supabase client automatically sets authorization header
-      body: {
-        ...insertPayload,
-        prize: wonPrize,
-        claim_id: insertedRows?.id,
-      },
-    } as any);
+      const { data: fnData, error: fnError } = await supabase.functions.invoke("send-reward-email", {
+        body: {
+          ...insertPayload,
+          prize: wonPrize,
+          claim_id: insertedRows?.id,
+        },
+      } as any);
 
-    if (fnError) {
-      console.error("Edge function error:", fnError);
-      // mark email_sent false (optional)
-      await supabase.from("reward_claims").update({ email_sent: false }).eq("id", insertedRows.id);
+      if (fnError) {
+        console.error("Edge function error:", fnError);
+        await supabase.from("reward_claims").update({ email_sent: false }).eq("id", insertedRows.id);
+        toast({
+          title: "Claim recorded (email failed)",
+          description: "We saved your claim but couldn't send the email. We'll retry.",
+          variant: "destructive",
+        });
+      } else {
+        await supabase.from("reward_claims").update({ email_sent: true }).eq("id", insertedRows.id);
+        toast({
+          title: "🎉 Reward Claimed!",
+          description: `Thank you ${data.firstName}! Check your email (${data.email}) for details.`,
+          variant: "default",
+        });
+      }
+
+      setShowClaimPopup(false);
+      setTimeout(() => {
+        setWonPrize(null);
+        setShowResult(false);
+        setRotation(0);
+      }, 2000);
+    } catch (err: any) {
+      console.error("Claim failed:", err);
       toast({
-        title: "Claim recorded (email failed)",
-        description: "We saved your claim but couldn't send the email. We'll retry.",
+        title: "Submission failed",
+        description: err?.message || "Please try again later.",
         variant: "destructive",
       });
-    } else {
-      // mark email_sent true
-      await supabase.from("reward_claims").update({ email_sent: true }).eq("id", insertedRows.id);
-      toast({
-        title: "🎉 Reward Claimed!",
-        description: `Thank you ${data.firstName}! Check your email (${data.email}) for details.`,
-        variant: "default",
-      });
     }
-
-    // close popup + reset wheel (keeps your existing UX)
-    setShowClaimPopup(false);
-    setTimeout(() => {
-      setWonPrize(null);
-      setShowResult(false);
-      setRotation(0);
-    }, 2000);
-  } catch (err: any) {
-    console.error("Claim failed:", err);
-    toast({
-      title: "Submission failed",
-      description: err?.message || "Please try again later.",
-      variant: "destructive",
-    });
-  }
-};
-
+  };
 
   const startSpinning = () => {
     if (spinning) return;
@@ -488,18 +478,14 @@ const handleClaimSubmit = async (data: {
     setShowResult(false);
     setWonPrize(null);
 
-    // Calculate total segments (6 segments for 6 prizes)
     const segments = 6;
     const segmentAngle = 360 / segments;
-    
-    // Random rotation (multiple full rotations + segment offset)
     const fullRotations = 5;
     const randomSegment = Math.floor(Math.random() * segments);
     const newRotation = fullRotations * 360 + (360 - randomSegment * segmentAngle) + 180;
     
     setRotation(newRotation);
 
-    // Determine won prize based on the segment
     setTimeout(() => {
       const wonPrizeIndex = randomSegment;
       const prize = prizes[wonPrizeIndex];
@@ -507,7 +493,6 @@ const handleClaimSubmit = async (data: {
       setSpinning(false);
       setShowResult(true);
 
-      // Show toast notification
       toast({
         title: "🎉 Congratulations!",
         description: `You won: ${prize.name} - ${prize.value}`,
@@ -517,141 +502,73 @@ const handleClaimSubmit = async (data: {
   };
 
   const claimReward = () => {
-    // Show claim popup
     setShowClaimPopup(true);
   };
 
   return (
-    <div className="bg-white rounded-lg p-4 border border-gray-300 shadow-lg">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-black font-bold text-lg flex items-center gap-2">
-          <Gift className="w-5 h-5" />
-          Advertiser Rewards Wheel
+    <div className="bg-white rounded-lg p-3 border border-gray-300 shadow-lg">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-black font-bold text-sm flex items-center gap-1">
+          <Gift className="w-4 h-4" />
+          Advertiser Rewards
         </h3>
         <Badge variant="secondary" className="bg-yellow-500 text-black text-xs">
           Free Spin
         </Badge>
       </div>
 
-      <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-        {/* Wheel Container with Text Labels */}
-        <div className="relative">
+      <div className="flex flex-col items-center">
+        {/* Minimal Wheel Container */}
+        <div className="relative mb-3">
           <div 
-            className="w-64 h-64 rounded-full border-4 border-yellow-400 relative transition-transform duration-4000 ease-out overflow-hidden"
+            className="w-40 h-40 rounded-full border-4 border-yellow-400 relative transition-transform duration-4000 ease-out overflow-hidden"
             style={{ 
               transform: `rotate(${rotation}deg)`,
               background: 'conic-gradient(from 0deg, #FF6B6B 0deg 60deg, #4ECDC4 60deg 120deg, #45B7D1 120deg 180deg, #FFA07A 180deg 240deg, #98D8C8 240deg 300deg, #F7DC6F 300deg 360deg)'
             }}
           >
-           {/* Text Labels on the Wheel - Stay Straight During Spin */}
-<div
-  className="absolute inset-0"
-  style={{
-    transform: `rotate(-${rotation}deg)`,
-    transition: 'transform 4s ease-out',
-  }}
->
-  {/* Premium Offer (Top) */}
-  <div className="absolute top-3 left-1/2 -translate-x-1/2 text-white text-xs font-bold text-center w-24">
-    $50 Credit
-  </div>
-
-  {/* Top Network (Top Right) */}
-  <div className="absolute top-1/4 right-4 -translate-y-1/2 text-white text-xs font-bold text-center w-20">
-    Top Network
-  </div>
-
-  {/* Admin Support (Bottom Right) */}
-  <div className="absolute bottom-1/4 right-4 translate-y-1/2 text-white text-xs font-bold text-center w-24">
-    Admin Support
-  </div>
-
-  {/* Weekly Access (Bottom) */}
-  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-white text-xs font-bold text-center w-24">
-    1 Week Access
-  </div>
-
-  {/* Spotlight (Bottom Left) */}
-  <div className="absolute bottom-1/4 left-4 translate-y-1/2 text-white text-xs font-bold text-center w-20">
-    Spotlight
-  </div>
-
-  {/* Pro Dashboard (Top Left) */}
-  <div className="absolute top-1/4 left-4 -translate-y-1/2 text-white text-xs font-bold text-center w-20">
-    Pro Dashboard
-  </div>
-</div>
-
-
             {/* Center circle */}
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-white rounded-full border-4 border-yellow-400 flex items-center justify-center">
-              <div className="w-4 h-4 bg-yellow-400 rounded-full"></div>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white rounded-full border-4 border-yellow-400 flex items-center justify-center">
+              <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
             </div>
             
             {/* Pointer */}
-            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1 w-6 h-10">
-              <div className="w-0 h-0 border-l-10 border-r-10 border-b-10 border-l-transparent border-r-transparent border-b-yellow-400"></div>
+            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1 w-4 h-6">
+              <div className="w-0 h-0 border-l-8 border-r-8 border-b-8 border-l-transparent border-r-transparent border-b-yellow-400"></div>
             </div>
 
-            {/* Result Overlay - Shows in the middle of wheel */}
-          {showResult && wonPrize && (
-  <div
-    className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-80 rounded-full"
-    style={{
-      transform: `rotate(-${rotation}deg)`,
-      transition: 'transform 0.5s ease-out',
-      transformOrigin: 'center center',
-      willChange: 'transform',
-    }}
-  >
-    <div className="text-center text-white p-4">
-      <div className="text-yellow-400 font-bold text-lg mb-2">You Won!</div>
-      <div className="text-white font-bold text-xl">{wonPrize.name}</div>
-      <div className="text-gray-200 text-sm mt-1">{wonPrize.value}</div>
-      <div className="text-gray-300 text-xs mt-2 max-w-[180px] mx-auto">{wonPrize.description}</div>
-      <Button 
-        className="mt-3 bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2"
-        onClick={claimReward}
-      >
-        Claim Reward
-      </Button>
-    </div>
-  </div>
-)}
-
-          </div>
-          
-          {/* Spin Button */}
-          <Button
-            onClick={startSpinning}
-            disabled={spinning}
-            className="mt-4 w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-105"
-          >
-            {spinning ? 'Spinning...' : 'SPIN FOR REWARDS!'}
-          </Button>
-        </div>
-
-        {/* Prizes List */}
-        <div className="flex-1">
-          <h4 className="text-black font-semibold mb-2 text-sm">Available Rewards:</h4>
-          <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
-            {prizes.map((prize) => (
+            {/* Result Overlay */}
+            {showResult && wonPrize && (
               <div
-                key={prize.id}
-                className="flex items-center gap-2 p-2 bg-gray-100 rounded-lg border border-gray-300"
+                className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-80 rounded-full"
+                style={{
+                  transform: `rotate(-${rotation}deg)`,
+                  transition: 'transform 0.5s ease-out',
+                }}
               >
-                <div 
-                  className="w-3 h-3 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: prize.color }}
-                ></div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-black text-xs font-medium truncate">{prize.name}</div>
-                  <div className="text-gray-600 text-xs truncate">{prize.value}</div>
+                <div className="text-center text-white p-3">
+                  <div className="text-yellow-400 font-bold text-sm mb-1">You Won!</div>
+                  <div className="text-white font-bold text-base">{wonPrize.name}</div>
+                  <Button 
+                    className="mt-2 bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1"
+                    onClick={claimReward}
+                  >
+                    Claim Reward
+                  </Button>
                 </div>
               </div>
-            ))}
+            )}
           </div>
         </div>
+        
+        {/* Spin Button */}
+        <Button
+          onClick={startSpinning}
+          disabled={spinning}
+          className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 text-sm"
+        >
+          {spinning ? 'Spinning...' : 'SPIN FOR REWARDS!'}
+        </Button>
       </div>
 
       {/* Claim Reward Popup */}
@@ -675,26 +592,26 @@ const TopNetworksOfMonth = ({ networks }: { networks: Network[] }) => {
   if (topNetworks.length === 0) return null;
 
   return (
-    <div className="bg-gradient-to-br from-amber-900 to-orange-800 rounded-lg p-4 border border-amber-600 shadow-lg">
-      <div className="flex items-center gap-2 mb-3">
-        <Trophy className="w-5 h-5 text-yellow-400" />
-        <h3 className="text-white font-bold text-lg">Top Networks This Month</h3>
+    <div className="bg-gradient-to-br from-amber-900 to-orange-800 rounded-lg p-3 border border-amber-600 shadow-lg">
+      <div className="flex items-center gap-2 mb-2">
+        <Trophy className="w-4 h-4 text-yellow-400" />
+        <h3 className="text-white font-bold text-sm">Top Networks This Month</h3>
       </div>
       
-      <div className="space-y-3">
+      <div className="space-y-2">
         {topNetworks.map((network, index) => (
-          <div key={network.id} className="flex items-center gap-3 p-2 bg-black/30 rounded-lg">
-            <div className="flex items-center justify-center w-6 h-6 bg-yellow-500 rounded-full text-black text-xs font-bold">
+          <div key={network.id} className="flex items-center gap-2 p-2 bg-black/30 rounded-lg">
+            <div className="flex items-center justify-center w-5 h-5 bg-yellow-500 rounded-full text-black text-xs font-bold">
               {index + 1}
             </div>
             <img
               src={network.logo_url || `https://placehold.co/32x32/333333/666666?text=${network.name.charAt(0)}`}
               alt={network.name}
-              className="w-8 h-8 rounded-lg object-cover"
+              className="w-6 h-6 rounded-lg object-cover"
             />
             <div className="flex-1">
-              <div className="text-white font-medium text-sm">{network.name}</div>
-              <StarRating rating={network.rating || 0} totalRatings={network.total_ratings} size={12} />
+              <div className="text-white font-medium text-xs">{network.name}</div>
+              <StarRating rating={network.rating || 0} totalRatings={network.total_ratings} size={10} />
             </div>
             <Badge variant="secondary" className="bg-green-600 text-white text-xs">
               {network.rating?.toFixed(1)}
@@ -708,25 +625,24 @@ const TopNetworksOfMonth = ({ networks }: { networks: Network[] }) => {
 
 // Top Searched Networks Component
 const TopSearchedNetworks = ({ networks }: { networks: Network[] }) => {
-  // Simulate search popularity (in real app, this would come from analytics)
   const popularNetworks = networks
     .sort(() => Math.random() - 0.5)
     .slice(0, 4);
 
   return (
-    <div className="bg-gradient-to-br from-green-900 to-emerald-800 rounded-lg p-4 border border-green-600 shadow-lg">
-      <div className="flex items-center gap-2 mb-3">
-        <TrendingUp className="w-5 h-5 text-green-400" />
-        <h3 className="text-white font-bold text-lg">Trending Searches</h3>
+    <div className="bg-gradient-to-br from-green-900 to-emerald-800 rounded-lg p-3 border border-green-600 shadow-lg">
+      <div className="flex items-center gap-2 mb-2">
+        <TrendingUp className="w-4 h-4 text-green-400" />
+        <h3 className="text-white font-bold text-sm">Trending Searches</h3>
       </div>
       
       <div className="grid grid-cols-2 gap-2">
         {popularNetworks.map((network) => (
-          <div key={network.id} className="flex items-center gap-2 p-2 bg-black/30 rounded-lg">
+          <div key={network.id} className="flex items-center gap-2 p-1 bg-black/30 rounded-lg">
             <img
               src={network.logo_url || `https://placehold.co/24x24/333333/666666?text=${network.name.charAt(0)}`}
               alt={network.name}
-              className="w-6 h-6 rounded object-cover"
+              className="w-5 h-5 rounded object-cover"
             />
             <span className="text-white text-xs truncate">{network.name}</span>
           </div>
@@ -757,23 +673,23 @@ const BannerDisplay = ({
     case "fixed-top":
     case "header":
       containerClass = "w-full bg-black shadow-md";
-      imageClass = "w-full h-16 object-cover";
+      imageClass = "w-full h-12 object-cover";
       break;
     case "fixed-bottom":
       containerClass = "fixed bottom-0 left-0 right-0 z-50 bg-black shadow-md";
-      imageClass = "w-full h-16 object-cover";
+      imageClass = "w-full h-12 object-cover";
       break;
     case "sidebar":
-      containerClass = "mb-4";
+      containerClass = "mb-3";
       imageClass = "w-full h-auto object-contain";
       break;
     case "top":
-      containerClass = "my-3 flex justify-end pr-3";
-      imageClass = "w-[800px] h-[80px] object-contain";
+      containerClass = "my-2 flex justify-center lg:justify-end lg:pr-3";
+      imageClass = "w-full lg:w-[800px] h-[60px] lg:h-[80px] object-contain";
       break;
     case "footer":
-      containerClass = "my-4";
-      imageClass = "w-full h-16 object-cover";
+      containerClass = "my-3";
+      imageClass = "w-full h-12 object-cover";
       break;
   }
 
@@ -784,7 +700,6 @@ const BannerDisplay = ({
   const handleBannerClick = async (banner: Banner, e: React.MouseEvent) => {
     e.stopPropagation();
 
-    // Handle multiple link URLs properly
     const links = (banner as any).link_urls || 
                  (banner.link_url ? [banner.link_url] : []);
     
@@ -798,16 +713,12 @@ const BannerDisplay = ({
 
     console.log(`Opening link ${currentIndex + 1}/${links.length}: ${linkToOpen}`);
 
-    // Log to custom tracking system
     await logCustomClick({ banner, linkOpened: linkToOpen, section });
 
-    // Open the link in the same tab like AffPlus
     window.location.href = linkToOpen;
 
-    // Log to Supabase (existing system)
     await logBannerClick(banner.id);
 
-    // Update click index for next click
     setClickIndexMap(prev => ({
       ...prev,
       [banner.id]: (currentIndex + 1) % links.length,
@@ -850,7 +761,6 @@ const SidebarBannerDisplay = ({ banners }: { banners: Banner[] }) => {
 
     await logCustomClick({ banner, linkOpened: linkToOpen, section: "sidebar" });
 
-    // Open in same tab like AffPlus
     window.location.href = linkToOpen;
     await logBannerClick(banner.id);
 
@@ -861,7 +771,7 @@ const SidebarBannerDisplay = ({ banners }: { banners: Banner[] }) => {
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {banners.map((banner) => {
         const bannerSrc = banner.image_url?.startsWith("http")
           ? banner.image_url
@@ -876,7 +786,7 @@ const SidebarBannerDisplay = ({ banners }: { banners: Banner[] }) => {
             <img
               src={bannerSrc}
               alt="Sidebar banner"
-              className="w-full h-[300px] object-contain rounded-md"
+              className="w-full h-[200px] lg:h-[300px] object-contain rounded-md"
               onError={(e) => {
                 console.error("Sidebar banner failed to load:", bannerSrc);
                 e.currentTarget.style.display = "none";
@@ -928,7 +838,6 @@ const JoinButton = ({
   const handleJoinClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     
-    // Check if landing_page_url exists and is valid
     if (offer.landing_page_url && 
         offer.landing_page_url.trim() !== "" && 
         offer.landing_page_url !== "null" && 
@@ -936,13 +845,10 @@ const JoinButton = ({
         offer.landing_page_url !== "##" &&
         (offer.landing_page_url.startsWith("http://") || offer.landing_page_url.startsWith("https://"))) {
       
-      // Open in same tab like AffPlus
       window.location.href = offer.landing_page_url;
       
-      // Log the join action
       console.log(`User joined offer: ${offer.name}`, offer.landing_page_url);
     } else {
-      // If no valid landing page, try network website
       if (network?.website_link && 
           network.website_link.trim() !== "" && 
           network.website_link !== "null" && 
@@ -953,7 +859,6 @@ const JoinButton = ({
         window.location.href = network.website_link;
         console.log(`User redirected to network website: ${network.name}`, network.website_link);
       } else {
-        // If neither is available, show error
         toast({
           title: "No Landing Page Available",
           description: "This offer does not have a valid landing page configured. Please contact the network for more information.",
@@ -980,7 +885,7 @@ const JoinButton = ({
     return (
       <Button
         size="sm"
-        className="bg-green-600 hover:bg-green-700 text-white p-1 h-7 w-7"
+        className="bg-green-600 hover:bg-green-700 text-white p-1 h-6 w-6"
         onClick={handleJoinClick}
         title="Join Offer"
       >
@@ -991,7 +896,7 @@ const JoinButton = ({
 
   return (
     <Button
-      className="bg-green-600 hover:bg-green-700 text-white font-medium py-1 px-3 h-8 rounded-md text-sm"
+      className="bg-green-600 hover:bg-green-700 text-white font-medium py-1 px-3 h-7 rounded-md text-xs"
       onClick={handleJoinClick}
     >
       Join Offer
@@ -999,7 +904,7 @@ const JoinButton = ({
   );
 };
 
-// Network Page Component - UPDATED: Added pagination with 10 offers per page
+// Network Page Component
 const NetworkPage = ({ 
   network, 
   offers, 
@@ -1013,24 +918,19 @@ const NetworkPage = ({
   const { toast } = useToast();
   const [sortBy, setSortBy] = useState<string>("relevance-desc");
   
-  // Pagination state for network page
   const [currentPage, setCurrentPage] = useState(1);
   const [offersPerPage] = useState(10);
 
-  // FIXED: Properly filter offers by network ID
   const networkOffers = offers.filter(offer => {
-    // Check both network_id and networks.id to ensure we catch all related offers
     return offer.network_id === network.id || offer.networks?.id === network.id;
   });
 
-  // Sort offers based on selected option
   const getSortedOffers = () => {
     const offersToSort = [...networkOffers];
     
     switch (sortBy) {
       case "relevance-desc":
         return offersToSort.sort((a, b) => {
-          // Relevance: featured first, then active, then by priority
           if (a.is_featured && !b.is_featured) return -1;
           if (!a.is_featured && b.is_featured) return 1;
           if (a.is_active && !b.is_active) return -1;
@@ -1069,7 +969,6 @@ const NetworkPage = ({
 
   const sortedOffers = getSortedOffers();
 
-  // Pagination logic for network page
   const indexOfLastOffer = currentPage * offersPerPage;
   const indexOfFirstOffer = indexOfLastOffer - offersPerPage;
   const currentOffers = sortedOffers.slice(indexOfFirstOffer, indexOfLastOffer);
@@ -1089,7 +988,6 @@ const NetworkPage = ({
   const handleJoinClick = (offer: Offer, e: React.MouseEvent) => {
     e.stopPropagation();
     
-    // Check if landing_page_url exists and is valid
     if (offer.landing_page_url && 
         offer.landing_page_url.trim() !== "" && 
         offer.landing_page_url !== "null" && 
@@ -1097,10 +995,8 @@ const NetworkPage = ({
         offer.landing_page_url !== "##" &&
         (offer.landing_page_url.startsWith("http://") || offer.landing_page_url.startsWith("https://"))) {
       
-      // Open in same tab like AffPlus
       window.location.href = offer.landing_page_url;
     } else {
-      // If no valid landing page, try network website
       if (network.website_link && 
           network.website_link.trim() !== "" && 
           network.website_link !== "null" && 
@@ -1119,7 +1015,6 @@ const NetworkPage = ({
     }
   };
 
-  // Helper function to convert any value to string array
   const toStringArray = (value: any, includeEmpty: boolean = false): string[] => {
     if (!value) return [];
     
@@ -1195,21 +1090,20 @@ const NetworkPage = ({
     return [];
   };
 
-  // Network Page Pagination Component
   const NetworkPagination = () => {
     if (totalPages <= 1) return null;
 
     return (
-      <div className="flex justify-center items-center mt-6 space-x-2">
+      <div className="flex justify-center items-center mt-4 space-x-1">
         <Button
           onClick={() => paginate(currentPage - 1)}
           disabled={currentPage === 1}
           variant="outline"
           size="sm"
-          className="flex items-center gap-1 bg-gray-800 text-white border-gray-700 h-8 px-3"
+          className="flex items-center gap-1 bg-gray-800 text-white border-gray-700 h-7 px-2 text-xs"
         >
           <ChevronLeft className="w-3 h-3" />
-          Previous
+          Prev
         </Button>
         
         {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -1230,7 +1124,7 @@ const NetworkPage = ({
               onClick={() => paginate(pageNum)}
               variant={currentPage === pageNum ? "default" : "outline"}
               size="sm"
-              className={`h-8 px-3 min-w-[2.5rem] ${currentPage === pageNum ? "bg-blue-600 text-white" : "bg-gray-800 text-white border-gray-700"}`}
+              className={`h-7 px-2 min-w-[2rem] text-xs ${currentPage === pageNum ? "bg-blue-600 text-white" : "bg-gray-800 text-white border-gray-700"}`}
             >
               {pageNum}
             </Button>
@@ -1238,7 +1132,7 @@ const NetworkPage = ({
         })}
         
         {totalPages > 5 && currentPage < totalPages - 2 && (
-          <span className="text-gray-400">...</span>
+          <span className="text-gray-400 text-xs">...</span>
         )}
         
         {totalPages > 5 && currentPage < totalPages - 2 && (
@@ -1246,7 +1140,7 @@ const NetworkPage = ({
             onClick={() => paginate(totalPages)}
             variant="outline"
             size="sm"
-            className="bg-gray-800 text-white border-gray-700 h-8 px-3"
+            className="bg-gray-800 text-white border-gray-700 h-7 px-2 text-xs"
           >
             {totalPages}
           </Button>
@@ -1257,7 +1151,7 @@ const NetworkPage = ({
           disabled={currentPage === totalPages}
           variant="outline"
           size="sm"
-          className="flex items-center gap-1 bg-gray-800 text-white border-gray-700 h-8 px-3"
+          className="flex items-center gap-1 bg-gray-800 text-white border-gray-700 h-7 px-2 text-xs"
         >
           Next
           <ChevronRight className="w-3 h-3" />
@@ -1269,11 +1163,11 @@ const NetworkPage = ({
   return (
     <div className="min-h-screen text-white bg-cover bg-center">
       {/* Back Button */}
-      <div className="bg-gray-900 border-b border-gray-700 px-4 py-3">
+      <div className="bg-gray-900 border-b border-gray-700 px-3 py-2">
         <Button
           onClick={onBack}
           variant="outline"
-          className="flex items-center gap-2 bg-gray-800 text-white border-gray-700 hover:bg-gray-700 h-8 text-sm"
+          className="flex items-center gap-2 bg-gray-800 text-white border-gray-700 hover:bg-gray-700 h-7 text-xs"
         >
           <ArrowLeft className="w-3 h-3" />
           Back to All Networks
@@ -1281,25 +1175,25 @@ const NetworkPage = ({
       </div>
 
       {/* Network Header */}
-      <div className="bg-gray-900/80 backdrop-blur-sm border-b border-gray-700 px-4 py-6">
+      <div className="bg-gray-900/80 backdrop-blur-sm border-b border-gray-700 px-3 py-4">
         <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
             <img
               src={network.logo_url || `https://placehold.co/80x80/333333/666666?text=${network.name.charAt(0)}`}
               alt={network.name}
-              className="w-16 h-16 rounded-lg object-cover"
+              className="w-12 h-12 rounded-lg object-cover"
             />
             <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-2xl font-bold text-white">{network.name}</h1>
+              <div className="flex items-center gap-2 mb-1">
+                <h1 className="text-xl font-bold text-white">{network.name}</h1>
                 {network.rating && (
-                  <StarRating rating={network.rating} totalRatings={network.total_ratings} size={16} />
+                  <StarRating rating={network.rating} totalRatings={network.total_ratings} size={14} />
                 )}
               </div>
               
-              <p className="text-gray-300 mb-3 text-sm">{network.description || "No description available."}</p>
+              <p className="text-gray-300 mb-2 text-xs">{network.description || "No description available."}</p>
               
-              <div className="flex flex-wrap gap-3 text-xs text-gray-400">
+              <div className="flex flex-wrap gap-2 text-xs text-gray-400">
                 {network.payment_frequency && (
                   <div>
                     <span className="font-medium text-white">Payment:</span> {network.payment_frequency}
@@ -1321,7 +1215,7 @@ const NetworkPage = ({
             {network.website_link && (
               <Button
                 onClick={() => window.location.href = network.website_link}
-                className="bg-blue-600 hover:bg-blue-700 text-white h-8 text-sm"
+                className="bg-blue-600 hover:bg-blue-700 text-white h-7 text-xs mt-2 md:mt-0"
               >
                 Visit Website
                 <ExternalLink className="w-3 h-3 ml-1" />
@@ -1332,9 +1226,9 @@ const NetworkPage = ({
       </div>
 
       {/* Network Offers */}
-      <div className="max-w-6xl mx-auto px-4 py-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-white">
+      <div className="max-w-6xl mx-auto px-3 py-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
+          <h2 className="text-lg font-bold text-white">
             Offers from {network.name} ({sortedOffers.length})
           </h2>
           
@@ -1343,7 +1237,7 @@ const NetworkPage = ({
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="bg-gray-800 border border-gray-700 text-white text-sm rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="bg-gray-800 border border-gray-700 text-white text-xs rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="relevance-desc">Relevance desc</option>
               <option value="time-desc">Time desc</option>
@@ -1354,40 +1248,40 @@ const NetworkPage = ({
         </div>
 
         {sortedOffers.length === 0 ? (
-          <div className="text-center py-8 text-gray-400">
-            <p className="text-sm">No offers available for this network.</p>
+          <div className="text-center py-6 text-gray-400 text-sm">
+            <p>No offers available for this network.</p>
           </div>
         ) : (
           <>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {currentOffers.map((offer) => (
                 <Card
                   key={offer.id}
-                  className={`p-3 w-full hover:shadow-md transition-shadow border-gray-800 cursor-pointer ${
+                  className={`p-2 w-full hover:shadow-md transition-shadow border-gray-800 cursor-pointer ${
                     offer.is_active ? "bg-gray-900 hover:bg-gray-850" : "bg-gray-800"
                   }`}
                   onClick={() => handleOfferClick(offer.id)}
                 >
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center justify-between gap-2">
                     {/* Left Side - Offer Info */}
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
                       {offer.image_url && (
                         <img
                           src={offer.image_url}
                           alt={offer.name}
-                          className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
+                          className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
                         />
                       )}
                       
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-white text-base truncate">
+                        <div className="flex items-center gap-1 mb-0.5">
+                          <h3 className="font-semibold text-white text-sm truncate">
                             {offer.name}
                           </h3>
                           {!offer.is_active && (
                             <Badge
                               variant="secondary"
-                              className="text-xs bg-gray-700 text-white px-1 py-0 h-4"
+                              className="text-[10px] bg-gray-700 text-white px-1 py-0 h-4"
                             >
                               Inactive
                             </Badge>
@@ -1395,20 +1289,20 @@ const NetworkPage = ({
                           {offer.is_featured && (
                             <Badge
                               variant="default"
-                              className="text-xs bg-yellow-600 text-white px-1 py-0 h-4"
+                              className="text-[10px] bg-yellow-600 text-white px-1 py-0 h-4"
                             >
                               Featured
                             </Badge>
                           )}
                         </div>
                         
-                        <div className="flex flex-wrap gap-1 mb-2">
+                        <div className="flex flex-wrap gap-0.5 mb-1">
                           {/* Geo Targets - Show up to 3 */}
                           {offer.geo_targets && Array.isArray(offer.geo_targets) && offer.geo_targets.slice(0, 3).map((geo, idx) => (
                             <Badge
                               key={`geo-${idx}`}
                               variant="outline"
-                              className="text-xs px-1 py-0 h-4 border-gray-600 text-gray-300 bg-gray-600/10"
+                              className="text-[10px] px-1 py-0 h-3 border-gray-600 text-gray-300 bg-gray-600/10"
                             >
                               {geo}
                             </Badge>
@@ -1419,7 +1313,7 @@ const NetworkPage = ({
                             <Badge
                               key={`vertical-${idx}`}
                               variant="outline"
-                              className="text-xs px-1 py-0 h-4 border-green-600 text-green-300 bg-green-600/10"
+                              className="text-[10px] px-1 py-0 h-3 border-green-600 text-green-300 bg-green-600/10"
                             >
                               {vertical}
                             </Badge>
@@ -1428,24 +1322,24 @@ const NetworkPage = ({
                           {offer.type && (
                             <Badge
                               variant="outline"
-                              className="text-xs px-1 py-0 h-4 border-blue-600 text-blue-300 bg-blue-600/10"
+                              className="text-[10px] px-1 py-0 h-3 border-blue-600 text-blue-300 bg-blue-600/10"
                             >
                               {offer.type}
                             </Badge>
                           )}
                         </div>
                         
-                        <div className="flex items-center gap-3 text-xs text-gray-400">
+                        <div className="flex items-center gap-2 text-[10px] text-gray-400">
                           {offer.conversion_rate && (
                             <div className="flex items-center gap-1">
-                              <Target size={10} />
+                              <Target size={8} />
                               <span>{offer.conversion_rate.toFixed(1)}% CR</span>
                             </div>
                           )}
 
                           {offer.last_updated && (
                             <div className="flex items-center gap-1">
-                              <Clock size={10} />
+                              <Clock size={8} />
                               <span>Updated {new Date(offer.last_updated).toLocaleDateString()}</span>
                             </div>
                           )}
@@ -1454,26 +1348,26 @@ const NetworkPage = ({
                     </div>
 
                     {/* Right Side - Payout and Action Buttons */}
-                    <div className="flex items-center gap-3 flex-shrink-0">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <div className="text-right">
-                        <div className="text-lg font-bold text-green-400">
+                        <div className="text-sm font-bold text-green-400">
                           {offer.payout_currency || "USD"} {typeof offer.payout_amount === "number"
                             ? offer.payout_amount.toFixed(2)
                             : offer.payout_amount}
                         </div>
                         
                         {offer.epc && (
-                          <div className="text-xs text-blue-400 mt-1">
+                          <div className="text-[10px] text-blue-400 mt-0.5">
                             EPC: ${offer.epc.toFixed(2)}
                           </div>
                         )}
                       </div>
                       
-                      <div className="flex flex-col gap-1">
+                      <div className="flex flex-col gap-0.5">
                         <Button
                           size="sm"
                           variant="outline"
-                          className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600 p-1 h-7 w-7"
+                          className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600 p-1 h-6 w-6"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleOfferClick(offer.id);
@@ -1485,7 +1379,7 @@ const NetworkPage = ({
                         
                         <Button
                           size="sm"
-                          className="bg-green-600 hover:bg-green-700 text-white p-1 h-7 w-7"
+                          className="bg-green-600 hover:bg-green-700 text-white p-1 h-6 w-6"
                           onClick={(e) => handleJoinClick(offer, e)}
                           title="Join Offer"
                         >
@@ -1511,7 +1405,6 @@ const Browse = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Add missing clickIndexMap state for main component
   const [clickIndexMap, setClickIndexMap] = useState<Record<string, number>>({});
 
   const [selectedNetworkFilter, setSelectedNetworkFilter] = useState<string | null>(null);
@@ -1536,11 +1429,11 @@ const Browse = () => {
   const [offerSearchTerm, setOfferSearchTerm] = useState("");
   const [globalSearchTerm, setGlobalSearchTerm] = useState("");
 
-  // Load More state for main browse view - CHANGED: Only one load more (15 + 15 = 30 max)
+  // Load More state for main browse view
   const [visibleOffersCount, setVisibleOffersCount] = useState(15);
   const [hasLoadedMore, setHasLoadedMore] = useState(false);
 
-  // Quick filter options (removed "Amount" and "Date Added")
+  // Quick filter options
   const quickFilterOptions = [
     "All Offers", "Duplicates", "Crypto", "Dating", "Gambling", "insurance", "Game", "COD", "Sweepstakes", 
     "SOI", "DOI", "CPA", "CPL", "CPI"
@@ -1576,7 +1469,6 @@ const Browse = () => {
         section: "background",
       });
 
-      // Open in same tab like AffPlus
       window.location.href = linkToOpen;
       
       setClickIndexMap(prev => ({
@@ -1588,8 +1480,8 @@ const Browse = () => {
 
   const handleNetworkClick = (networkId: string, networkName: string) => {
     setSelectedNetworkFilter(networkName);
-    setVisibleOffersCount(15); // Reset visible offers when filtering
-    setHasLoadedMore(false); // Reset load more state
+    setVisibleOffersCount(15);
+    setHasLoadedMore(false);
   };
 
   // Function to handle network page navigation
@@ -1611,13 +1503,11 @@ const Browse = () => {
     const seenOffers = new Map<string, Offer[]>();
 
     offers.forEach(offer => {
-      // Create a normalized key for comparison
       const normalizedName = getDisplayValue(offer.name, "").toLowerCase().trim();
       const normalizedVertical = toStringArray(offer.vertical, false).map(v => v.toLowerCase()).sort().join(',');
       const normalizedGeo = toStringArray(offer.geo_targets, false).map(g => g.toLowerCase()).sort().join(',');
       const payoutAmount = typeof offer.payout_amount === 'number' ? offer.payout_amount : parseFloat(String(offer.payout_amount)) || 0;
       
-      // Create a composite key for duplicate detection
       const compositeKey = `${normalizedName}|${normalizedVertical}|${normalizedGeo}|${payoutAmount}`;
       
       if (!seenOffers.has(compositeKey)) {
@@ -1626,7 +1516,6 @@ const Browse = () => {
       seenOffers.get(compositeKey)!.push(offer);
     });
 
-    // Mark offers as duplicates if there are multiple with same key
     seenOffers.forEach((offersGroup) => {
       if (offersGroup.length > 1) {
         offersGroup.forEach(offer => duplicateIds.add(offer.id));
@@ -1642,22 +1531,19 @@ const Browse = () => {
     setSelectedOfferCategory("🔥 Top Offers");
   } else {
     setSelectedQuickFilter(filter);
-    // IMPORTANT: when using quick filters (SOI/DOI/CPA/CPL/CPI/etc.),
-    // do NOT also force selectedOfferCategory to the same value.
-    // That causes double-filtering (quick filter + vertical category) and hides matches.
     setSelectedOfferCategory("All");
-    setVisibleOffersCount(15); // Reset visible offers when filtering
-    setHasLoadedMore(false); // Reset load more state
+    setVisibleOffersCount(15);
+    setHasLoadedMore(false);
   }
 };
 
   const handleSortChange = (value: string) => {
     setSortBy(value);
-    setVisibleOffersCount(15); // Reset visible offers when sorting
-    setHasLoadedMore(false); // Reset load more state
+    setVisibleOffersCount(15);
+    setHasLoadedMore(false);
   };
 
-  // Load More function for main browse view - CHANGED: Only one load more allowed
+  // Load More function for main browse view
   const handleLoadMore = () => {
     if (!hasLoadedMore) {
       setVisibleOffersCount(prev => prev + 15);
@@ -1676,7 +1562,6 @@ const Browse = () => {
 
         if (error) throw error;
         
-        // Use only your actual data, no demo data
         setAllOffers(data || []);
 
         const counts: Record<string, number> = {};
@@ -1712,7 +1597,6 @@ const Browse = () => {
 
         if (error) throw error;
         
-        // Use only your actual data, no demo data
         setAllNetworks(data || []);
       } catch (error: any) {
         console.error("Error fetching networks:", error.message);
@@ -2375,7 +2259,7 @@ const Browse = () => {
     return filtered;
   };
 
-  // Load More logic for main browse view - CHANGED: Only one load more (15 + 15 = 30 max)
+  // Load More logic for main browse view
   const offersToDisplay = getFilteredOffers();
   const currentOffers = offersToDisplay.slice(0, visibleOffersCount);
   const canLoadMore = !hasLoadedMore && offersToDisplay.length > 15 && visibleOffersCount < offersToDisplay.length;
@@ -2442,37 +2326,37 @@ const Browse = () => {
       <div className="relative group" onClick={(e) => e.stopPropagation()}>
         <Button 
           variant="outline" 
-          className="flex items-center gap-1 px-2 py-1 bg-gray-900 border-gray-700 text-white hover:bg-gray-800 transition-colors text-xs h-8"
+          className="flex items-center gap-1 px-2 py-1 bg-gray-900 border-gray-700 text-white hover:bg-gray-800 transition-colors text-xs h-7"
         >
-          <span className="text-xs font-medium">{selected || title}</span>
-          <ChevronDown className="w-3 h-3 text-white" />
+          <span className="text-xs font-medium truncate max-w-[80px]">{selected || title}</span>
+          <ChevronDown className="w-3 h-3 text-white flex-shrink-0" />
         </Button>
-        <div className="absolute top-full left-0 mt-1 w-64 bg-gray-900 border border-gray-700 rounded-lg shadow-lg z-50 hidden group-hover:block">
+        <div className="absolute top-full left-0 mt-1 w-48 sm:w-64 bg-gray-900 border border-gray-700 rounded-lg shadow-lg z-50 hidden group-hover:block">
           <div className="p-2">
             <div className="relative mb-2">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
               <Input 
                 placeholder={`Search ${title.toLowerCase()}`}
-                className="pl-10 h-7 text-sm bg-gray-800 border-gray-700 text-white"
+                className="pl-7 h-6 text-xs bg-gray-800 border-gray-700 text-white"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="max-h-64 overflow-y-auto">
+            <div className="max-h-48 overflow-y-auto">
               {filteredOptions.map((option: string, idx: number) => (
                 <div
                   key={idx}
-                  className="flex items-center justify-between px-3 py-1 hover:bg-gray-800 cursor-pointer rounded text-sm text-white"
+                  className="flex items-center justify-between px-2 py-1 hover:bg-gray-800 cursor-pointer rounded text-xs text-white"
                   onClick={() => onSelect(option)}
                 >
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label className="flex items-center gap-2 cursor-pointer w-full">
                     <input 
                       type="checkbox" 
                       className="w-3 h-3"
                       checked={selected === option}
                       readOnly
                     />
-                    {option}
+                    <span className="truncate flex-1">{option}</span>
                   </label>
                 </div>
               ))}
@@ -2488,30 +2372,30 @@ const Browse = () => {
       <div className="relative group" onClick={(e) => e.stopPropagation()}>
         <Button 
           variant="outline" 
-          className="flex items-center gap-1 px-2 py-1 bg-gray-900 border-gray-700 text-white hover:bg-gray-800 transition-colors text-xs h-8"
+          className="flex items-center gap-1 px-2 py-1 bg-gray-900 border-gray-700 text-white hover:bg-gray-800 transition-colors text-xs h-7"
         >
-          <span className="text-xs font-medium">
+          <span className="text-xs font-medium truncate max-w-[100px]">
             {sortOptions.find(opt => opt.value === sortBy)?.label || "Sort By"}
           </span>
-          <ChevronDown className="w-3 h-3 text-white" />
+          <ChevronDown className="w-3 h-3 text-white flex-shrink-0" />
         </Button>
-        <div className="absolute top-full left-0 mt-1 w-48 bg-gray-900 border border-gray-700 rounded-lg shadow-lg z-50 hidden group-hover:block">
+        <div className="absolute top-full left-0 mt-1 w-40 sm:w-48 bg-gray-900 border border-gray-700 rounded-lg shadow-lg z-50 hidden group-hover:block">
           <div className="p-2">
-            <div className="max-h-64 overflow-y-auto">
+            <div className="max-h-48 overflow-y-auto">
               {sortOptions.map((option) => (
                 <div
                   key={option.value}
-                  className="flex items-center justify-between px-3 py-1 hover:bg-gray-800 cursor-pointer rounded text-sm text-white"
+                  className="flex items-center justify-between px-2 py-1 hover:bg-gray-800 cursor-pointer rounded text-xs text-white"
                   onClick={() => handleSortChange(option.value)}
                 >
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label className="flex items-center gap-2 cursor-pointer w-full">
                     <input 
                       type="radio" 
                       className="w-3 h-3"
                       checked={sortBy === option.value}
                       readOnly
                     />
-                    {option.label}
+                    <span className="truncate flex-1">{option.label}</span>
                   </label>
                 </div>
               ))}
@@ -2546,11 +2430,11 @@ const Browse = () => {
       >
         <TopBar />
         {/* Logo positioned in top left corner */}
-        <div className="absolute top-14 left-4 sm:top-16 sm:left-8 z-50">
+        <div className="absolute top-12 left-2 sm:top-16 sm:left-8 z-50">
           <img 
             src="https://pepeleads.com/uploads/1756199032-7299397.png"
             alt="AffiTitans Logo" 
-            className="h-8 sm:h-10 w-auto object-contain"
+            className="h-6 sm:h-10 w-auto object-contain"
           />
         </div>
       </div>
@@ -2570,8 +2454,8 @@ const Browse = () => {
         )}
       </div>
       
-      {/* Top Banners - Now aligned to the right with proper spacing */}
-      <div className="flex justify-end px-4 pt-3">
+      {/* Top Banners - Responsive alignment */}
+      <div className="flex justify-center lg:justify-end px-2 pt-2">
         {rotationGroupsBySection["top"].map((rotation) => (
           <BannerDisplay
             key={rotation.id}
@@ -2585,9 +2469,9 @@ const Browse = () => {
         )}
       </div>
       
-      {/* Header with Filters and Global Search */}
-      <div className="bg-gray-900 border-b border-gray-700 px-4 py-2" onClick={(e) => e.stopPropagation()}>
-        <div className="flex flex-row flex-wrap items-center gap-2">
+      {/* Header with Filters and Global Search - Mobile Optimized */}
+      <div className="bg-gray-900 border-b border-gray-700 px-2 py-2" onClick={(e) => e.stopPropagation()}>
+        <div className="flex flex-row flex-wrap items-center gap-1 sm:gap-2">
           <FilterDropdown 
             title="Networks" 
             options={networksOptions}
@@ -2611,11 +2495,11 @@ const Browse = () => {
           <SortDropdown />
           
           {/* Global Search Bar */}
-          <div className="relative w-[50%] max-w-[350px]">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <div className="relative w-full sm:w-[200px] lg:w-[350px] mt-1 sm:mt-0">
+            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
             <Input
               placeholder="Search networks and offers..."
-              className="pl-10 bg-gray-800 border-gray-700 text-white h-8 text-sm"
+              className="pl-7 bg-gray-800 border-gray-700 text-white h-7 text-xs"
               value={globalSearchTerm}
               onChange={(e) => setGlobalSearchTerm(e.target.value)}
             />
@@ -2623,294 +2507,291 @@ const Browse = () => {
         </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-3 p-3">
-        {/* Main Content Area */}
-        <div className="flex-1">
-          {/* Premium Quick Filter Buttons - Single Line Layout with Better Spacing */}
-          <div className="mb-3 flex flex-nowrap gap-1 overflow-x-auto scrollbar-hide pb-1" onClick={(e) => e.stopPropagation()}>
-            {quickFilterOptions.map((filter) => (
-              <button
-                key={filter}
-                className={`text-xs px-2 py-0.5 rounded-full transition-all duration-200 ease-in-out transform hover:scale-105 whitespace-nowrap flex-shrink-0 min-w-max ${
-                  selectedQuickFilter === filter 
-                    ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg" 
-                    : "bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700 hover:text-white shadow-md"
-                } font-medium tracking-wide`}
-                onClick={() => handleQuickFilterClick(filter)}
-              >
-                {filter}
-              </button>
-            ))}
-          </div>
-
-          {/* Offers List with Load More */}
-          <div className="space-y-3">
-            {/* Offer Search Input */}
-            {selectedNetworkFilter && (
-              <div className="flex flex-col sm:flex-row justify-between items-center mb-2 gap-2" onClick={(e) => e.stopPropagation()}>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto px-3 py-1 h-7 text-xs"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedNetworkFilter(null);
-                  }}
+      <div className="flex flex-col lg:flex-row gap-2 p-2">
+        {/* Main Content Area - Centered and Extended */}
+        <div className="flex-1 flex justify-center">
+          <div className="w-full max-w-4xl">
+            {/* Premium Quick Filter Buttons - Mobile Optimized */}
+            <div className="mb-2 flex flex-nowrap gap-1 overflow-x-auto scrollbar-hide pb-1" onClick={(e) => e.stopPropagation()}>
+              {quickFilterOptions.map((filter) => (
+                <button
+                  key={filter}
+                  className={`text-xs px-2 py-0.5 rounded-full transition-all duration-200 ease-in-out transform hover:scale-105 whitespace-nowrap flex-shrink-0 min-w-max ${
+                    selectedQuickFilter === filter 
+                      ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg" 
+                      : "bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700 hover:text-white shadow-md"
+                  } font-medium tracking-wide`}
+                  onClick={() => handleQuickFilterClick(filter)}
                 >
-                  Back to All Offers
-                </Button>
-                <div className="relative w-full sm:w-auto flex-grow">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
-                  <Input
-                    placeholder={`Search offers for ${selectedNetworkFilter}...`}
-                    className="pl-8 h-7 text-xs bg-gray-800 border-gray-700 text-white w-full"
-                    value={offerSearchTerm}
-                    onChange={(e) => setOfferSearchTerm(e.target.value)}
-                  />
-                </div>
-              </div>
-            )}
-            
-            <div className="flex justify-between items-center">
-              <h2 className="text-base font-bold text-white">
-                {selectedQuickFilter === "All Offers" 
-                  ? "All Offers" 
-                  : selectedQuickFilter === "insurance"
-                    ? "Insurance Offers"
-                    : selectedQuickFilter === "Duplicates"
-                      ? "Duplicate Offers"
-                      : selectedQuickFilter 
-                        ? `${selectedQuickFilter} Offers` 
-                        : selectedNetworkFilter 
-                          ? `Offers for ${selectedNetworkFilter}` 
-                          : "🔥 Top Offers"}
-              </h2>
+                  {filter}
+                </button>
+              ))}
             </div>
 
-            {loadingOffers ? (
-              <div className="text-center py-6 text-gray-400 text-sm">Loading offers...</div>
-            ) : currentOffers.length === 0 ? (
-              <div className="text-center py-6 text-gray-400 text-sm">
-                No offers found. Try adjusting your filters.
+            {/* Offers List with Load More */}
+            <div className="space-y-2">
+              {/* Offer Search Input */}
+              {selectedNetworkFilter && (
+                <div className="flex flex-col sm:flex-row justify-between items-center mb-1 gap-1" onClick={(e) => e.stopPropagation()}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto px-2 py-0 h-6 text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedNetworkFilter(null);
+                    }}
+                  >
+                    Back to All Offers
+                  </Button>
+                  <div className="relative w-full sm:w-auto flex-grow">
+                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
+                    <Input
+                      placeholder={`Search offers for ${selectedNetworkFilter}...`}
+                      className="pl-7 h-6 text-xs bg-gray-800 border-gray-700 text-white w-full"
+                      value={offerSearchTerm}
+                      onChange={(e) => setOfferSearchTerm(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex justify-between items-center">
+                <h2 className="text-sm font-bold text-white">
+                  {selectedQuickFilter === "All Offers" 
+                    ? "All Offers" 
+                    : selectedQuickFilter === "insurance"
+                      ? "Insurance Offers"
+                      : selectedQuickFilter === "Duplicates"
+                        ? "Duplicate Offers"
+                        : selectedQuickFilter 
+                          ? `${selectedQuickFilter} Offers` 
+                          : selectedNetworkFilter 
+                            ? `Offers for ${selectedNetworkFilter}` 
+                            : "🔥 Top Offers"}
+                </h2>
               </div>
-            ) : (
-              <>
-                {/* COMPACT OFFER CARDS - Much smaller height with AffPlus-like features */}
-                {currentOffers.map((offer) => {
-                  // Get payout amount as number for proper display
-                  const payoutAmount = typeof offer.payout_amount === 'number' 
-                    ? offer.payout_amount 
-                    : parseFloat(String(offer.payout_amount)) || 0;
-                  
-                  // Get verticals and geo tags as arrays
-                  const verticals = toStringArray(offer.vertical, false);
-                  const geoTargets = toStringArray(offer.geo_targets, false);
-                  
-                  
-                  return (
-                    <Card
-                      key={offer.id}
-                      className={`p-2 w-full hover:shadow-md transition-shadow border-gray-800 cursor-pointer ${
-                        offer.is_active ? "bg-gray-900 hover:bg-gray-850" : "bg-gray-800"
-                      } max-w-full sm:max-w-[600px] mx-auto`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/offer/${offer.id}`);
-                      }}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        {/* Left Side - Network Logo and Offer Info */}
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <img
-                            src={
-                              offer.networks?.logo_url ||
-                              `https://placehold.co/32x32/333333/666666?text=${(
-                                offer.networks?.name || "N"
-                              ).charAt(0)}`
-                            }
-                            alt={offer.networks?.name || "Network Logo"}
-                            className="w-8 h-8 rounded-lg object-cover flex-shrink-0"
-                          />
-                          
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1 mb-0.5">
-                              <h3 className="font-semibold text-white text-xs truncate">
-                                {getDisplayValue(offer.name, "Unnamed Offer")}
-                              </h3>
-                              {!offer.is_active && (
-                                <Badge
-                                  variant="secondary"
-                                  className="text-[10px] bg-gray-700 text-white px-1 py-0 h-3"
+
+            {currentOffers.length === 0 ? (
+  <div className="text-center py-4 text-gray-400 text-xs">
+    
+  </div>
+) : (
+
+                <>
+                  {/* COMPACT OFFER CARDS - Mobile Optimized */}
+                  {currentOffers.map((offer) => {
+                    const payoutAmount = typeof offer.payout_amount === 'number' 
+                      ? offer.payout_amount 
+                      : parseFloat(String(offer.payout_amount)) || 0;
+                    
+                    const verticals = toStringArray(offer.vertical, false);
+                    const geoTargets = toStringArray(offer.geo_targets, false);
+                    
+                    return (
+                      <Card
+                        key={offer.id}
+                        className={`p-2 w-full hover:shadow-md transition-shadow border-gray-800 cursor-pointer ${
+                          offer.is_active ? "bg-gray-900 hover:bg-gray-850" : "bg-gray-800"
+                        } max-w-full mx-auto`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/offer/${offer.id}`);
+                        }}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          {/* Left Side - Network Logo and Offer Info */}
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <img
+                              src={
+                                offer.networks?.logo_url ||
+                                `https://placehold.co/32x32/333333/666666?text=${(
+                                  offer.networks?.name || "N"
+                                ).charAt(0)}`
+                              }
+                              alt={offer.networks?.name || "Network Logo"}
+                              className="w-7 h-7 rounded-lg object-cover flex-shrink-0"
+                            />
+                            
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1 mb-0.5">
+                                <h3 className="font-semibold text-white text-xs truncate">
+                                  {getDisplayValue(offer.name, "Unnamed Offer")}
+                                </h3>
+                                {!offer.is_active && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-[10px] bg-gray-700 text-white px-1 py-0 h-3"
+                                  >
+                                    Inactive
+                                  </Badge>
+                                )}
+                                {offer.is_featured && (
+                                  <Badge
+                                    variant="default"
+                                    className="text-[10px] bg-yellow-600 text-white px-1 py-0 h-3"
+                                  >
+                                    Featured
+                                  </Badge>
+                                )}
+                              </div>
+                              
+                              <div className="flex items-center gap-1 mb-0.5">
+                                <span 
+                                  className="text-[10px] text-blue-400 cursor-pointer hover:underline font-medium truncate"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const network = allNetworks.find(n => n.id === offer.network_id);
+                                    if (network) {
+                                      handleNetworkPageClick(network);
+                                    }
+                                  }}
                                 >
-                                  Inactive
-                                </Badge>
+                                  {getDisplayValue(offer.networks?.name, "Unknown Network")}
+                                </span>
+                                
+                                {/* Rating Display - Only show if data exists */}
+                                {offer.rating && (
+                                  <StarRating 
+                                    rating={offer.rating} 
+                                    totalRatings={offer.total_ratings}
+                                    size={10}
+                                  />
+                                )}
+                              </div>
+                              
+                              <div className="flex flex-wrap gap-0.5 mb-0.5">
+                                {/* Geo Targets - Show all available */}
+                                {geoTargets.slice(0, 2).map((geo, idx) => (
+                                  <Badge
+                                    key={`geo-${idx}`}
+                                    variant="outline"
+                                    className="text-[10px] px-1 py-0 h-3 border-gray-600 text-gray-300 bg-gray-600/10"
+                                  >
+                                    {geo}
+                                  </Badge>
+                                ))}
+                                
+                                {/* Vertical Tags - Show all available */}
+                                {verticals.slice(0, 2).map((vertical, idx) => (
+                                  <Badge
+                                    key={`vertical-${idx}`}
+                                    variant="outline"
+                                    className="text-[10px] px-1 py-0 h-3 border-green-600 text-green-300 bg-green-600/10"
+                                  >
+                                    {vertical}
+                                  </Badge>
+                                ))}
+                              </div>
+
+                              <div className="flex items-center gap-1 text-[10px] text-gray-400">
+                                {/* Additional metrics - Only show if data exists */}
+                                {offer.conversion_rate && (
+                                  <div className="flex items-center gap-1">
+                                    <Target size={8} />
+                                    <span>{offer.conversion_rate.toFixed(1)}% CR</span>
+                                  </div>
+                                )}
+
+                                {offer.last_updated && (
+                                  <div className="flex items-center gap-1">
+                                    <Clock size={8} />
+                                    <span>{formatRelativeTime(offer.last_updated)}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Right Side - Payout and Action Buttons */}
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <div className="text-right">
+                              <div className="text-xs font-bold text-green-400">
+                                {getDisplayValue(offer.payout_currency, "USD")}{" "}
+                                {payoutAmount.toFixed(2)}
+                              </div>
+                              
+                              {/* Show click count if sorting by clicks */}
+                              {sortBy === "clicks" && (
+                                <div className="text-[10px] text-gray-400 mt-0.5 flex items-center gap-1 justify-end">
+                                  <Users size={8} />
+                                  {offer.click_count || 0} clicks
+                                </div>
                               )}
-                              {offer.is_featured && (
-                                <Badge
-                                  variant="default"
-                                  className="text-[10px] bg-yellow-600 text-white px-1 py-0 h-3"
-                                >
-                                  Featured
-                                </Badge>
+                              
+                              {/* EPC if available */}
+                              {offer.epc && (
+                                <div className="text-[10px] text-blue-400 mt-0.5">
+                                  EPC: ${offer.epc.toFixed(2)}
+                                </div>
                               )}
                             </div>
                             
-                            <div className="flex items-center gap-1 mb-0.5">
-                              <span 
-                                className="text-[10px] text-blue-400 cursor-pointer hover:underline font-medium"
+                            <div className="flex flex-col gap-0.5">
+                              {/* View Details Button */}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] p-1 h-5 w-5 border-blue-600"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  // Navigate to network page instead of filtering
-                                  const network = allNetworks.find(n => n.id === offer.network_id);
-                                  if (network) {
-                                    handleNetworkPageClick(network);
-                                  }
+                                  navigate(`/offer/${offer.id}`);
                                 }}
+                                title="Details"
                               >
-                                {getDisplayValue(offer.networks?.name, "Unknown Network")}
-                              </span>
+                                <MoreHorizontal className="w-3 h-3" />
+                              </Button>
                               
-                              {/* Rating Display - Only show if data exists */}
-                              {offer.rating && (
-                                <StarRating 
-                                  rating={offer.rating} 
-                                  totalRatings={offer.total_ratings}
-                                  size={10}
-                                />
-                              )}
-                            </div>
-                            
-                            <div className="flex flex-wrap gap-1 mb-0.5">
-                              {/* Geo Targets - Show all available */}
-                              {geoTargets.map((geo, idx) => (
-                                <Badge
-                                  key={`geo-${idx}`}
-                                  variant="outline"
-                                  className="text-[10px] px-1 py-0 h-3 border-gray-600 text-gray-300 bg-gray-600/10"
-                                >
-                                  {geo}
-                                </Badge>
-                              ))}
-                              
-                              {/* Vertical Tags - Show all available */}
-                              {verticals.map((vertical, idx) => (
-                                <Badge
-                                  key={`vertical-${idx}`}
-                                  variant="outline"
-                                  className="text-[10px] px-1 py-0 h-3 border-green-600 text-green-300 bg-green-600/10"
-                                >
-                                  {vertical}
-                                </Badge>
-                              ))}
-                            </div>
-
-                            <div className="flex items-center gap-1 text-[10px] text-gray-400">
-                              {/* Additional metrics - Only show if data exists */}
-                              {offer.conversion_rate && (
-                                <div className="flex items-center gap-1">
-                                  <Target size={8} />
-                                  <span>{offer.conversion_rate.toFixed(1)}% CR</span>
-                                </div>
-                              )}
-
-                              {offer.last_updated && (
-                                <div className="flex items-center gap-1">
-                                  <Clock size={8} />
-                                  <span>{formatRelativeTime(offer.last_updated)}</span>
-                                </div>
-                              )}
+                              {/* Join Button */}
+                              <JoinButton offer={offer} network={offer.networks} variant="icon" />
                             </div>
                           </div>
                         </div>
+                      </Card>
+                    );
+                  })}
+                  
+                  {/* Load More Button */}
+                  {canLoadMore && (
+                    <div className="flex justify-center mt-4">
+                      <Button
+                        onClick={handleLoadMore}
+                        variant="outline"
+                        className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600 px-4 py-1 text-xs"
+                      >
+                        Load More Offers
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
 
-                        {/* Right Side - Payout and Action Buttons */}
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <div className="text-right">
-                            <div className="text-sm font-bold text-green-400">
-                              {getDisplayValue(offer.payout_currency, "USD")}{" "}
-                              {payoutAmount.toFixed(2)}
-                            </div>
-                            
-                            {/* Show click count if sorting by clicks */}
-                            {sortBy === "clicks" && (
-                              <div className="text-[10px] text-gray-400 mt-0.5 flex items-center gap-1 justify-end">
-                                <Users size={8} />
-                                {offer.click_count || 0} clicks
-                              </div>
-                            )}
-                            
-                            {/* EPC if available */}
-                            {offer.epc && (
-                              <div className="text-[10px] text-blue-400 mt-0.5">
-                                EPC: ${offer.epc.toFixed(2)}
-                              </div>
-                            )}
-                          </div>
-                          
-                          <div className="flex flex-col gap-1">
-                            {/* View Details Button - Now with three dots icon */}
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] p-1 h-6 w-6 border-blue-600"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(`/offer/${offer.id}`);
-                              }}
-                              title="Details"
-                            >
-                              <MoreHorizontal className="w-3 h-3" />
-                            </Button>
-                            
-                            {/* Join Button - Now with titled arrow icon */}
-                            <JoinButton offer={offer} network={offer.networks} variant="icon" />
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  );
-                })}
-                
-                {/* Load More Button - CHANGED: Only shows once */}
-                {canLoadMore && (
-                  <div className="flex justify-center mt-6">
-                    <Button
-                      onClick={handleLoadMore}
-                      variant="outline"
-                      className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600 px-6 py-2"
-                    >
-                      Load More Offers
-                    </Button>
-                  </div>
-                )}
-              </>
+            {/* Minimal Spinner Wheel Section */}
+            <div className="bg-white rounded-lg p-3 my-4 border border-gray-300 shadow-lg">
+              <div className="flex justify-center">
+                <SpinWheel />
+              </div>
+            </div>
+
+            {/* Footer Banners */}
+            {rotationGroupsBySection["footer"].map((rotation) => (
+              <BannerDisplay
+                key={rotation.id}
+                banners={bannersForRotation(rotation)}
+                section="footer"
+                intervalMs={rotation.rotation_duration_ms || 5000}
+              />
+            ))}
+            {footerBanners.length > 0 && (
+              <BannerDisplay banners={footerBanners} section="footer" />
             )}
           </div>
-
-          {/* Spinner Wheel Section - Added in the white area with updated prizes and email collection */}
-          <div className="bg-white rounded-lg p-6 my-6 border border-gray-300 shadow-lg">
-            <div className="flex justify-center">
-              <SpinWheel />
-            </div>
-          </div>
-
-          {/* Footer Banners */}
-          {rotationGroupsBySection["footer"].map((rotation) => (
-            <BannerDisplay
-              key={rotation.id}
-              banners={bannersForRotation(rotation)}
-              section="footer"
-              intervalMs={rotation.rotation_duration_ms || 5000}
-            />
-          ))}
-          {footerBanners.length > 0 && (
-            <BannerDisplay banners={footerBanners} section="footer" />
-          )}
         </div>
 
         {/* Right Sidebar - Networks and New Features */}
-        <div className="w-full lg:w-80 flex-shrink-0 order-last lg:order-none">
-          <div className="space-y-4">
+        <div className="w-full lg:w-72 flex-shrink-0 order-last lg:order-none">
+          <div className="space-y-3">
             {/* Top Networks of the Month */}
             <TopNetworksOfMonth networks={allNetworks} />
 
@@ -2934,10 +2815,10 @@ const Browse = () => {
             <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden">
               <div className="p-2 border-b border-gray-700" onClick={(e) => e.stopPropagation()}>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
+                  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
                   <Input
                     placeholder="Search networks..."
-                    className="pl-8 bg-gray-800 border-gray-700 text-white h-7 text-xs"
+                    className="pl-7 bg-gray-800 border-gray-700 text-white h-6 text-xs"
                     value={networkSearchTerm}
                     onChange={(e) => setNetworkSearchTerm(e.target.value)}
                   />
@@ -2949,11 +2830,11 @@ const Browse = () => {
               </div>
               
               <div className="p-2">
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-1 sm:gap-2">
                   {loadingNetworks ? (
-                    <div className="text-center py-3 text-gray-400 col-span-4 text-xs">Loading networks...</div>
+                    <div className="text-center py-2 text-gray-400 col-span-3 sm:col-span-4 text-xs">Loading networks...</div>
                   ) : networksToDisplay.length === 0 ? (
-                    <div className="text-center py-3 text-gray-400 col-span-4 text-xs">No networks found.</div>
+                    <div className="text-center py-2 text-gray-400 col-span-3 sm:col-span-4 text-xs">No networks found.</div>
                   ) : (
                     networksToDisplay.map((network) => (
                       <div
@@ -2968,10 +2849,10 @@ const Browse = () => {
                         <img
                           src={network.logo_url || `https://placehold.co/32x32/333333/666666?text=${network.name.charAt(0)}`}
                           alt={network.name}
-                          className="w-8 h-8 rounded-lg object-cover group-hover:scale-110 transition-transform"
+                          className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg object-cover group-hover:scale-110 transition-transform"
                         />
                         <div className="flex items-center gap-1 group-hover:underline mt-0.5">
-                          <span className="text-[10px] text-white truncate w-full text-center">
+                          <span className="text-[10px] sm:text-xs text-white truncate w-full text-center">
                             {network.name}
                           </span>
                         </div>
@@ -3009,7 +2890,7 @@ const Browse = () => {
         )}
       </div>
       
-      {fixedBottomBanners.length > 0 && <div className="h-16" />}
+      {fixedBottomBanners.length > 0 && <div className="h-12" />}
       <div>
         <Footer />
       </div>
