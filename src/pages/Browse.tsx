@@ -2572,12 +2572,13 @@ const Browse = () => {
                 </h2>
               </div>
 
-            {currentOffers.length === 0 ? (
-  <div className="text-center py-4 text-gray-400 text-xs">
-    
-  </div>
-) : (
-
+              {loadingOffers ? (
+                <div className="text-center py-4 text-gray-400 text-xs"></div>
+              ) : currentOffers.length === 0 ? (
+                <div className="text-center py-4 text-gray-400 text-xs">
+                  
+                </div>
+              ) : (
                 <>
                   {/* COMPACT OFFER CARDS - Mobile Optimized */}
                   {currentOffers.map((offer) => {
