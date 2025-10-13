@@ -2637,8 +2637,8 @@ const Browse = () => {
                 </div>
               ) : (
                 <>
-                  {/* UPDATED: SINGLE COLUMN LAYOUT FOR ALL DEVICES with proper card size */}
-                  <div className="space-y-2">
+                  {/* UPDATED: GRID LAYOUT FOR OFFER CARDS - Similar to second image */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                     {currentOffers.map((offer) => {
                       const payoutAmount = typeof offer.payout_amount === 'number' 
                         ? offer.payout_amount 
@@ -2650,7 +2650,7 @@ const Browse = () => {
                       return (
                         <Card
                           key={offer.id}
-                          className={`w-full hover:shadow-lg transition-all duration-200 border border-gray-600 cursor-pointer ${
+                          className={`w-full hover:shadow-lg transition-all duration-200 border border-gray-600 cursor-pointer flex flex-col ${
                             offer.is_active 
                               ? "bg-gray-800/90 hover:bg-gray-700/90" 
                               : "bg-gray-800/70 opacity-70"
@@ -2660,140 +2660,138 @@ const Browse = () => {
                             navigate(`/offer/${offer.id}`);
                           }}
                         >
-                          <div className="p-3">
-                            <div className="flex items-start justify-between gap-3">
-                              {/* Left Side: Network Logo and Offer Info */}
-                              <div className="flex items-start gap-3 flex-1 min-w-0">
-                                <img
-                                  src={
-                                    offer.networks?.logo_url ||
-                                    `https://placehold.co/40x40/333333/666666?text=${(
-                                      offer.networks?.name || "N"
-                                    ).charAt(0)}`
-                                  }
-                                  alt={offer.networks?.name || "Network Logo"}
-                                  className="w-10 h-10 rounded object-cover flex-shrink-0"
-                                />
-                                
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <h3 className="font-semibold text-white text-sm leading-tight line-clamp-2">
-                                      {getDisplayValue(offer.name, "Unnamed Offer")}
-                                    </h3>
-                                    {!offer.is_active && (
-                                      <Badge
-                                        variant="secondary"
-                                        className="text-xs bg-gray-700 text-white px-2 py-0 h-4"
-                                      >
-                                        Inactive
-                                      </Badge>
-                                    )}
-                                    {offer.is_featured && (
-                                      <Badge
-                                        variant="default"
-                                        className="text-xs bg-yellow-600 text-white px-2 py-0 h-4"
-                                      >
-                                        Featured
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <span 
-                                      className="text-xs text-blue-400 cursor-pointer hover:underline font-medium truncate"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        const network = allNetworks.find(n => n.id === offer.network_id);
-                                        if (network) {
-                                          handleNetworkPageClick(network);
-                                        }
-                                      }}
+                          <div className="p-2 flex flex-col h-full">
+                            {/* Top Section: Network and Offer Info */}
+                            <div className="flex items-start gap-2 mb-2">
+                              <img
+                                src={
+                                  offer.networks?.logo_url ||
+                                  `https://placehold.co/32x32/333333/666666?text=${(
+                                    offer.networks?.name || "N"
+                                  ).charAt(0)}`
+                                }
+                                alt={offer.networks?.name || "Network Logo"}
+                                className="w-6 h-6 rounded object-cover flex-shrink-0"
+                              />
+                              
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1 mb-1">
+                                  <h3 className="font-semibold text-white text-[11px] leading-tight line-clamp-2">
+                                    {getDisplayValue(offer.name, "Unnamed Offer")}
+                                  </h3>
+                                  {!offer.is_active && (
+                                    <Badge
+                                      variant="secondary"
+                                      className="text-[7px] bg-gray-700 text-white px-1 py-0 h-3"
                                     >
-                                      {getDisplayValue(offer.networks?.name, "Unknown Network")}
-                                    </span>
-                                    
-                                    {/* Rating Display */}
-                                    {offer.rating && (
-                                      <StarRating 
-                                        rating={offer.rating} 
-                                        totalRatings={offer.total_ratings}
-                                        size={12}
-                                      />
-                                    )}
-                                  </div>
-                                  
-                                  <div className="flex flex-wrap gap-1 mb-2">
-                                    {/* Geo Targets */}
-                                    {geoTargets.slice(0, 3).map((geo, idx) => (
-                                      <Badge
-                                        key={`geo-${idx}`}
-                                        variant="outline"
-                                        className="text-xs px-2 py-0 h-5 border-gray-500 text-gray-300 bg-gray-600/10"
-                                      >
-                                        {geo}
-                                      </Badge>
-                                    ))}
-                                    
-                                    {/* Vertical Tags */}
-                                    {verticals.slice(0, 2).map((vertical, idx) => (
-                                      <Badge
-                                        key={`vertical-${idx}`}
-                                        variant="outline"
-                                        className="text-xs px-2 py-0 h-5 border-green-500 text-green-300 bg-green-600/10"
-                                      >
-                                        {vertical}
-                                      </Badge>
-                                    ))}
-                                    
-                                    {/* Offer Type */}
-                                    {offer.type && (
-                                      <Badge
-                                        variant="outline"
-                                        className="text-xs px-2 py-0 h-5 border-blue-500 text-blue-300 bg-blue-600/10"
-                                      >
-                                        {offer.type}
-                                      </Badge>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Right Side: Payout and Actions */}
-                              <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                                <div className="text-right">
-                                  <div className="text-lg font-bold text-green-400">
-                                    {getDisplayValue(offer.payout_currency, "USD")}{" "}
-                                    {payoutAmount.toFixed(2)}
-                                  </div>
-                                  
-                                  {/* Show click count if sorting by clicks */}
-                                  {sortBy === "clicks" && (
-                                    <div className="text-xs text-gray-400 mt-1 flex items-center gap-1 justify-end">
-                                      <Users size={12} />
-                                      {offer.click_count || 0} clicks
-                                    </div>
+                                      Inactive
+                                    </Badge>
+                                  )}
+                                  {offer.is_featured && (
+                                    <Badge
+                                      variant="default"
+                                      className="text-[7px] bg-yellow-600 text-white px-1 py-0 h-3"
+                                    >
+                                      Featured
+                                    </Badge>
                                   )}
                                 </div>
                                 
-                                <div className="flex gap-2">
-                                  {/* View Details Button */}
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 h-7 border-blue-600"
+                                <div className="flex items-center gap-1 mb-1">
+                                  <span 
+                                    className="text-[9px] text-blue-400 cursor-pointer hover:underline font-medium truncate"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      navigate(`/offer/${offer.id}`);
+                                      const network = allNetworks.find(n => n.id === offer.network_id);
+                                      if (network) {
+                                        handleNetworkPageClick(network);
+                                      }
                                     }}
-                                    title="Details"
                                   >
-                                    <MoreHorizontal className="w-3 h-3 mr-1" />
-                                    Details
-                                  </Button>
+                                    {getDisplayValue(offer.networks?.name, "Unknown Network")}
+                                  </span>
                                   
-                                  {/* Join Button */}
-                                  <JoinButton offer={offer} network={offer.networks} variant="default" />
+                                  {/* Rating Display */}
+                                  {offer.rating && (
+                                    <StarRating 
+                                      rating={offer.rating} 
+                                      totalRatings={offer.total_ratings}
+                                      size={8}
+                                    />
+                                  )}
                                 </div>
+                              </div>
+                            </div>
+                            
+                            {/* Middle Section: Tags and Info */}
+                            <div className="flex flex-wrap gap-1 mb-2">
+                              {/* Geo Targets */}
+                              {geoTargets.slice(0, 2).map((geo, idx) => (
+                                <Badge
+                                  key={`geo-${idx}`}
+                                  variant="outline"
+                                  className="text-[7px] px-1 py-0 h-3 border-gray-500 text-gray-300 bg-gray-600/10"
+                                >
+                                  {geo}
+                                </Badge>
+                              ))}
+                              
+                              {/* Vertical Tags */}
+                              {verticals.slice(0, 2).map((vertical, idx) => (
+                                <Badge
+                                  key={`vertical-${idx}`}
+                                  variant="outline"
+                                  className="text-[7px] px-1 py-0 h-3 border-green-500 text-green-300 bg-green-600/10"
+                                >
+                                  {vertical}
+                                </Badge>
+                              ))}
+                              
+                              {/* Offer Type */}
+                              {offer.type && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[7px] px-1 py-0 h-3 border-blue-500 text-blue-300 bg-blue-600/10"
+                                >
+                                  {offer.type}
+                                </Badge>
+                              )}
+                            </div>
+                            
+                            {/* Bottom Section: Payout and Actions */}
+                            <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-700">
+                              <div className="text-left">
+                                <div className="text-[12px] font-bold text-green-400">
+                                  {getDisplayValue(offer.payout_currency, "USD")}{" "}
+                                  {payoutAmount.toFixed(2)}
+                                </div>
+                                
+                                {/* Show click count if sorting by clicks */}
+                                {sortBy === "clicks" && (
+                                  <div className="text-[8px] text-gray-400 mt-0.5 flex items-center gap-0.5">
+                                    <Users size={6} />
+                                    {offer.click_count || 0} clicks
+                                  </div>
+                                )}
+                              </div>
+                              
+                              <div className="flex gap-1">
+                                {/* View Details Button */}
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="bg-blue-600 hover:bg-blue-700 text-white text-[8px] p-1 h-5 w-5 border-blue-600"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/offer/${offer.id}`);
+                                  }}
+                                  title="Details"
+                                >
+                                  <MoreHorizontal className="w-2.5 h-2.5" />
+                                </Button>
+                                
+                                {/* Join Button */}
+                                <JoinButton offer={offer} network={offer.networks} variant="compact" />
                               </div>
                             </div>
                           </div>
@@ -2808,7 +2806,7 @@ const Browse = () => {
                       <Button
                         onClick={handleLoadMore}
                         variant="outline"
-                        className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600 px-4 py-2 text-sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600 px-3 py-1 text-[11px]"
                       >
                         Load More Offers
                       </Button>
