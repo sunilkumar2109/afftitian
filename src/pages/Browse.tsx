@@ -336,8 +336,8 @@ const ClaimRewardPopup = ({
   );
 };
 
-// Minimal Spin Wheel Component - SMALLER SIZE
-const SpinWheel = () => {
+// Minimal Spin Wheel Component - SMALLER SIZE with Offer Names
+const SpinWheel = ({ offers }: { offers: Offer[] }) => {
   const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [wonPrize, setWonPrize] = useState<SpinPrize | null>(null);
@@ -345,10 +345,37 @@ const SpinWheel = () => {
   const [showClaimPopup, setShowClaimPopup] = useState(false);
   const { toast } = useToast();
 
-  const prizes: SpinPrize[] = [
+  // Get top 6 offers by payout for the wheel
+  const topOffers = offers
+    .filter(offer => offer.is_active)
+    .sort((a, b) => {
+      const aAmount = typeof a.payout_amount === 'number' ? a.payout_amount : parseFloat(String(a.payout_amount)) || 0;
+      const bAmount = typeof b.payout_amount === 'number' ? b.payout_amount : parseFloat(String(b.payout_amount)) || 0;
+      return bAmount - aAmount;
+    })
+    .slice(0, 6);
+
+  const prizes: SpinPrize[] = topOffers.map((offer, index) => {
+    const payoutAmount = typeof offer.payout_amount === 'number' ? offer.payout_amount : parseFloat(String(offer.payout_amount)) || 0;
+    const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F'];
+    const probabilities = [0.05, 0.15, 0.15, 0.2, 0.1, 0.35];
+    
+    return {
+      id: offer.id,
+      name: offer.name.length > 20 ? offer.name.substring(0, 20) + '...' : offer.name,
+      type: 'top_banner',
+      value: `$${payoutAmount.toFixed(2)}`,
+      probability: probabilities[index] || 0.1,
+      color: colors[index] || '#FF6B6B',
+      description: `Premium offer from ${offer.networks?.name || 'Network'}`
+    };
+  });
+
+  // Fallback prizes if no offers available
+  const fallbackPrizes: SpinPrize[] = [
     { 
       id: '1', 
-      name: 'Premium Offer', 
+      name: 'Bitcoin Era', 
       type: 'top_banner', 
       value: '$50 Free Credit', 
       probability: 0.05, 
@@ -357,7 +384,7 @@ const SpinWheel = () => {
     },
     { 
       id: '2', 
-      name: 'Weekly Access', 
+      name: 'YuanPay System', 
       type: 'bottom_banner', 
       value: '1 Week Access', 
       probability: 0.15, 
@@ -366,7 +393,7 @@ const SpinWheel = () => {
     },
     { 
       id: '3', 
-      name: 'Featured Network', 
+      name: 'Crypto Revolution', 
       type: 'sidebar_banner', 
       value: 'Top Network', 
       probability: 0.15, 
@@ -375,7 +402,7 @@ const SpinWheel = () => {
     },
     { 
       id: '4', 
-      name: 'Newsletter Feature', 
+      name: 'Profit Maximizer', 
       type: 'newsletter', 
       value: 'Pro Dashboard', 
       probability: 0.2, 
@@ -384,7 +411,7 @@ const SpinWheel = () => {
     },
     { 
       id: '5', 
-      name: 'Homepage Spotlight', 
+      name: 'Wealth Builder', 
       type: 'homepage_feature', 
       value: 'Special Highlight', 
       probability: 0.1, 
@@ -393,7 +420,7 @@ const SpinWheel = () => {
     },
     { 
       id: '6', 
-      name: 'Admin Support', 
+      name: 'Coin Generator', 
       type: 'contact_admin', 
       value: 'Contact Admin', 
       probability: 0.35, 
@@ -401,6 +428,8 @@ const SpinWheel = () => {
       description: 'Direct conversation with admin'
     },
   ];
+
+  const wheelPrizes = prizes.length > 0 ? prizes : fallbackPrizes;
 
   const handleClaimSubmit = async (data: {
     firstName: string;
@@ -488,7 +517,7 @@ const SpinWheel = () => {
 
     setTimeout(() => {
       const wonPrizeIndex = randomSegment;
-      const prize = prizes[wonPrizeIndex];
+      const prize = wheelPrizes[wonPrizeIndex];
       setWonPrize(prize);
       setSpinning(false);
       setShowResult(true);
@@ -518,13 +547,15 @@ const SpinWheel = () => {
       </div>
 
       <div className="flex flex-col items-center">
-        {/* Minimal Wheel Container - SMALLER */}
+        {/* Minimal Wheel Container - SMALLER with Offer Names */}
         <div className="relative mb-2">
           <div 
             className="w-24 h-24 rounded-full border-2 border-yellow-400 relative transition-transform duration-4000 ease-out overflow-hidden"
             style={{ 
               transform: `rotate(${rotation}deg)`,
-              background: 'conic-gradient(from 0deg, #FF6B6B 0deg 60deg, #4ECDC4 60deg 120deg, #45B7D1 120deg 180deg, #FFA07A 180deg 240deg, #98D8C8 240deg 300deg, #F7DC6F 300deg 360deg)'
+              background: `conic-gradient(from 0deg, ${wheelPrizes.map((prize, index) => 
+                `${prize.color} ${index * 60}deg ${(index + 1) * 60}deg`
+              ).join(', ')})`
             }}
           >
             {/* Center circle */}
@@ -536,6 +567,31 @@ const SpinWheel = () => {
             <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1 w-3 h-4">
               <div className="w-0 h-0 border-l-6 border-r-6 border-b-6 border-l-transparent border-r-transparent border-b-yellow-400"></div>
             </div>
+
+            {/* Prize Labels - Rotated to appear correctly */}
+            {wheelPrizes.map((prize, index) => {
+              const angle = (index * 60 + 30) * (Math.PI / 180); // Convert to radians
+              const radius = 40; // Distance from center
+              const x = 50 + radius * Math.cos(angle);
+              const y = 50 + radius * Math.sin(angle);
+              
+              return (
+                <div
+                  key={prize.id}
+                  className="absolute text-[6px] font-bold text-white text-center pointer-events-none"
+                  style={{
+                    top: `${y}%`,
+                    left: `${x}%`,
+                    transform: `translate(-50%, -50%) rotate(${index * 60 + 90}deg)`,
+                    textShadow: '1px 1px 1px rgba(0,0,0,0.5)',
+                    width: '30px',
+                    zIndex: 10
+                  }}
+                >
+                  {prize.name}
+                </div>
+              );
+            })}
 
             {/* Result Overlay */}
             {showResult && wonPrize && (
@@ -549,6 +605,7 @@ const SpinWheel = () => {
                 <div className="text-center text-white p-2">
                   <div className="text-yellow-400 font-bold text-xs mb-0.5">You Won!</div>
                   <div className="text-white font-bold text-sm">{wonPrize.name}</div>
+                  <div className="text-yellow-300 text-xs mb-1">{wonPrize.value}</div>
                   <Button 
                     className="mt-1 bg-green-600 hover:bg-green-700 text-white text-[10px] px-2 py-0 h-5"
                     onClick={claimReward}
@@ -2580,185 +2637,178 @@ const Browse = () => {
                 </div>
               ) : (
                 <>
-                  {/* COMPACT OFFER CARDS - Mobile Optimized - SMALLER */}
-                  {currentOffers.map((offer) => {
-                    const payoutAmount = typeof offer.payout_amount === 'number' 
-                      ? offer.payout_amount 
-                      : parseFloat(String(offer.payout_amount)) || 0;
-                    
-                    const verticals = toStringArray(offer.vertical, false);
-                    const geoTargets = toStringArray(offer.geo_targets, false);
-                    
-                    return (
-                      <Card
-                        key={offer.id}
-                        className={`p-0.5 w-full hover:shadow transition-shadow border-gray-800 cursor-pointer ${
-                          offer.is_active ? "bg-gray-900 hover:bg-gray-850" : "bg-gray-800"
-                        } max-w-full mx-auto`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/offer/${offer.id}`);
-                        }}
-                      >
-                        <div className="flex items-center justify-between gap-1">
-                          {/* Left Side - Network Logo and Offer Info */}
-                          <div className="flex items-center gap-1 flex-1 min-w-0">
-                            <img
-                              src={
-                                offer.networks?.logo_url ||
-                                `https://placehold.co/24x24/333333/666666?text=${(
-                                  offer.networks?.name || "N"
-                                ).charAt(0)}`
-                              }
-                              alt={offer.networks?.name || "Network Logo"}
-                              className="w-4 h-4 rounded object-cover flex-shrink-0"
-                            />
-                            
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-0.5 mb-0.5">
-                                <h3 className="font-semibold text-white text-[9px] truncate">
-                                  {getDisplayValue(offer.name, "Unnamed Offer")}
-                                </h3>
-                                {!offer.is_active && (
-                                  <Badge
-                                    variant="secondary"
-                                    className="text-[7px] bg-gray-700 text-white px-0.5 py-0 h-2"
-                                  >
-                                    Inactive
-                                  </Badge>
-                                )}
-                                {offer.is_featured && (
-                                  <Badge
-                                    variant="default"
-                                    className="text-[7px] bg-yellow-600 text-white px-0.5 py-0 h-2"
-                                  >
-                                    Featured
-                                  </Badge>
-                                )}
-                              </div>
-                              
-                              <div className="flex items-center gap-0.5 mb-0.5">
-                                <span 
-                                  className="text-[8px] text-blue-400 cursor-pointer hover:underline font-medium truncate"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const network = allNetworks.find(n => n.id === offer.network_id);
-                                    if (network) {
-                                      handleNetworkPageClick(network);
-                                    }
-                                  }}
-                                >
-                                  {getDisplayValue(offer.networks?.name, "Unknown Network")}
-                                </span>
+                  {/* UPDATED: SINGLE COLUMN LAYOUT FOR ALL DEVICES with proper card size */}
+                  <div className="space-y-2">
+                    {currentOffers.map((offer) => {
+                      const payoutAmount = typeof offer.payout_amount === 'number' 
+                        ? offer.payout_amount 
+                        : parseFloat(String(offer.payout_amount)) || 0;
+                      
+                      const verticals = toStringArray(offer.vertical, false);
+                      const geoTargets = toStringArray(offer.geo_targets, false);
+                      
+                      return (
+                        <Card
+                          key={offer.id}
+                          className={`w-full hover:shadow-lg transition-all duration-200 border border-gray-600 cursor-pointer ${
+                            offer.is_active 
+                              ? "bg-gray-800/90 hover:bg-gray-700/90" 
+                              : "bg-gray-800/70 opacity-70"
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/offer/${offer.id}`);
+                          }}
+                        >
+                          <div className="p-3">
+                            <div className="flex items-start justify-between gap-3">
+                              {/* Left Side: Network Logo and Offer Info */}
+                              <div className="flex items-start gap-3 flex-1 min-w-0">
+                                <img
+                                  src={
+                                    offer.networks?.logo_url ||
+                                    `https://placehold.co/40x40/333333/666666?text=${(
+                                      offer.networks?.name || "N"
+                                    ).charAt(0)}`
+                                  }
+                                  alt={offer.networks?.name || "Network Logo"}
+                                  className="w-10 h-10 rounded object-cover flex-shrink-0"
+                                />
                                 
-                                {/* Rating Display - Only show if data exists */}
-                                {offer.rating && (
-                                  <StarRating 
-                                    rating={offer.rating} 
-                                    totalRatings={offer.total_ratings}
-                                    size={7}
-                                  />
-                                )}
-                              </div>
-                              
-                              <div className="flex flex-wrap gap-0.5 mb-0.5">
-                                {/* Geo Targets - Show all available */}
-                                {geoTargets.slice(0, 2).map((geo, idx) => (
-                                  <Badge
-                                    key={`geo-${idx}`}
-                                    variant="outline"
-                                    className="text-[7px] px-0.5 py-0 h-2 border-gray-600 text-gray-300 bg-gray-600/10"
-                                  >
-                                    {geo}
-                                  </Badge>
-                                ))}
-                                
-                                {/* Vertical Tags - Show all available */}
-                                {verticals.slice(0, 2).map((vertical, idx) => (
-                                  <Badge
-                                    key={`vertical-${idx}`}
-                                    variant="outline"
-                                    className="text-[7px] px-0.5 py-0 h-2 border-green-600 text-green-300 bg-green-600/10"
-                                  >
-                                    {vertical}
-                                  </Badge>
-                                ))}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <h3 className="font-semibold text-white text-sm leading-tight line-clamp-2">
+                                      {getDisplayValue(offer.name, "Unnamed Offer")}
+                                    </h3>
+                                    {!offer.is_active && (
+                                      <Badge
+                                        variant="secondary"
+                                        className="text-xs bg-gray-700 text-white px-2 py-0 h-4"
+                                      >
+                                        Inactive
+                                      </Badge>
+                                    )}
+                                    {offer.is_featured && (
+                                      <Badge
+                                        variant="default"
+                                        className="text-xs bg-yellow-600 text-white px-2 py-0 h-4"
+                                      >
+                                        Featured
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span 
+                                      className="text-xs text-blue-400 cursor-pointer hover:underline font-medium truncate"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const network = allNetworks.find(n => n.id === offer.network_id);
+                                        if (network) {
+                                          handleNetworkPageClick(network);
+                                        }
+                                      }}
+                                    >
+                                      {getDisplayValue(offer.networks?.name, "Unknown Network")}
+                                    </span>
+                                    
+                                    {/* Rating Display */}
+                                    {offer.rating && (
+                                      <StarRating 
+                                        rating={offer.rating} 
+                                        totalRatings={offer.total_ratings}
+                                        size={12}
+                                      />
+                                    )}
+                                  </div>
+                                  
+                                  <div className="flex flex-wrap gap-1 mb-2">
+                                    {/* Geo Targets */}
+                                    {geoTargets.slice(0, 3).map((geo, idx) => (
+                                      <Badge
+                                        key={`geo-${idx}`}
+                                        variant="outline"
+                                        className="text-xs px-2 py-0 h-5 border-gray-500 text-gray-300 bg-gray-600/10"
+                                      >
+                                        {geo}
+                                      </Badge>
+                                    ))}
+                                    
+                                    {/* Vertical Tags */}
+                                    {verticals.slice(0, 2).map((vertical, idx) => (
+                                      <Badge
+                                        key={`vertical-${idx}`}
+                                        variant="outline"
+                                        className="text-xs px-2 py-0 h-5 border-green-500 text-green-300 bg-green-600/10"
+                                      >
+                                        {vertical}
+                                      </Badge>
+                                    ))}
+                                    
+                                    {/* Offer Type */}
+                                    {offer.type && (
+                                      <Badge
+                                        variant="outline"
+                                        className="text-xs px-2 py-0 h-5 border-blue-500 text-blue-300 bg-blue-600/10"
+                                      >
+                                        {offer.type}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
 
-                              <div className="flex items-center gap-0.5 text-[7px] text-gray-400">
-                                {/* Additional metrics - Only show if data exists */}
-                                {offer.conversion_rate && (
-                                  <div className="flex items-center gap-0.5">
-                                    <Target size={5} />
-                                    <span>{offer.conversion_rate.toFixed(1)}% CR</span>
+                              {/* Right Side: Payout and Actions */}
+                              <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                                <div className="text-right">
+                                  <div className="text-lg font-bold text-green-400">
+                                    {getDisplayValue(offer.payout_currency, "USD")}{" "}
+                                    {payoutAmount.toFixed(2)}
                                   </div>
-                                )}
-
-                                {offer.last_updated && (
-                                  <div className="flex items-center gap-0.5">
-                                    <Clock size={5} />
-                                    <span>{formatRelativeTime(offer.last_updated)}</span>
-                                  </div>
-                                )}
+                                  
+                                  {/* Show click count if sorting by clicks */}
+                                  {sortBy === "clicks" && (
+                                    <div className="text-xs text-gray-400 mt-1 flex items-center gap-1 justify-end">
+                                      <Users size={12} />
+                                      {offer.click_count || 0} clicks
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                <div className="flex gap-2">
+                                  {/* View Details Button */}
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 h-7 border-blue-600"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigate(`/offer/${offer.id}`);
+                                    }}
+                                    title="Details"
+                                  >
+                                    <MoreHorizontal className="w-3 h-3 mr-1" />
+                                    Details
+                                  </Button>
+                                  
+                                  {/* Join Button */}
+                                  <JoinButton offer={offer} network={offer.networks} variant="default" />
+                                </div>
                               </div>
                             </div>
                           </div>
-
-                          {/* Right Side - Payout and Action Buttons */}
-                          <div className="flex items-center gap-0.5 flex-shrink-0">
-                            <div className="text-right">
-                              <div className="text-[9px] font-bold text-green-400">
-                                {getDisplayValue(offer.payout_currency, "USD")}{" "}
-                                {payoutAmount.toFixed(2)}
-                              </div>
-                              
-                              {/* Show click count if sorting by clicks */}
-                              {sortBy === "clicks" && (
-                                <div className="text-[7px] text-gray-400 mt-0.5 flex items-center gap-0.5 justify-end">
-                                  <Users size={5} />
-                                  {offer.click_count || 0} clicks
-                                </div>
-                              )}
-                              
-                              {/* EPC if available */}
-                              {offer.epc && (
-                                <div className="text-[7px] text-blue-400 mt-0.5">
-                                  EPC: ${offer.epc.toFixed(2)}
-                                </div>
-                              )}
-                            </div>
-                            
-                            <div className="flex flex-col gap-0.5">
-                              {/* View Details Button */}
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="bg-blue-600 hover:bg-blue-700 text-white text-[7px] p-0.5 h-4 w-4 border-blue-600"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate(`/offer/${offer.id}`);
-                                }}
-                                title="Details"
-                              >
-                                <MoreHorizontal className="w-2 h-2" />
-                              </Button>
-                              
-                              {/* Join Button */}
-                              <JoinButton offer={offer} network={offer.networks} variant="icon" />
-                            </div>
-                          </div>
-                        </div>
-                      </Card>
-                    );
-                  })}
+                        </Card>
+                      );
+                    })}
+                  </div>
                   
                   {/* Load More Button */}
                   {canLoadMore && (
-                    <div className="flex justify-center mt-2">
+                    <div className="flex justify-center mt-4">
                       <Button
                         onClick={handleLoadMore}
                         variant="outline"
-                        className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600 px-2 py-0.5 text-[10px]"
+                        className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600 px-4 py-2 text-sm"
                       >
                         Load More Offers
                       </Button>
@@ -2768,10 +2818,10 @@ const Browse = () => {
               )}
             </div>
 
-            {/* Minimal Spinner Wheel Section - SMALLER */}
+            {/* Minimal Spinner Wheel Section - UPDATED WITH OFFER NAMES */}
             <div className="bg-white rounded p-2 my-2 border border-gray-300 shadow">
               <div className="flex justify-center">
-                <SpinWheel />
+                <SpinWheel offers={allOffers} />
               </div>
             </div>
 
