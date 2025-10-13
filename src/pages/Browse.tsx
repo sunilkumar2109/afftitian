@@ -336,7 +336,7 @@ const ClaimRewardPopup = ({
   );
 };
 
-// Minimal Spin Wheel Component
+// Minimal Spin Wheel Component - SMALLER SIZE
 const SpinWheel = () => {
   const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
@@ -506,35 +506,35 @@ const SpinWheel = () => {
   };
 
   return (
-    <div className="bg-white rounded-lg p-3 border border-gray-300 shadow-lg">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-black font-bold text-sm flex items-center gap-1">
-          <Gift className="w-4 h-4" />
+    <div className="bg-white rounded-lg p-2 border border-gray-300 shadow-lg">
+      <div className="flex items-center justify-between mb-1">
+        <h3 className="text-black font-bold text-xs flex items-center gap-1">
+          <Gift className="w-3 h-3" />
           Advertiser Rewards
         </h3>
-        <Badge variant="secondary" className="bg-yellow-500 text-black text-xs">
+        <Badge variant="secondary" className="bg-yellow-500 text-black text-[10px]">
           Free Spin
         </Badge>
       </div>
 
       <div className="flex flex-col items-center">
-        {/* Minimal Wheel Container */}
-        <div className="relative mb-3">
+        {/* Minimal Wheel Container - SMALLER */}
+        <div className="relative mb-2">
           <div 
-            className="w-40 h-40 rounded-full border-4 border-yellow-400 relative transition-transform duration-4000 ease-out overflow-hidden"
+            className="w-24 h-24 rounded-full border-2 border-yellow-400 relative transition-transform duration-4000 ease-out overflow-hidden"
             style={{ 
               transform: `rotate(${rotation}deg)`,
               background: 'conic-gradient(from 0deg, #FF6B6B 0deg 60deg, #4ECDC4 60deg 120deg, #45B7D1 120deg 180deg, #FFA07A 180deg 240deg, #98D8C8 240deg 300deg, #F7DC6F 300deg 360deg)'
             }}
           >
             {/* Center circle */}
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white rounded-full border-4 border-yellow-400 flex items-center justify-center">
-              <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full border-2 border-yellow-400 flex items-center justify-center">
+              <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
             </div>
             
             {/* Pointer */}
-            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1 w-4 h-6">
-              <div className="w-0 h-0 border-l-8 border-r-8 border-b-8 border-l-transparent border-r-transparent border-b-yellow-400"></div>
+            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1 w-3 h-4">
+              <div className="w-0 h-0 border-l-6 border-r-6 border-b-6 border-l-transparent border-r-transparent border-b-yellow-400"></div>
             </div>
 
             {/* Result Overlay */}
@@ -546,14 +546,14 @@ const SpinWheel = () => {
                   transition: 'transform 0.5s ease-out',
                 }}
               >
-                <div className="text-center text-white p-3">
-                  <div className="text-yellow-400 font-bold text-sm mb-1">You Won!</div>
-                  <div className="text-white font-bold text-base">{wonPrize.name}</div>
+                <div className="text-center text-white p-2">
+                  <div className="text-yellow-400 font-bold text-xs mb-0.5">You Won!</div>
+                  <div className="text-white font-bold text-sm">{wonPrize.name}</div>
                   <Button 
-                    className="mt-2 bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1"
+                    className="mt-1 bg-green-600 hover:bg-green-700 text-white text-[10px] px-2 py-0 h-5"
                     onClick={claimReward}
                   >
-                    Claim Reward
+                    Claim
                   </Button>
                 </div>
               </div>
@@ -561,11 +561,11 @@ const SpinWheel = () => {
           </div>
         </div>
         
-        {/* Spin Button */}
+        {/* Spin Button - SMALLER */}
         <Button
           onClick={startSpinning}
           disabled={spinning}
-          className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 text-sm"
+          className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-1 px-2 rounded text-[10px]"
         >
           {spinning ? 'Spinning...' : 'SPIN FOR REWARDS!'}
         </Button>
@@ -592,28 +592,28 @@ const TopNetworksOfMonth = ({ networks }: { networks: Network[] }) => {
   if (topNetworks.length === 0) return null;
 
   return (
-    <div className="bg-gradient-to-br from-amber-900 to-orange-800 rounded-lg p-3 border border-amber-600 shadow-lg">
-      <div className="flex items-center gap-2 mb-2">
-        <Trophy className="w-4 h-4 text-yellow-400" />
-        <h3 className="text-white font-bold text-sm">Top Networks This Month</h3>
+    <div className="bg-gradient-to-br from-amber-900 to-orange-800 rounded-lg p-2 border border-amber-600 shadow-lg">
+      <div className="flex items-center gap-2 mb-1">
+        <Trophy className="w-3 h-3 text-yellow-400" />
+        <h3 className="text-white font-bold text-xs">Top Networks This Month</h3>
       </div>
       
-      <div className="space-y-2">
+      <div className="space-y-1">
         {topNetworks.map((network, index) => (
-          <div key={network.id} className="flex items-center gap-2 p-2 bg-black/30 rounded-lg">
-            <div className="flex items-center justify-center w-5 h-5 bg-yellow-500 rounded-full text-black text-xs font-bold">
+          <div key={network.id} className="flex items-center gap-1 p-1 bg-black/30 rounded">
+            <div className="flex items-center justify-center w-4 h-4 bg-yellow-500 rounded-full text-black text-[10px] font-bold">
               {index + 1}
             </div>
             <img
-              src={network.logo_url || `https://placehold.co/32x32/333333/666666?text=${network.name.charAt(0)}`}
+              src={network.logo_url || `https://placehold.co/24x24/333333/666666?text=${network.name.charAt(0)}`}
               alt={network.name}
-              className="w-6 h-6 rounded-lg object-cover"
+              className="w-4 h-4 rounded object-cover"
             />
             <div className="flex-1">
-              <div className="text-white font-medium text-xs">{network.name}</div>
-              <StarRating rating={network.rating || 0} totalRatings={network.total_ratings} size={10} />
+              <div className="text-white font-medium text-[10px]">{network.name}</div>
+              <StarRating rating={network.rating || 0} totalRatings={network.total_ratings} size={8} />
             </div>
-            <Badge variant="secondary" className="bg-green-600 text-white text-xs">
+            <Badge variant="secondary" className="bg-green-600 text-white text-[10px]">
               {network.rating?.toFixed(1)}
             </Badge>
           </div>
@@ -630,21 +630,21 @@ const TopSearchedNetworks = ({ networks }: { networks: Network[] }) => {
     .slice(0, 4);
 
   return (
-    <div className="bg-gradient-to-br from-green-900 to-emerald-800 rounded-lg p-3 border border-green-600 shadow-lg">
-      <div className="flex items-center gap-2 mb-2">
-        <TrendingUp className="w-4 h-4 text-green-400" />
-        <h3 className="text-white font-bold text-sm">Trending Searches</h3>
+    <div className="bg-gradient-to-br from-green-900 to-emerald-800 rounded-lg p-2 border border-green-600 shadow-lg">
+      <div className="flex items-center gap-2 mb-1">
+        <TrendingUp className="w-3 h-3 text-green-400" />
+        <h3 className="text-white font-bold text-xs">Trending Searches</h3>
       </div>
       
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-1">
         {popularNetworks.map((network) => (
-          <div key={network.id} className="flex items-center gap-2 p-1 bg-black/30 rounded-lg">
+          <div key={network.id} className="flex items-center gap-1 p-1 bg-black/30 rounded">
             <img
-              src={network.logo_url || `https://placehold.co/24x24/333333/666666?text=${network.name.charAt(0)}`}
+              src={network.logo_url || `https://placehold.co/20x20/333333/666666?text=${network.name.charAt(0)}`}
               alt={network.name}
-              className="w-5 h-5 rounded object-cover"
+              className="w-4 h-4 rounded object-cover"
             />
-            <span className="text-white text-xs truncate">{network.name}</span>
+            <span className="text-white text-[10px] truncate">{network.name}</span>
           </div>
         ))}
       </div>
@@ -680,15 +680,15 @@ const BannerDisplay = ({
       imageClass = "w-full h-12 object-cover";
       break;
     case "sidebar":
-      containerClass = "mb-3";
+      containerClass = "mb-2";
       imageClass = "w-full h-auto object-contain";
       break;
     case "top":
-      containerClass = "my-2 flex justify-center lg:justify-end lg:pr-3";
-      imageClass = "w-full lg:w-[800px] h-[60px] lg:h-[80px] object-contain";
+      containerClass = "my-1 flex justify-center lg:justify-end lg:pr-2";
+      imageClass = "w-full lg:w-[800px] h-[50px] lg:h-[70px] object-contain";
       break;
     case "footer":
-      containerClass = "my-3";
+      containerClass = "my-2";
       imageClass = "w-full h-12 object-cover";
       break;
   }
@@ -771,7 +771,7 @@ const SidebarBannerDisplay = ({ banners }: { banners: Banner[] }) => {
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1">
       {banners.map((banner) => {
         const bannerSrc = banner.image_url?.startsWith("http")
           ? banner.image_url
@@ -786,7 +786,7 @@ const SidebarBannerDisplay = ({ banners }: { banners: Banner[] }) => {
             <img
               src={bannerSrc}
               alt="Sidebar banner"
-              className="w-full h-[200px] lg:h-[300px] object-contain rounded-md"
+              className="w-full h-[150px] lg:h-[250px] object-contain rounded-md"
               onError={(e) => {
                 console.error("Sidebar banner failed to load:", bannerSrc);
                 e.currentTarget.style.display = "none";
@@ -800,12 +800,12 @@ const SidebarBannerDisplay = ({ banners }: { banners: Banner[] }) => {
 };
 
 // Star Rating Component
-const StarRating = ({ rating, totalRatings, size = 12 }: { rating: number; totalRatings?: number; size?: number }) => {
+const StarRating = ({ rating, totalRatings, size = 10 }: { rating: number; totalRatings?: number; size?: number }) => {
   const fullStars = Math.floor(rating);
   const hasHalfStar = rating % 1 >= 0.5;
   
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-0.5">
       <div className="flex">
         {[...Array(5)].map((_, i) => (
           <Star
@@ -815,9 +815,9 @@ const StarRating = ({ rating, totalRatings, size = 12 }: { rating: number; total
           />
         ))}
       </div>
-      <span className="text-xs text-gray-300">{rating.toFixed(1)}</span>
+      <span className="text-[10px] text-gray-300">{rating.toFixed(1)}</span>
       {totalRatings && (
-        <span className="text-xs text-gray-400">({totalRatings})</span>
+        <span className="text-[10px] text-gray-400">({totalRatings})</span>
       )}
     </div>
   );
@@ -873,7 +873,7 @@ const JoinButton = ({
     return (
       <Button
         size="sm"
-        className="bg-green-600 hover:bg-green-700 text-white text-xs px-2 py-0 h-6 font-medium"
+        className="bg-green-600 hover:bg-green-700 text-white text-[10px] px-1 py-0 h-5 font-medium"
         onClick={handleJoinClick}
       >
         Join
@@ -885,18 +885,18 @@ const JoinButton = ({
     return (
       <Button
         size="sm"
-        className="bg-green-600 hover:bg-green-700 text-white p-1 h-6 w-6"
+        className="bg-green-600 hover:bg-green-700 text-white p-0.5 h-5 w-5"
         onClick={handleJoinClick}
         title="Join Offer"
       >
-        <ArrowUpRight className="w-3 h-3" />
+        <ArrowUpRight className="w-2.5 h-2.5" />
       </Button>
     );
   }
 
   return (
     <Button
-      className="bg-green-600 hover:bg-green-700 text-white font-medium py-1 px-3 h-7 rounded-md text-xs"
+      className="bg-green-600 hover:bg-green-700 text-white font-medium py-0.5 px-2 h-6 rounded text-[10px]"
       onClick={handleJoinClick}
     >
       Join Offer
@@ -1094,15 +1094,15 @@ const NetworkPage = ({
     if (totalPages <= 1) return null;
 
     return (
-      <div className="flex justify-center items-center mt-4 space-x-1">
+      <div className="flex justify-center items-center mt-3 space-x-1">
         <Button
           onClick={() => paginate(currentPage - 1)}
           disabled={currentPage === 1}
           variant="outline"
           size="sm"
-          className="flex items-center gap-1 bg-gray-800 text-white border-gray-700 h-7 px-2 text-xs"
+          className="flex items-center gap-1 bg-gray-800 text-white border-gray-700 h-6 px-1 text-[10px]"
         >
-          <ChevronLeft className="w-3 h-3" />
+          <ChevronLeft className="w-2.5 h-2.5" />
           Prev
         </Button>
         
@@ -1124,7 +1124,7 @@ const NetworkPage = ({
               onClick={() => paginate(pageNum)}
               variant={currentPage === pageNum ? "default" : "outline"}
               size="sm"
-              className={`h-7 px-2 min-w-[2rem] text-xs ${currentPage === pageNum ? "bg-blue-600 text-white" : "bg-gray-800 text-white border-gray-700"}`}
+              className={`h-6 px-1 min-w-[1.5rem] text-[10px] ${currentPage === pageNum ? "bg-blue-600 text-white" : "bg-gray-800 text-white border-gray-700"}`}
             >
               {pageNum}
             </Button>
@@ -1132,7 +1132,7 @@ const NetworkPage = ({
         })}
         
         {totalPages > 5 && currentPage < totalPages - 2 && (
-          <span className="text-gray-400 text-xs">...</span>
+          <span className="text-gray-400 text-[10px]">...</span>
         )}
         
         {totalPages > 5 && currentPage < totalPages - 2 && (
@@ -1140,7 +1140,7 @@ const NetworkPage = ({
             onClick={() => paginate(totalPages)}
             variant="outline"
             size="sm"
-            className="bg-gray-800 text-white border-gray-700 h-7 px-2 text-xs"
+            className="bg-gray-800 text-white border-gray-700 h-6 px-1 text-[10px]"
           >
             {totalPages}
           </Button>
@@ -1151,10 +1151,10 @@ const NetworkPage = ({
           disabled={currentPage === totalPages}
           variant="outline"
           size="sm"
-          className="flex items-center gap-1 bg-gray-800 text-white border-gray-700 h-7 px-2 text-xs"
+          className="flex items-center gap-1 bg-gray-800 text-white border-gray-700 h-6 px-1 text-[10px]"
         >
           Next
-          <ChevronRight className="w-3 h-3" />
+          <ChevronRight className="w-2.5 h-2.5" />
         </Button>
       </div>
     );
@@ -1163,37 +1163,37 @@ const NetworkPage = ({
   return (
     <div className="min-h-screen text-white bg-cover bg-center">
       {/* Back Button */}
-      <div className="bg-gray-900 border-b border-gray-700 px-3 py-2">
+      <div className="bg-gray-900 border-b border-gray-700 px-2 py-1">
         <Button
           onClick={onBack}
           variant="outline"
-          className="flex items-center gap-2 bg-gray-800 text-white border-gray-700 hover:bg-gray-700 h-7 text-xs"
+          className="flex items-center gap-1 bg-gray-800 text-white border-gray-700 hover:bg-gray-700 h-6 text-[10px]"
         >
-          <ArrowLeft className="w-3 h-3" />
+          <ArrowLeft className="w-2.5 h-2.5" />
           Back to All Networks
         </Button>
       </div>
 
       {/* Network Header */}
-      <div className="bg-gray-900/80 backdrop-blur-sm border-b border-gray-700 px-3 py-4">
+      <div className="bg-gray-900/80 backdrop-blur-sm border-b border-gray-700 px-2 py-2">
         <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
             <img
-              src={network.logo_url || `https://placehold.co/80x80/333333/666666?text=${network.name.charAt(0)}`}
+              src={network.logo_url || `https://placehold.co/60x60/333333/666666?text=${network.name.charAt(0)}`}
               alt={network.name}
-              className="w-12 h-12 rounded-lg object-cover"
+              className="w-8 h-8 rounded object-cover"
             />
             <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <h1 className="text-xl font-bold text-white">{network.name}</h1>
+              <div className="flex items-center gap-1 mb-0.5">
+                <h1 className="text-lg font-bold text-white">{network.name}</h1>
                 {network.rating && (
-                  <StarRating rating={network.rating} totalRatings={network.total_ratings} size={14} />
+                  <StarRating rating={network.rating} totalRatings={network.total_ratings} size={12} />
                 )}
               </div>
               
-              <p className="text-gray-300 mb-2 text-xs">{network.description || "No description available."}</p>
+              <p className="text-gray-300 mb-1 text-[10px]">{network.description || "No description available."}</p>
               
-              <div className="flex flex-wrap gap-2 text-xs text-gray-400">
+              <div className="flex flex-wrap gap-1 text-[10px] text-gray-400">
                 {network.payment_frequency && (
                   <div>
                     <span className="font-medium text-white">Payment:</span> {network.payment_frequency}
@@ -1215,10 +1215,10 @@ const NetworkPage = ({
             {network.website_link && (
               <Button
                 onClick={() => window.location.href = network.website_link}
-                className="bg-blue-600 hover:bg-blue-700 text-white h-7 text-xs mt-2 md:mt-0"
+                className="bg-blue-600 hover:bg-blue-700 text-white h-6 text-[10px] mt-1 md:mt-0"
               >
                 Visit Website
-                <ExternalLink className="w-3 h-3 ml-1" />
+                <ExternalLink className="w-2.5 h-2.5 ml-0.5" />
               </Button>
             )}
           </div>
@@ -1226,9 +1226,9 @@ const NetworkPage = ({
       </div>
 
       {/* Network Offers */}
-      <div className="max-w-6xl mx-auto px-3 py-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
-          <h2 className="text-lg font-bold text-white">
+      <div className="max-w-6xl mx-auto px-2 py-2">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 mb-2">
+          <h2 className="text-base font-bold text-white">
             Offers from {network.name} ({sortedOffers.length})
           </h2>
           
@@ -1237,7 +1237,7 @@ const NetworkPage = ({
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="bg-gray-800 border border-gray-700 text-white text-xs rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+              className="bg-gray-800 border border-gray-700 text-white text-[10px] rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="relevance-desc">Relevance desc</option>
               <option value="time-desc">Time desc</option>
@@ -1248,40 +1248,40 @@ const NetworkPage = ({
         </div>
 
         {sortedOffers.length === 0 ? (
-          <div className="text-center py-6 text-gray-400 text-sm">
+          <div className="text-center py-4 text-gray-400 text-[10px]">
             <p>No offers available for this network.</p>
           </div>
         ) : (
           <>
-            <div className="space-y-2">
+            <div className="space-y-1">
               {currentOffers.map((offer) => (
                 <Card
                   key={offer.id}
-                  className={`p-2 w-full hover:shadow-md transition-shadow border-gray-800 cursor-pointer ${
+                  className={`p-1 w-full hover:shadow-md transition-shadow border-gray-800 cursor-pointer ${
                     offer.is_active ? "bg-gray-900 hover:bg-gray-850" : "bg-gray-800"
                   }`}
                   onClick={() => handleOfferClick(offer.id)}
                 >
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center justify-between gap-1">
                     {/* Left Side - Offer Info */}
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <div className="flex items-center gap-1 flex-1 min-w-0">
                       {offer.image_url && (
                         <img
                           src={offer.image_url}
                           alt={offer.name}
-                          className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                          className="w-6 h-6 rounded object-cover flex-shrink-0"
                         />
                       )}
                       
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1 mb-0.5">
-                          <h3 className="font-semibold text-white text-sm truncate">
+                        <div className="flex items-center gap-0.5 mb-0.5">
+                          <h3 className="font-semibold text-white text-[10px] truncate">
                             {offer.name}
                           </h3>
                           {!offer.is_active && (
                             <Badge
                               variant="secondary"
-                              className="text-[10px] bg-gray-700 text-white px-1 py-0 h-4"
+                              className="text-[8px] bg-gray-700 text-white px-0.5 py-0 h-3"
                             >
                               Inactive
                             </Badge>
@@ -1289,20 +1289,20 @@ const NetworkPage = ({
                           {offer.is_featured && (
                             <Badge
                               variant="default"
-                              className="text-[10px] bg-yellow-600 text-white px-1 py-0 h-4"
+                              className="text-[8px] bg-yellow-600 text-white px-0.5 py-0 h-3"
                             >
                               Featured
                             </Badge>
                           )}
                         </div>
                         
-                        <div className="flex flex-wrap gap-0.5 mb-1">
+                        <div className="flex flex-wrap gap-0.5 mb-0.5">
                           {/* Geo Targets - Show up to 3 */}
                           {offer.geo_targets && Array.isArray(offer.geo_targets) && offer.geo_targets.slice(0, 3).map((geo, idx) => (
                             <Badge
                               key={`geo-${idx}`}
                               variant="outline"
-                              className="text-[10px] px-1 py-0 h-3 border-gray-600 text-gray-300 bg-gray-600/10"
+                              className="text-[8px] px-0.5 py-0 h-2.5 border-gray-600 text-gray-300 bg-gray-600/10"
                             >
                               {geo}
                             </Badge>
@@ -1313,7 +1313,7 @@ const NetworkPage = ({
                             <Badge
                               key={`vertical-${idx}`}
                               variant="outline"
-                              className="text-[10px] px-1 py-0 h-3 border-green-600 text-green-300 bg-green-600/10"
+                              className="text-[8px] px-0.5 py-0 h-2.5 border-green-600 text-green-300 bg-green-600/10"
                             >
                               {vertical}
                             </Badge>
@@ -1322,24 +1322,24 @@ const NetworkPage = ({
                           {offer.type && (
                             <Badge
                               variant="outline"
-                              className="text-[10px] px-1 py-0 h-3 border-blue-600 text-blue-300 bg-blue-600/10"
+                              className="text-[8px] px-0.5 py-0 h-2.5 border-blue-600 text-blue-300 bg-blue-600/10"
                             >
                               {offer.type}
                             </Badge>
                           )}
                         </div>
                         
-                        <div className="flex items-center gap-2 text-[10px] text-gray-400">
+                        <div className="flex items-center gap-1 text-[8px] text-gray-400">
                           {offer.conversion_rate && (
-                            <div className="flex items-center gap-1">
-                              <Target size={8} />
+                            <div className="flex items-center gap-0.5">
+                              <Target size={6} />
                               <span>{offer.conversion_rate.toFixed(1)}% CR</span>
                             </div>
                           )}
 
                           {offer.last_updated && (
-                            <div className="flex items-center gap-1">
-                              <Clock size={8} />
+                            <div className="flex items-center gap-0.5">
+                              <Clock size={6} />
                               <span>Updated {new Date(offer.last_updated).toLocaleDateString()}</span>
                             </div>
                           )}
@@ -1348,16 +1348,16 @@ const NetworkPage = ({
                     </div>
 
                     {/* Right Side - Payout and Action Buttons */}
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="flex items-center gap-1 flex-shrink-0">
                       <div className="text-right">
-                        <div className="text-sm font-bold text-green-400">
+                        <div className="text-[10px] font-bold text-green-400">
                           {offer.payout_currency || "USD"} {typeof offer.payout_amount === "number"
                             ? offer.payout_amount.toFixed(2)
                             : offer.payout_amount}
                         </div>
                         
                         {offer.epc && (
-                          <div className="text-[10px] text-blue-400 mt-0.5">
+                          <div className="text-[8px] text-blue-400 mt-0.5">
                             EPC: ${offer.epc.toFixed(2)}
                           </div>
                         )}
@@ -1367,23 +1367,23 @@ const NetworkPage = ({
                         <Button
                           size="sm"
                           variant="outline"
-                          className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600 p-1 h-6 w-6"
+                          className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600 p-0.5 h-5 w-5"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleOfferClick(offer.id);
                           }}
                           title="Details"
                         >
-                          <MoreHorizontal className="w-3 h-3" />
+                          <MoreHorizontal className="w-2.5 h-2.5" />
                         </Button>
                         
                         <Button
                           size="sm"
-                          className="bg-green-600 hover:bg-green-700 text-white p-1 h-6 w-6"
+                          className="bg-green-600 hover:bg-green-700 text-white p-0.5 h-5 w-5"
                           onClick={(e) => handleJoinClick(offer, e)}
                           title="Join Offer"
                         >
-                          <ArrowUpRight className="w-3 h-3" />
+                          <ArrowUpRight className="w-2.5 h-2.5" />
                         </Button>
                       </div>
                     </div>
@@ -2326,33 +2326,33 @@ const Browse = () => {
       <div className="relative group" onClick={(e) => e.stopPropagation()}>
         <Button 
           variant="outline" 
-          className="flex items-center gap-1 px-2 py-1 bg-gray-900 border-gray-700 text-white hover:bg-gray-800 transition-colors text-xs h-7"
+          className="flex items-center gap-1 px-1 py-0.5 bg-gray-900 border-gray-700 text-white hover:bg-gray-800 transition-colors text-[10px] h-6"
         >
-          <span className="text-xs font-medium truncate max-w-[80px]">{selected || title}</span>
-          <ChevronDown className="w-3 h-3 text-white flex-shrink-0" />
+          <span className="text-[10px] font-medium truncate max-w-[60px]">{selected || title}</span>
+          <ChevronDown className="w-2.5 h-2.5 text-white flex-shrink-0" />
         </Button>
-        <div className="absolute top-full left-0 mt-1 w-48 sm:w-64 bg-gray-900 border border-gray-700 rounded-lg shadow-lg z-50 hidden group-hover:block">
-          <div className="p-2">
-            <div className="relative mb-2">
-              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
+        <div className="absolute top-full left-0 mt-0.5 w-40 sm:w-56 bg-gray-900 border border-gray-700 rounded shadow-lg z-50 hidden group-hover:block">
+          <div className="p-1">
+            <div className="relative mb-1">
+              <Search className="absolute left-1 top-1/2 transform -translate-y-1/2 text-gray-400 w-2.5 h-2.5" />
               <Input 
                 placeholder={`Search ${title.toLowerCase()}`}
-                className="pl-7 h-6 text-xs bg-gray-800 border-gray-700 text-white"
+                className="pl-6 h-5 text-[10px] bg-gray-800 border-gray-700 text-white"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="max-h-48 overflow-y-auto">
+            <div className="max-h-40 overflow-y-auto">
               {filteredOptions.map((option: string, idx: number) => (
                 <div
                   key={idx}
-                  className="flex items-center justify-between px-2 py-1 hover:bg-gray-800 cursor-pointer rounded text-xs text-white"
+                  className="flex items-center justify-between px-1 py-0.5 hover:bg-gray-800 cursor-pointer rounded text-[10px] text-white"
                   onClick={() => onSelect(option)}
                 >
-                  <label className="flex items-center gap-2 cursor-pointer w-full">
+                  <label className="flex items-center gap-1 cursor-pointer w-full">
                     <input 
                       type="checkbox" 
-                      className="w-3 h-3"
+                      className="w-2.5 h-2.5"
                       checked={selected === option}
                       readOnly
                     />
@@ -2372,26 +2372,26 @@ const Browse = () => {
       <div className="relative group" onClick={(e) => e.stopPropagation()}>
         <Button 
           variant="outline" 
-          className="flex items-center gap-1 px-2 py-1 bg-gray-900 border-gray-700 text-white hover:bg-gray-800 transition-colors text-xs h-7"
+          className="flex items-center gap-1 px-1 py-0.5 bg-gray-900 border-gray-700 text-white hover:bg-gray-800 transition-colors text-[10px] h-6"
         >
-          <span className="text-xs font-medium truncate max-w-[100px]">
+          <span className="text-[10px] font-medium truncate max-w-[80px]">
             {sortOptions.find(opt => opt.value === sortBy)?.label || "Sort By"}
           </span>
-          <ChevronDown className="w-3 h-3 text-white flex-shrink-0" />
+          <ChevronDown className="w-2.5 h-2.5 text-white flex-shrink-0" />
         </Button>
-        <div className="absolute top-full left-0 mt-1 w-40 sm:w-48 bg-gray-900 border border-gray-700 rounded-lg shadow-lg z-50 hidden group-hover:block">
-          <div className="p-2">
-            <div className="max-h-48 overflow-y-auto">
+        <div className="absolute top-full left-0 mt-0.5 w-36 sm:w-44 bg-gray-900 border border-gray-700 rounded shadow-lg z-50 hidden group-hover:block">
+          <div className="p-1">
+            <div className="max-h-40 overflow-y-auto">
               {sortOptions.map((option) => (
                 <div
                   key={option.value}
-                  className="flex items-center justify-between px-2 py-1 hover:bg-gray-800 cursor-pointer rounded text-xs text-white"
+                  className="flex items-center justify-between px-1 py-0.5 hover:bg-gray-800 cursor-pointer rounded text-[10px] text-white"
                   onClick={() => handleSortChange(option.value)}
                 >
-                  <label className="flex items-center gap-2 cursor-pointer w-full">
+                  <label className="flex items-center gap-1 cursor-pointer w-full">
                     <input 
                       type="radio" 
-                      className="w-3 h-3"
+                      className="w-2.5 h-2.5"
                       checked={sortBy === option.value}
                       readOnly
                     />
@@ -2455,7 +2455,7 @@ const Browse = () => {
       </div>
       
       {/* Top Banners - Responsive alignment */}
-      <div className="flex justify-center lg:justify-end px-2 pt-2">
+      <div className="flex justify-center lg:justify-end px-1 pt-1">
         {rotationGroupsBySection["top"].map((rotation) => (
           <BannerDisplay
             key={rotation.id}
@@ -2470,8 +2470,8 @@ const Browse = () => {
       </div>
       
       {/* Header with Filters and Global Search - Mobile Optimized */}
-      <div className="bg-gray-900 border-b border-gray-700 px-2 py-2" onClick={(e) => e.stopPropagation()}>
-        <div className="flex flex-row flex-wrap items-center gap-1 sm:gap-2">
+      <div className="bg-gray-900 border-b border-gray-700 px-1 py-1" onClick={(e) => e.stopPropagation()}>
+        <div className="flex flex-row flex-wrap items-center gap-0.5 sm:gap-1">
           <FilterDropdown 
             title="Networks" 
             options={networksOptions}
@@ -2495,11 +2495,11 @@ const Browse = () => {
           <SortDropdown />
           
           {/* Global Search Bar */}
-          <div className="relative w-full sm:w-[200px] lg:w-[350px] mt-1 sm:mt-0">
-            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
+          <div className="relative w-full sm:w-[180px] lg:w-[300px] mt-0.5 sm:mt-0">
+            <Search className="absolute left-1 top-1/2 transform -translate-y-1/2 text-gray-400 w-2.5 h-2.5" />
             <Input
               placeholder="Search networks and offers..."
-              className="pl-7 bg-gray-800 border-gray-700 text-white h-7 text-xs"
+              className="pl-6 bg-gray-800 border-gray-700 text-white h-6 text-[10px]"
               value={globalSearchTerm}
               onChange={(e) => setGlobalSearchTerm(e.target.value)}
             />
@@ -2507,19 +2507,19 @@ const Browse = () => {
         </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-2 p-2">
+      <div className="flex flex-col lg:flex-row gap-1 p-1">
         {/* Main Content Area - Centered and Extended */}
         <div className="flex-1 flex justify-center">
           <div className="w-full max-w-4xl">
             {/* Premium Quick Filter Buttons - Mobile Optimized */}
-            <div className="mb-2 flex flex-nowrap gap-1 overflow-x-auto scrollbar-hide pb-1" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-1 flex flex-nowrap gap-0.5 overflow-x-auto scrollbar-hide pb-0.5" onClick={(e) => e.stopPropagation()}>
               {quickFilterOptions.map((filter) => (
                 <button
                   key={filter}
-                  className={`text-xs px-2 py-0.5 rounded-full transition-all duration-200 ease-in-out transform hover:scale-105 whitespace-nowrap flex-shrink-0 min-w-max ${
+                  className={`text-[10px] px-1 py-0.5 rounded transition-all duration-200 ease-in-out transform hover:scale-105 whitespace-nowrap flex-shrink-0 min-w-max ${
                     selectedQuickFilter === filter 
-                      ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg" 
-                      : "bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700 hover:text-white shadow-md"
+                      ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow" 
+                      : "bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700 hover:text-white shadow-sm"
                   } font-medium tracking-wide`}
                   onClick={() => handleQuickFilterClick(filter)}
                 >
@@ -2529,14 +2529,14 @@ const Browse = () => {
             </div>
 
             {/* Offers List with Load More */}
-            <div className="space-y-2">
+            <div className="space-y-0.5">
               {/* Offer Search Input */}
               {selectedNetworkFilter && (
-                <div className="flex flex-col sm:flex-row justify-between items-center mb-1 gap-1" onClick={(e) => e.stopPropagation()}>
+                <div className="flex flex-col sm:flex-row justify-between items-center mb-0.5 gap-0.5" onClick={(e) => e.stopPropagation()}>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto px-2 py-0 h-6 text-xs"
+                    className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto px-1 py-0 h-5 text-[10px]"
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedNetworkFilter(null);
@@ -2545,10 +2545,10 @@ const Browse = () => {
                     Back to All Offers
                   </Button>
                   <div className="relative w-full sm:w-auto flex-grow">
-                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
+                    <Search className="absolute left-1 top-1/2 transform -translate-y-1/2 text-gray-400 w-2.5 h-2.5" />
                     <Input
                       placeholder={`Search offers for ${selectedNetworkFilter}...`}
-                      className="pl-7 h-6 text-xs bg-gray-800 border-gray-700 text-white w-full"
+                      className="pl-6 h-5 text-[10px] bg-gray-800 border-gray-700 text-white w-full"
                       value={offerSearchTerm}
                       onChange={(e) => setOfferSearchTerm(e.target.value)}
                     />
@@ -2557,7 +2557,7 @@ const Browse = () => {
               )}
               
               <div className="flex justify-between items-center">
-                <h2 className="text-sm font-bold text-white">
+                <h2 className="text-[10px] font-bold text-white">
                   {selectedQuickFilter === "All Offers" 
                     ? "All Offers" 
                     : selectedQuickFilter === "insurance"
@@ -2573,14 +2573,14 @@ const Browse = () => {
               </div>
 
               {loadingOffers ? (
-                <div className="text-center py-2 text-gray-400 text-xs"></div>
+                <div className="text-center py-1 text-gray-200 text-[10px]"></div>
               ) : currentOffers.length === 0 ? (
-                <div className="text-center py-2 text-gray-400 text-xs">
+                <div className="text-center py-1 text-gray- text-[10px]">
                   
                 </div>
               ) : (
                 <>
-                  {/* COMPACT OFFER CARDS - Mobile Optimized */}
+                  {/* COMPACT OFFER CARDS - Mobile Optimized - SMALLER */}
                   {currentOffers.map((offer) => {
                     const payoutAmount = typeof offer.payout_amount === 'number' 
                       ? offer.payout_amount 
@@ -2592,7 +2592,7 @@ const Browse = () => {
                     return (
                       <Card
                         key={offer.id}
-                        className={`p-2 w-full hover:shadow-md transition-shadow border-gray-800 cursor-pointer ${
+                        className={`p-0.5 w-full hover:shadow transition-shadow border-gray-800 cursor-pointer ${
                           offer.is_active ? "bg-gray-900 hover:bg-gray-850" : "bg-gray-800"
                         } max-w-full mx-auto`}
                         onClick={(e) => {
@@ -2600,29 +2600,29 @@ const Browse = () => {
                           navigate(`/offer/${offer.id}`);
                         }}
                       >
-                        <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center justify-between gap-1">
                           {/* Left Side - Network Logo and Offer Info */}
-                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <div className="flex items-center gap-1 flex-1 min-w-0">
                             <img
                               src={
                                 offer.networks?.logo_url ||
-                                `https://placehold.co/32x32/333333/666666?text=${(
+                                `https://placehold.co/24x24/333333/666666?text=${(
                                   offer.networks?.name || "N"
                                 ).charAt(0)}`
                               }
                               alt={offer.networks?.name || "Network Logo"}
-                              className="w-7 h-7 rounded-lg object-cover flex-shrink-0"
+                              className="w-4 h-4 rounded object-cover flex-shrink-0"
                             />
                             
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1 mb-0.5">
-                                <h3 className="font-semibold text-white text-xs truncate">
+                              <div className="flex items-center gap-0.5 mb-0.5">
+                                <h3 className="font-semibold text-white text-[9px] truncate">
                                   {getDisplayValue(offer.name, "Unnamed Offer")}
                                 </h3>
                                 {!offer.is_active && (
                                   <Badge
                                     variant="secondary"
-                                    className="text-[10px] bg-gray-700 text-white px-1 py-0 h-3"
+                                    className="text-[7px] bg-gray-700 text-white px-0.5 py-0 h-2"
                                   >
                                     Inactive
                                   </Badge>
@@ -2630,16 +2630,16 @@ const Browse = () => {
                                 {offer.is_featured && (
                                   <Badge
                                     variant="default"
-                                    className="text-[10px] bg-yellow-600 text-white px-1 py-0 h-3"
+                                    className="text-[7px] bg-yellow-600 text-white px-0.5 py-0 h-2"
                                   >
                                     Featured
                                   </Badge>
                                 )}
                               </div>
                               
-                              <div className="flex items-center gap-1 mb-0.5">
+                              <div className="flex items-center gap-0.5 mb-0.5">
                                 <span 
-                                  className="text-[10px] text-blue-400 cursor-pointer hover:underline font-medium truncate"
+                                  className="text-[8px] text-blue-400 cursor-pointer hover:underline font-medium truncate"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     const network = allNetworks.find(n => n.id === offer.network_id);
@@ -2656,7 +2656,7 @@ const Browse = () => {
                                   <StarRating 
                                     rating={offer.rating} 
                                     totalRatings={offer.total_ratings}
-                                    size={10}
+                                    size={7}
                                   />
                                 )}
                               </div>
@@ -2667,7 +2667,7 @@ const Browse = () => {
                                   <Badge
                                     key={`geo-${idx}`}
                                     variant="outline"
-                                    className="text-[10px] px-1 py-0 h-3 border-gray-600 text-gray-300 bg-gray-600/10"
+                                    className="text-[7px] px-0.5 py-0 h-2 border-gray-600 text-gray-300 bg-gray-600/10"
                                   >
                                     {geo}
                                   </Badge>
@@ -2678,25 +2678,25 @@ const Browse = () => {
                                   <Badge
                                     key={`vertical-${idx}`}
                                     variant="outline"
-                                    className="text-[10px] px-1 py-0 h-3 border-green-600 text-green-300 bg-green-600/10"
+                                    className="text-[7px] px-0.5 py-0 h-2 border-green-600 text-green-300 bg-green-600/10"
                                   >
                                     {vertical}
                                   </Badge>
                                 ))}
                               </div>
 
-                              <div className="flex items-center gap-1 text-[10px] text-gray-400">
+                              <div className="flex items-center gap-0.5 text-[7px] text-gray-400">
                                 {/* Additional metrics - Only show if data exists */}
                                 {offer.conversion_rate && (
-                                  <div className="flex items-center gap-1">
-                                    <Target size={8} />
+                                  <div className="flex items-center gap-0.5">
+                                    <Target size={5} />
                                     <span>{offer.conversion_rate.toFixed(1)}% CR</span>
                                   </div>
                                 )}
 
                                 {offer.last_updated && (
-                                  <div className="flex items-center gap-1">
-                                    <Clock size={8} />
+                                  <div className="flex items-center gap-0.5">
+                                    <Clock size={5} />
                                     <span>{formatRelativeTime(offer.last_updated)}</span>
                                   </div>
                                 )}
@@ -2705,24 +2705,24 @@ const Browse = () => {
                           </div>
 
                           {/* Right Side - Payout and Action Buttons */}
-                          <div className="flex items-center gap-1 flex-shrink-0">
+                          <div className="flex items-center gap-0.5 flex-shrink-0">
                             <div className="text-right">
-                              <div className="text-xs font-bold text-green-400">
+                              <div className="text-[9px] font-bold text-green-400">
                                 {getDisplayValue(offer.payout_currency, "USD")}{" "}
                                 {payoutAmount.toFixed(2)}
                               </div>
                               
                               {/* Show click count if sorting by clicks */}
                               {sortBy === "clicks" && (
-                                <div className="text-[10px] text-gray-400 mt-0.5 flex items-center gap-1 justify-end">
-                                  <Users size={8} />
+                                <div className="text-[7px] text-gray-400 mt-0.5 flex items-center gap-0.5 justify-end">
+                                  <Users size={5} />
                                   {offer.click_count || 0} clicks
                                 </div>
                               )}
                               
                               {/* EPC if available */}
                               {offer.epc && (
-                                <div className="text-[10px] text-blue-400 mt-0.5">
+                                <div className="text-[7px] text-blue-400 mt-0.5">
                                   EPC: ${offer.epc.toFixed(2)}
                                 </div>
                               )}
@@ -2733,14 +2733,14 @@ const Browse = () => {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] p-1 h-5 w-5 border-blue-600"
+                                className="bg-blue-600 hover:bg-blue-700 text-white text-[7px] p-0.5 h-4 w-4 border-blue-600"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   navigate(`/offer/${offer.id}`);
                                 }}
                                 title="Details"
                               >
-                                <MoreHorizontal className="w-3 h-3" />
+                                <MoreHorizontal className="w-2 h-2" />
                               </Button>
                               
                               {/* Join Button */}
@@ -2754,11 +2754,11 @@ const Browse = () => {
                   
                   {/* Load More Button */}
                   {canLoadMore && (
-                    <div className="flex justify-center mt-4">
+                    <div className="flex justify-center mt-2">
                       <Button
                         onClick={handleLoadMore}
                         variant="outline"
-                        className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600 px-4 py-1 text-xs"
+                        className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600 px-2 py-0.5 text-[10px]"
                       >
                         Load More Offers
                       </Button>
@@ -2768,8 +2768,8 @@ const Browse = () => {
               )}
             </div>
 
-            {/* Minimal Spinner Wheel Section */}
-            <div className="bg-white rounded-lg p-3 my-4 border border-gray-300 shadow-lg">
+            {/* Minimal Spinner Wheel Section - SMALLER */}
+            <div className="bg-white rounded p-2 my-2 border border-gray-300 shadow">
               <div className="flex justify-center">
                 <SpinWheel />
               </div>
@@ -2791,8 +2791,8 @@ const Browse = () => {
         </div>
 
         {/* Right Sidebar - Networks and New Features */}
-        <div className="w-full lg:w-72 flex-shrink-0 order-last lg:order-none">
-          <div className="space-y-3">
+        <div className="w-full lg:w-64 flex-shrink-0 order-last lg:order-none">
+          <div className="space-y-2">
             {/* Top Networks of the Month */}
             <TopNetworksOfMonth networks={allNetworks} />
 
@@ -2813,29 +2813,29 @@ const Browse = () => {
             )}
             
             {/* Network Search Box */}
-            <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden">
-              <div className="p-2 border-b border-gray-700" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-gray-900 rounded border border-gray-700 overflow-hidden">
+              <div className="p-1 border-b border-gray-700" onClick={(e) => e.stopPropagation()}>
                 <div className="relative">
-                  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" />
+                  <Search className="absolute left-1 top-1/2 transform -translate-y-1/2 text-gray-400 w-2.5 h-2.5" />
                   <Input
                     placeholder="Search networks..."
-                    className="pl-7 bg-gray-800 border-gray-700 text-white h-6 text-xs"
+                    className="pl-6 bg-gray-800 border-gray-700 text-white h-5 text-[10px]"
                     value={networkSearchTerm}
                     onChange={(e) => setNetworkSearchTerm(e.target.value)}
                   />
                 </div>
               </div>
               
-              <div className="p-2 border-b border-gray-700">
-                <h2 className="font-medium text-white text-xs">All Networks</h2>
+              <div className="p-1 border-b border-gray-700">
+                <h2 className="font-medium text-white text-[10px]">All Networks</h2>
               </div>
               
-              <div className="p-2">
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-1 sm:gap-2">
+              <div className="p-1">
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-0.5 sm:gap-1">
                   {loadingNetworks ? (
-                    <div className="text-center py-2 text-gray-400 col-span-3 sm:col-span-4 text-xs">Loading networks...</div>
+                    <div className="text-center py-1 text-gray-400 col-span-3 sm:col-span-4 text-[10px]">Loading networks...</div>
                   ) : networksToDisplay.length === 0 ? (
-                    <div className="text-center py-2 text-gray-400 col-span-3 sm:col-span-4 text-xs">No networks found.</div>
+                    <div className="text-center py-1 text-gray-400 col-span-3 sm:col-span-4 text-[10px]">No networks found.</div>
                   ) : (
                     networksToDisplay.map((network) => (
                       <div
@@ -2848,12 +2848,12 @@ const Browse = () => {
                         }}
                       >
                         <img
-                          src={network.logo_url || `https://placehold.co/32x32/333333/666666?text=${network.name.charAt(0)}`}
+                          src={network.logo_url || `https://placehold.co/24x24/333333/666666?text=${network.name.charAt(0)}`}
                           alt={network.name}
-                          className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg object-cover group-hover:scale-110 transition-transform"
+                          className="w-5 h-5 sm:w-6 sm:h-6 rounded object-cover group-hover:scale-110 transition-transform"
                         />
-                        <div className="flex items-center gap-1 group-hover:underline mt-0.5">
-                          <span className="text-[10px] sm:text-xs text-white truncate w-full text-center">
+                        <div className="flex items-center gap-0.5 group-hover:underline mt-0.5">
+                          <span className="text-[8px] sm:text-[10px] text-white truncate w-full text-center">
                             {network.name}
                           </span>
                         </div>
@@ -2863,7 +2863,7 @@ const Browse = () => {
                           <StarRating 
                             rating={network.rating} 
                             totalRatings={network.total_ratings}
-                            size={8}
+                            size={6}
                           />
                         )}
                       </div>
