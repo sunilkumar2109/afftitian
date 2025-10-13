@@ -2573,9 +2573,9 @@ const Browse = () => {
               </div>
 
               {loadingOffers ? (
-                <div className="text-center py-4 text-gray-400 text-xs"></div>
+                <div className="text-center py-2 text-gray-400 text-xs"></div>
               ) : currentOffers.length === 0 ? (
-                <div className="text-center py-4 text-gray-400 text-xs">
+                <div className="text-center py-2 text-gray-400 text-xs">
                   
                 </div>
               ) : (
