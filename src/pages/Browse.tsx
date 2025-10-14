@@ -261,6 +261,7 @@ const ClaimRewardPopup = ({
         )}
         
         <form onSubmit={handleSubmit}>
+          
           <div className="grid grid-cols-2 gap-2 mb-2">
             <Input
               type="text"
@@ -2567,7 +2568,7 @@ const Browse = () => {
       <div className="flex flex-col lg:flex-row gap-1 p-1">
         {/* Main Content Area - Centered and Extended */}
         <div className="flex-1 flex justify-center">
-          <div className="w-full max-w-4xl">
+          <div className="w-full max-w-2xl">
             {/* Premium Quick Filter Buttons - Mobile Optimized */}
             <div className="mb-1 flex flex-nowrap gap-0.5 overflow-x-auto scrollbar-hide pb-0.5" onClick={(e) => e.stopPropagation()}>
               {quickFilterOptions.map((filter) => (
@@ -2637,8 +2638,9 @@ const Browse = () => {
                 </div>
               ) : (
                 <>
-                  {/* UPDATED: GRID LAYOUT FOR OFFER CARDS - Similar to second image */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {/* UPDATED: COMPACT GRID LAYOUT FOR OFFER CARDS - Single column on mobile, 3 columns on desktop */}
+                  <div className="grid grid-cols-1 gap-1.5">
+
                     {currentOffers.map((offer) => {
                       const payoutAmount = typeof offer.payout_amount === 'number' 
                         ? offer.payout_amount 
@@ -2660,77 +2662,104 @@ const Browse = () => {
                             navigate(`/offer/${offer.id}`);
                           }}
                         >
-                          <div className="p-2 flex flex-col h-full">
+                          <div className="p-1.5 flex flex-col h-full">
                             {/* Top Section: Network and Offer Info */}
-                            <div className="flex items-start gap-2 mb-2">
-                              <img
-                                src={
-                                  offer.networks?.logo_url ||
-                                  `https://placehold.co/32x32/333333/666666?text=${(
-                                    offer.networks?.name || "N"
-                                  ).charAt(0)}`
-                                }
-                                alt={offer.networks?.name || "Network Logo"}
-                                className="w-6 h-6 rounded object-cover flex-shrink-0"
-                              />
-                              
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1 mb-1">
-                                  <h3 className="font-semibold text-white text-[11px] leading-tight line-clamp-2">
-                                    {getDisplayValue(offer.name, "Unnamed Offer")}
-                                  </h3>
-                                  {!offer.is_active && (
-                                    <Badge
-                                      variant="secondary"
-                                      className="text-[7px] bg-gray-700 text-white px-1 py-0 h-3"
+                            <div className="flex items-start justify-between gap-1 mb-1">
+                              {/* Left side: logo + title + network */}
+                              <div className="flex items-start gap-1 min-w-0">
+                                <img
+                                  src={
+                                    offer.networks?.logo_url ||
+                                    `https://placehold.co/32x32/333333/666666?text=${(
+                                      offer.networks?.name || "N"
+                                    ).charAt(0)}`
+                                  }
+                                  alt={offer.networks?.name || "Network Logo"}
+                                  className="w-5 h-5 rounded object-cover flex-shrink-0"
+                                />
+
+                                <div className="flex-1 min-w-0">
+                                  {/* Offer title + badges */}
+                                  <div className="flex items-center gap-0.5 mb-0.5">
+                                    <h3 className="font-semibold text-white text-[10px] leading-tight line-clamp-2">
+                                      {getDisplayValue(offer.name, "Unnamed Offer")}
+                                    </h3>
+
+                                    {!offer.is_active && (
+                                      <Badge
+                                        variant="secondary"
+                                        className="text-[6px] bg-gray-700 text-white px-0.5 py-0 h-2.5"
+                                      >
+                                        Inactive
+                                      </Badge>
+                                    )}
+                                    {offer.is_featured && (
+                                      <Badge
+                                        variant="default"
+                                        className="text-[6px] bg-yellow-600 text-white px-0.5 py-0 h-2.5"
+                                      >
+                                        Featured
+                                      </Badge>
+                                    )}
+                                  </div>
+
+                                  {/* Network name + rating */}
+                                  <div className="flex items-center gap-0.5 mb-0.5">
+                                    <span
+                                      className="text-[8px] text-blue-400 cursor-pointer hover:underline font-medium truncate"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const network = allNetworks.find(n => n.id === offer.network_id);
+                                        if (network) handleNetworkPageClick(network);
+                                      }}
                                     >
-                                      Inactive
-                                    </Badge>
-                                  )}
-                                  {offer.is_featured && (
-                                    <Badge
-                                      variant="default"
-                                      className="text-[7px] bg-yellow-600 text-white px-1 py-0 h-3"
-                                    >
-                                      Featured
-                                    </Badge>
-                                  )}
+                                      {getDisplayValue(offer.networks?.name, "Unknown Network")}
+                                    </span>
+
+                                    {offer.rating && (
+                                      <StarRating rating={offer.rating} totalRatings={offer.total_ratings} size={6} />
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Right side: Payout and Action Buttons */}
+                              <div className="flex flex-col items-end ml-2 gap-0.5">
+                                <div className="text-[10px] font-bold text-green-400 inline-flex items-center gap-0.5 whitespace-nowrap">
+                                  <span>{getDisplayValue(offer.payout_currency, "USD")}</span>
+                                  <span>{payoutAmount.toFixed(2)}</span>
                                 </div>
                                 
-                                <div className="flex items-center gap-1 mb-1">
-                                  <span 
-                                    className="text-[9px] text-blue-400 cursor-pointer hover:underline font-medium truncate"
+                                {/* Action Buttons - Three dots and Join */}
+                                <div className="flex gap-0.5">
+                                  {/* View Details Button */}
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="bg-blue-600 hover:bg-blue-700 text-white text-[8px] p-0.5 h-4 w-4 border-blue-600"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      const network = allNetworks.find(n => n.id === offer.network_id);
-                                      if (network) {
-                                        handleNetworkPageClick(network);
-                                      }
+                                      navigate(`/offer/${offer.id}`);
                                     }}
+                                    title="Details"
                                   >
-                                    {getDisplayValue(offer.networks?.name, "Unknown Network")}
-                                  </span>
+                                    <MoreHorizontal className="w-2 h-2" />
+                                  </Button>
                                   
-                                  {/* Rating Display */}
-                                  {offer.rating && (
-                                    <StarRating 
-                                      rating={offer.rating} 
-                                      totalRatings={offer.total_ratings}
-                                      size={8}
-                                    />
-                                  )}
+                                  {/* Join Button */}
+                                  <JoinButton offer={offer} network={offer.networks} variant="compact" />
                                 </div>
                               </div>
                             </div>
                             
                             {/* Middle Section: Tags and Info */}
-                            <div className="flex flex-wrap gap-1 mb-2">
+                            <div className="flex flex-wrap gap-0.5 mb-1">
                               {/* Geo Targets */}
                               {geoTargets.slice(0, 2).map((geo, idx) => (
                                 <Badge
                                   key={`geo-${idx}`}
                                   variant="outline"
-                                  className="text-[7px] px-1 py-0 h-3 border-gray-500 text-gray-300 bg-gray-600/10"
+                                  className="text-[6px] px-0.5 py-0 h-2.5 border-gray-500 text-gray-300 bg-gray-600/10"
                                 >
                                   {geo}
                                 </Badge>
@@ -2741,7 +2770,7 @@ const Browse = () => {
                                 <Badge
                                   key={`vertical-${idx}`}
                                   variant="outline"
-                                  className="text-[7px] px-1 py-0 h-3 border-green-500 text-green-300 bg-green-600/10"
+                                  className="text-[6px] px-0.5 py-0 h-2.5 border-green-500 text-green-300 bg-green-600/10"
                                 >
                                   {vertical}
                                 </Badge>
@@ -2751,48 +2780,11 @@ const Browse = () => {
                               {offer.type && (
                                 <Badge
                                   variant="outline"
-                                  className="text-[7px] px-1 py-0 h-3 border-blue-500 text-blue-300 bg-blue-600/10"
+                                  className="text-[6px] px-0.5 py-0 h-2.5 border-blue-500 text-blue-300 bg-blue-600/10"
                                 >
                                   {offer.type}
                                 </Badge>
                               )}
-                            </div>
-                            
-                            {/* Bottom Section: Payout and Actions */}
-                            <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-700">
-                              <div className="text-left">
-                                <div className="text-[12px] font-bold text-green-400">
-                                  {getDisplayValue(offer.payout_currency, "USD")}{" "}
-                                  {payoutAmount.toFixed(2)}
-                                </div>
-                                
-                                {/* Show click count if sorting by clicks */}
-                                {sortBy === "clicks" && (
-                                  <div className="text-[8px] text-gray-400 mt-0.5 flex items-center gap-0.5">
-                                    <Users size={6} />
-                                    {offer.click_count || 0} clicks
-                                  </div>
-                                )}
-                              </div>
-                              
-                              <div className="flex gap-1">
-                                {/* View Details Button */}
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="bg-blue-600 hover:bg-blue-700 text-white text-[8px] p-1 h-5 w-5 border-blue-600"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigate(`/offer/${offer.id}`);
-                                  }}
-                                  title="Details"
-                                >
-                                  <MoreHorizontal className="w-2.5 h-2.5" />
-                                </Button>
-                                
-                                {/* Join Button */}
-                                <JoinButton offer={offer} network={offer.networks} variant="compact" />
-                              </div>
                             </div>
                           </div>
                         </Card>
