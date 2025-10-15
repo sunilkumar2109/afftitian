@@ -9,6 +9,7 @@ import { ChevronDown, Search, ChevronLeft, ChevronRight, ExternalLink, Star, Use
 import { useToast } from "@/hooks/use-toast";
 import Footer from "@/components/Footer";
 import TopBar from "@/components/TopBar";
+import StorySection from "@/components/StorySection";
 
 interface Network {
   id: string;
@@ -656,7 +657,8 @@ const TopNetworksOfMonth = ({ networks }: { networks: Network[] }) => {
         <h3 className="text-white font-bold text-xs">Top Networks This Month</h3>
       </div>
       
-      <div className="space-y-1">
+      <div className="space-y-[2px]">
+
         {topNetworks.map((network, index) => (
           <div key={network.id} className="flex items-center gap-1 p-1 bg-black/30 rounded">
             <div className="flex items-center justify-center w-4 h-4 bg-yellow-500 rounded-full text-black text-[10px] font-bold">
@@ -1315,19 +1317,21 @@ const NetworkPage = ({
               {currentOffers.map((offer) => (
                 <Card
                   key={offer.id}
-                  className={`p-1 w-full hover:shadow-md transition-shadow border-gray-800 cursor-pointer ${
+                 className={`p-0.5 w-full hover:shadow-md transition-shadow border-gray-800 cursor-pointer ${
+
                     offer.is_active ? "bg-gray-900 hover:bg-gray-850" : "bg-gray-800"
                   }`}
                   onClick={() => handleOfferClick(offer.id)}
                 >
-                  <div className="flex items-center justify-between gap-1">
+                  <div className="flex items-center justify-between gap-[2px]">
+
                     {/* Left Side - Offer Info */}
                     <div className="flex items-center gap-1 flex-1 min-w-0">
                       {offer.image_url && (
                         <img
                           src={offer.image_url}
                           alt={offer.name}
-                          className="w-6 h-6 rounded object-cover flex-shrink-0"
+                          className="w-3 h-3 rounded object-cover flex-shrink-0"
                         />
                       )}
                       
@@ -1354,7 +1358,8 @@ const NetworkPage = ({
                           )}
                         </div>
                         
-                        <div className="flex flex-wrap gap-0.5 mb-0.5">
+                        <div className="flex flex-wrap gap-[1px] mb-0">
+
                           {/* Geo Targets - Show up to 3 */}
                           {offer.geo_targets && Array.isArray(offer.geo_targets) && offer.geo_targets.slice(0, 3).map((geo, idx) => (
                             <Badge
@@ -1985,6 +1990,7 @@ const Browse = () => {
       default:
         // For any other filter, do a general search
         return searchableText.includes(normalizedFilter);
+        <StorySection />
     }
   };
 
@@ -2489,11 +2495,14 @@ const Browse = () => {
         <TopBar />
         {/* Logo positioned in top left corner */}
         <div className="absolute top-12 left-2 sm:top-16 sm:left-8 z-50">
+          
+
           <img 
             src="https://pepeleads.com/uploads/1756199032-7299397.png"
             alt="AffiTitans Logo" 
             className="h-6 sm:h-10 w-auto object-contain"
           />
+          
         </div>
       </div>
       
@@ -2582,12 +2591,15 @@ const Browse = () => {
                   onClick={() => handleQuickFilterClick(filter)}
                 >
                   {filter}
+                  
                 </button>
               ))}
             </div>
 
             {/* Offers List with Load More */}
-            <div className="space-y-0.5">
+            {/* Story Section - Added above offers */}
+      <StorySection />
+      <div className="space-y-0.5">
               {/* Offer Search Input */}
               {selectedNetworkFilter && (
                 <div className="flex flex-col sm:flex-row justify-between items-center mb-0.5 gap-0.5" onClick={(e) => e.stopPropagation()}>
@@ -2723,12 +2735,27 @@ const Browse = () => {
                                 </div>
                               </div>
 
-                              {/* Right side: Payout and Action Buttons */}
+                              {/* Right side: Payout, Geo Tags, and Action Buttons */}
                               <div className="flex flex-col items-end ml-2 gap-0.5">
                                 <div className="text-[10px] font-bold text-green-400 inline-flex items-center gap-0.5 whitespace-nowrap">
                                   <span>{getDisplayValue(offer.payout_currency, "USD")}</span>
                                   <span>{payoutAmount.toFixed(2)}</span>
                                 </div>
+                                
+                                {/* Geo Targets - Show up to 3 beside payout */}
+                                {geoTargets.length > 0 && (
+                                  <div className="flex flex-wrap gap-0.5 justify-end">
+                                    {geoTargets.slice(0, 3).map((geo, idx) => (
+                                      <Badge
+                                        key={`geo-${idx}`}
+                                        variant="outline"
+                                        className="text-[6px] px-0.5 py-0 h-2.5 border-gray-500 text-gray-300 bg-gray-600/10"
+                                      >
+                                        {geo}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                )}
                                 
                                 {/* Action Buttons - Three dots and Join */}
                                 <div className="flex gap-0.5">
@@ -2752,19 +2779,8 @@ const Browse = () => {
                               </div>
                             </div>
                             
-                            {/* Middle Section: Tags and Info */}
+                            {/* Middle Section: Vertical Tags and Info */}
                             <div className="flex flex-wrap gap-0.5 mb-1">
-                              {/* Geo Targets */}
-                              {geoTargets.slice(0, 2).map((geo, idx) => (
-                                <Badge
-                                  key={`geo-${idx}`}
-                                  variant="outline"
-                                  className="text-[6px] px-0.5 py-0 h-2.5 border-gray-500 text-gray-300 bg-gray-600/10"
-                                >
-                                  {geo}
-                                </Badge>
-                              ))}
-                              
                               {/* Vertical Tags */}
                               {verticals.slice(0, 2).map((vertical, idx) => (
                                 <Badge
@@ -2793,8 +2809,10 @@ const Browse = () => {
                   </div>
                   
                   {/* Load More Button */}
+                  
                   {canLoadMore && (
                     <div className="flex justify-center mt-4">
+                    
                       <Button
                         onClick={handleLoadMore}
                         variant="outline"
