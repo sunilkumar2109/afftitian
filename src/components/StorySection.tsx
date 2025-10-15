@@ -183,7 +183,7 @@ export default function StorySection() {
       {/* Main Story Section - For Browse Page */}
       <div className="bg-gradient-to-br from-amber-900 to-orange-800 rounded-lg border border-amber-400 shadow-lg p-3 mb-3">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-yellow-400 font-semibold text-sm">24H Stories</h2>
+          <h2 className="text-yellow-400 font-semibold text-sm">Stories</h2>
           
           {/* Login/Upload Section */}
           <div className="flex items-center gap-2">
