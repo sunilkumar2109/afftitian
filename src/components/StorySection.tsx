@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 
 interface Story {
   id: string;
@@ -181,9 +181,13 @@ export default function StorySection() {
   return (
     <>
       {/* Main Story Section - For Browse Page */}
-      <div className="bg-gradient-to-br from-amber-900 to-orange-800 rounded-lg border border-amber-400 shadow-lg p-3 mb-3">
+      <div className="bg-gradient-to-br from-amber-800 to-orange-700 rounded-lg border border-amber-500 shadow-lg p-3 mb-4">
+        {/* Header */}
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-yellow-400 font-semibold text-sm">Stories</h2>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+            <h2 className="text-yellow-300 font-bold text-sm"> STORIES</h2>
+          </div>
           
           {/* Login/Upload Section */}
           <div className="flex items-center gap-2">
@@ -193,26 +197,26 @@ export default function StorySection() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  className="p-1 rounded border text-black text-[10px] w-28"
+                  placeholder="email@example.com"
+                  className="p-1.5 rounded border border-gray-300 text-black text-xs w-32 focus:outline-none focus:ring-1 focus:ring-yellow-400"
                 />
                 <Button
                   onClick={sendMagicLink}
                   disabled={sendingMagic}
-                  className="bg-yellow-500 text-black hover:bg-yellow-600 text-[10px] h-6"
+                  className="bg-yellow-500 hover:bg-yellow-600 text-black text-xs h-7 px-2 font-medium"
                 >
                   {sendingMagic ? "Sending..." : "Login"}
                 </Button>
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <span className="text-yellow-300 text-[10px]">Hi, {user.email?.split('@')[0]}</span>
+                <span className="text-yellow-200 text-xs font-medium">Hi, {user.email?.split('@')[0]}</span>
                 <Button
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-6 h-6 bg-yellow-400 hover:bg-yellow-500 text-black rounded-full p-0"
+                  className="w-7 h-7 bg-yellow-400 hover:bg-yellow-500 text-black rounded-full p-0 shadow-md"
                   title="Add Story"
                 >
-                  <Plus size={12} />
+                  <Plus size={14} />
                 </Button>
                 <input
                   type="file"
@@ -232,124 +236,201 @@ export default function StorySection() {
 
         {/* Upload Form */}
         {showUploadQuestions && (
-          <div className="p-2 bg-white/90 text-black rounded-lg shadow-md mb-3">
-            <h3 className="font-semibold mb-2 text-[10px]">Story Upload — Offer Details</h3>
-
-            <input
-              className="w-full mb-1 p-1 border rounded text-[10px]"
-              placeholder="Offer title"
-              value={offerTitle}
-              onChange={(e) => setOfferTitle(e.target.value)}
-            />
-            <input
-              className="w-full mb-1 p-1 border rounded text-[10px]"
-              placeholder="Offer / tracking link"
-              value={offerLink}
-              onChange={(e) => setOfferLink(e.target.value)}
-            />
-            <input
-              className="w-full mb-1 p-1 border rounded text-[10px]"
-              placeholder="Payout (optional)"
-              value={payout}
-              onChange={(e) => setPayout(e.target.value)}
-            />
-            <textarea
-              className="w-full mb-1 p-1 border rounded text-[10px]"
-              placeholder="Message (optional)"
-              rows={2}
-              value={questionText}
-              onChange={(e) => setQuestionText(e.target.value)}
-            />
-
-            <div className="flex gap-1">
-              <Button onClick={handleUpload} className="bg-green-600 text-white text-[10px] h-6">
-                {loading ? "Uploading..." : "Upload"}
+          <div className="p-3 bg-white/95 text-black rounded-lg shadow-md mb-3 border border-yellow-400">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-bold text-xs text-gray-800">UPLOAD STORY</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowUploadQuestions(false)}
+                className="h-5 w-5 p-0 hover:bg-gray-200"
+              >
+                <X size={12} />
               </Button>
-              <Button variant="ghost" onClick={() => setShowUploadQuestions(false)} className="text-[10px] h-6">
-                Cancel
-              </Button>
+            </div>
+
+            <div className="space-y-2">
+              <input
+                className="w-full p-2 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                placeholder="Offer title *"
+                value={offerTitle}
+                onChange={(e) => setOfferTitle(e.target.value)}
+              />
+              <input
+                className="w-full p-2 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                placeholder="Offer / tracking link *"
+                value={offerLink}
+                onChange={(e) => setOfferLink(e.target.value)}
+              />
+              <input
+                className="w-full p-2 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                placeholder="Payout (optional)"
+                value={payout}
+                onChange={(e) => setPayout(e.target.value)}
+              />
+              <textarea
+                className="w-full p-2 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                placeholder="Message (optional)"
+                rows={2}
+                value={questionText}
+                onChange={(e) => setQuestionText(e.target.value)}
+              />
+
+              <div className="flex gap-2 pt-1">
+                <Button 
+                  onClick={handleUpload} 
+                  disabled={loading}
+                  className="bg-green-600 hover:bg-green-700 text-white text-xs h-7 px-3 flex-1 font-medium"
+                >
+                  {loading ? "Uploading..." : "📤 Upload Story"}
+                </Button>
+              </div>
             </div>
           </div>
         )}
 
         {/* STORY LIST */}
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
           {stories.length === 0 ? (
-            <p className="text-[10px] text-gray-300 text-center w-full py-2">
-              No stories yet. Be the first to upload!
-            </p>
+            <div className="flex flex-col items-center justify-center w-full py-4">
+              <div className="w-12 h-12 rounded-full bg-amber-700 border border-amber-500 flex items-center justify-center mb-2">
+                <Plus size={20} className="text-yellow-300" />
+              </div>
+              <p className="text-xs text-amber-200 text-center">
+                No active stories<br />
+                <span className="text-amber-300">Be the first to upload!</span>
+              </p>
+            </div>
           ) : (
             stories.map((story, idx) => (
               <div
                 key={story.id}
-                className="flex flex-col items-center cursor-pointer min-w-[60px]"
+                className="flex flex-col items-center cursor-pointer min-w-[70px] group"
                 onClick={() => setOpenIndex(idx)}
               >
-                <div className="w-12 h-12 rounded-full border-2 border-yellow-500 overflow-hidden shadow-md">
-                  {isVideoFile(story.media_url) ? (
-                    <video src={story.media_url} className="w-full h-full object-cover" muted />
-                  ) : (
-                    <img src={story.media_url} className="w-full h-full object-cover" />
-                  )}
+                <div className="relative">
+                  <div className="w-14 h-14 rounded-full border-2 border-yellow-400 overflow-hidden shadow-lg group-hover:border-yellow-300 group-hover:scale-105 transition-all duration-200">
+                    {isVideoFile(story.media_url) ? (
+                      <video 
+                        src={story.media_url} 
+                        className="w-full h-full object-cover" 
+                        muted 
+                        preload="metadata"
+                      />
+                    ) : (
+                      <img 
+                        src={story.media_url} 
+                        className="w-full h-full object-cover" 
+                        alt={story.title || "Story"}
+                        loading="lazy"
+                      />
+                    )}
+                  </div>
+                  {/* Online indicator */}
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-amber-800"></div>
                 </div>
-                <p className="text-[8px] text-white mt-1 truncate w-[55px] text-center">
-                  {story.username?.split('@')[0]}
+                <p className="text-[9px] text-yellow-200 mt-2 truncate w-[65px] text-center font-medium">
+                  {story.username?.split('@')[0] || "User"}
                 </p>
+                {story.payout && (
+                  <div className="text-[8px] bg-green-600 text-white px-1.5 py-0.5 rounded-full mt-1 font-bold">
+                    ${story.payout}
+                  </div>
+                )}
               </div>
             ))
           )}
         </div>
       </div>
 
-      {/* STORY VIEWER */}
+      {/* STORY VIEWER MODAL */}
       {openIndex !== null && stories[openIndex] && (
         <div
-          className="fixed inset-0 bg-black/90 flex items-center justify-center z-[999] p-4"
+          className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4"
           onClick={() => setOpenIndex(null)}
         >
-          <div className="relative w-full max-w-xs sm:max-w-md rounded-lg overflow-hidden">
+          <div className="relative w-full max-w-md rounded-xl overflow-hidden bg-white shadow-2xl">
+            {/* Close button */}
+            <button
+              onClick={() => setOpenIndex(null)}
+              className="absolute top-3 right-3 z-10 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70 transition-colors"
+            >
+              <X size={16} />
+            </button>
+
+            {/* Media content */}
             {isVideoFile(stories[openIndex].media_url) ? (
-              <video src={stories[openIndex].media_url} className="w-full rounded-lg" autoPlay controls />
+              <video 
+                src={stories[openIndex].media_url} 
+                className="w-full h-auto max-h-[70vh] object-contain" 
+                autoPlay 
+                controls 
+                playsInline
+              />
             ) : (
-              <img src={stories[openIndex].media_url} className="w-full rounded-lg" />
+              <img 
+                src={stories[openIndex].media_url} 
+                className="w-full h-auto max-h-[70vh] object-contain" 
+                alt={stories[openIndex].title || "Story"}
+              />
             )}
 
-            <div className="absolute left-4 top-4 bg-black/50 px-3 py-1 rounded text-white">
-              <div className="font-semibold text-sm">{stories[openIndex].title}</div>
-              {stories[openIndex].payout && (
-                <div className="text-xs">{stories[openIndex].payout}</div>
-              )}
-            </div>
-
-            {stories[openIndex].offer_link && (
-              <div className="absolute bottom-4 left-0 right-0 flex justify-center">
-                <button
-                  className="bg-green-500 text-white px-4 py-2 rounded shadow"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const link = stories[openIndex].offer_link!;
-                    supabase
-                      .from("stories")
-                      .update({ clicks: (stories[openIndex].clicks || 0) + 1 })
-                      .eq("id", stories[openIndex].id)
-                      .then(() => {});
-                    window.open(link, "_blank");
-                  }}
-                >
-                  Visit Offer
-                </button>
+            {/* Story info overlay */}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+              <div className="text-white">
+                <div className="font-bold text-lg mb-1">{stories[openIndex].title}</div>
+                {stories[openIndex].payout && (
+                  <div className="text-yellow-300 font-semibold text-sm mb-2">
+                    Payout: {stories[openIndex].payout}
+                  </div>
+                )}
+                {stories[openIndex].question && (
+                  <div className="text-gray-200 text-sm mb-3">
+                    {stories[openIndex].question}
+                  </div>
+                )}
+                
+                {/* User info */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-yellow-500 flex items-center justify-center text-xs font-bold">
+                      {stories[openIndex].username?.charAt(0).toUpperCase() || "U"}
+                    </div>
+                    <span className="text-sm text-gray-300">
+                      {stories[openIndex].username?.split('@')[0] || "User"}
+                    </span>
+                  </div>
+                  
+                  {stories[openIndex].offer_link && (
+                    <Button
+                      className="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const link = stories[openIndex].offer_link!;
+                        supabase
+                          .from("stories")
+                          .update({ clicks: (stories[openIndex].clicks || 0) + 1 })
+                          .eq("id", stories[openIndex].id)
+                          .then(() => {});
+                        window.open(link, "_blank");
+                      }}
+                    >
+                      Visit Offer ↗
+                    </Button>
+                  )}
+                </div>
               </div>
-            )}
+            </div>
           </div>
 
-          {/* Arrows */}
+          {/* Navigation arrows */}
           {openIndex > 0 && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 setOpenIndex(openIndex - 1);
               }}
-              className="absolute left-4 text-white text-3xl sm:text-4xl"
+              className="absolute left-4 text-white text-3xl bg-black/50 hover:bg-black/70 w-10 h-10 rounded-full flex items-center justify-center transition-colors"
             >
               ‹
             </button>
@@ -360,7 +441,7 @@ export default function StorySection() {
                 e.stopPropagation();
                 setOpenIndex(openIndex + 1);
               }}
-              className="absolute right-4 text-white text-3xl sm:text-4xl"
+              className="absolute right-4 text-white text-3xl bg-black/50 hover:bg-black/70 w-10 h-10 rounded-full flex items-center justify-center transition-colors"
             >
               ›
             </button>
