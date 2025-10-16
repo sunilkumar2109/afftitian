@@ -338,7 +338,7 @@ const ClaimRewardPopup = ({
   );
 };
 
-// Minimal Spin Wheel Component - SMALLER SIZE with Offer Names
+// Minimal Spin Wheel Component - LARGER SIZE with Offer Names
 const SpinWheel = ({ offers, isOpen, onClose }: { offers: Offer[]; isOpen: boolean; onClose: () => void }) => {
   const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
@@ -541,27 +541,27 @@ const SpinWheel = ({ offers, isOpen, onClose }: { offers: Offer[]; isOpen: boole
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50 p-4">
-      <div className="bg-white rounded-lg p-4 border border-gray-300 shadow-lg max-w-sm w-full">
-        <div className="flex justify-between items-center mb-3">
-          <h3 className="text-black font-bold text-sm flex items-center gap-1">
-            <Gift className="w-4 h-4" />
+      <div className="bg-white rounded-lg p-6 border border-gray-300 shadow-lg max-w-md w-full">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-black font-bold text-lg flex items-center gap-2">
+            <Gift className="w-5 h-5" />
             Advertiser Rewards
           </h3>
           <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={onClose}
-            className="h-6 w-6 p-0"
-          >
-            ×
-          </Button>
+  variant="outline" 
+  size="sm" 
+  onClick={onClose}
+  className="h-8 w-8 p-0 bg-red-500 text-white border-red-500 hover:bg-red-600 hover:border-red-600 flex items-center justify-center"
+>
+  ×
+</Button>
         </div>
 
         <div className="flex flex-col items-center">
-          {/* Minimal Wheel Container */}
-          <div className="relative mb-3">
+          {/* LARGER Wheel Container */}
+          <div className="relative mb-4">
             <div 
-              className="w-32 h-32 rounded-full border-2 border-yellow-400 relative transition-transform duration-4000 ease-out overflow-hidden"
+              className="w-64 h-64 rounded-full border-4 border-yellow-400 relative transition-transform duration-4000 ease-out overflow-hidden"
               style={{ 
                 transform: `rotate(${rotation}deg)`,
                 background: `conic-gradient(from 0deg, ${wheelPrizes.map((prize, index) => 
@@ -570,32 +570,32 @@ const SpinWheel = ({ offers, isOpen, onClose }: { offers: Offer[]; isOpen: boole
               }}
             >
               {/* Center circle */}
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full border-2 border-yellow-400 flex items-center justify-center">
-                <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white rounded-full border-4 border-yellow-400 flex items-center justify-center">
+                <div className="w-6 h-6 bg-yellow-400 rounded-full"></div>
               </div>
               
               {/* Pointer */}
-              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1 w-4 h-5">
-                <div className="w-0 h-0 border-l-8 border-r-8 border-b-8 border-l-transparent border-r-transparent border-b-yellow-400"></div>
+              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-2 w-6 h-8">
+                <div className="w-0 h-0 border-l-12 border-r-12 border-b-12 border-l-transparent border-r-transparent border-b-yellow-400"></div>
               </div>
 
               {/* Prize Labels - Rotated to appear correctly */}
               {wheelPrizes.map((prize, index) => {
                 const angle = (index * 60 + 30) * (Math.PI / 180); // Convert to radians
-                const radius = 50; // Distance from center
+                const radius = 90; // Distance from center
                 const x = 50 + radius * Math.cos(angle);
                 const y = 50 + radius * Math.sin(angle);
                 
                 return (
                   <div
                     key={prize.id}
-                    className="absolute text-[8px] font-bold text-white text-center pointer-events-none"
+                    className="absolute text-xs font-bold text-white text-center pointer-events-none"
                     style={{
                       top: `${y}%`,
                       left: `${x}%`,
                       transform: `translate(-50%, -50%) rotate(${index * 60 + 90}deg)`,
-                      textShadow: '1px 1px 1px rgba(0,0,0,0.5)',
-                      width: '40px',
+                      textShadow: '1px 1px 2px rgba(0,0,0,0.7)',
+                      width: '70px',
                       zIndex: 10
                     }}
                   >
@@ -607,21 +607,21 @@ const SpinWheel = ({ offers, isOpen, onClose }: { offers: Offer[]; isOpen: boole
               {/* Result Overlay */}
               {showResult && wonPrize && (
                 <div
-                  className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-80 rounded-full"
+                  className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-85 rounded-full"
                   style={{
                     transform: `rotate(-${rotation}deg)`,
                     transition: 'transform 0.5s ease-out',
                   }}
                 >
-                  <div className="text-center text-white p-2">
-                    <div className="text-yellow-400 font-bold text-sm mb-1">You Won!</div>
-                    <div className="text-white font-bold text-base">{wonPrize.name}</div>
-                    <div className="text-yellow-300 text-sm mb-2">{wonPrize.value}</div>
+                  <div className="text-center text-white p-4">
+                    <div className="text-yellow-400 font-bold text-lg mb-2">You Won!</div>
+                    <div className="text-white font-bold text-xl mb-1">{wonPrize.name}</div>
+                    <div className="text-yellow-300 text-lg mb-3">{wonPrize.value}</div>
                     <Button 
-                      className="mt-1 bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 h-6"
+                      className="mt-2 bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 h-8"
                       onClick={claimReward}
                     >
-                      Claim
+                      Claim Reward
                     </Button>
                   </div>
                 </div>
@@ -633,7 +633,7 @@ const SpinWheel = ({ offers, isOpen, onClose }: { offers: Offer[]; isOpen: boole
           <Button
             onClick={startSpinning}
             disabled={spinning}
-            className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-2 px-4 rounded text-sm"
+            className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-3 px-6 rounded text-base"
           >
             {spinning ? 'Spinning...' : 'SPIN FOR REWARDS!'}
           </Button>
@@ -2968,7 +2968,7 @@ const Browse = () => {
         <Footer />
       </div>
 
-      {/* NEW: Spin Wheel Modal */}
+      {/* NEW: LARGER Spin Wheel Modal */}
       <SpinWheel 
         offers={allOffers} 
         isOpen={showSpinWheel} 

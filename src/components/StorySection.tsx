@@ -24,12 +24,16 @@ export default function StorySection() {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<any | null>(null);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [acceptNewsletter, setAcceptNewsletter] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [sendingMagic, setSendingMagic] = useState(false);
   const [loginSuccess, setLoginSuccess] = useState(false);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
-  const [showEmailInput, setShowEmailInput] = useState(false);
+  const [showLoginForm, setShowLoginForm] = useState(false);
   const [showUploadQuestions, setShowUploadQuestions] = useState(false);
   const [offerTitle, setOfferTitle] = useState("");
   const [offerLink, setOfferLink] = useState("");
@@ -91,16 +95,35 @@ export default function StorySection() {
 
   // ----------------- LOGIN MAGIC LINK -----------------
   const sendMagicLink = async () => {
-    if (!email) return alert("Please enter your email.");
+    if (!email) return alert("Please enter your email address.");
+    if (!acceptTerms) return alert("You must accept the Terms and Privacy Policy.");
+
     setSendingMagic(true);
-    const { error } = await supabase.auth.signInWithOtp({ email });
+    const { error } = await supabase.auth.signInWithOtp({ 
+      email,
+      options: {
+        data: {
+          first_name: firstName,
+          last_name: lastName,
+          accept_newsletter: acceptNewsletter
+        }
+      }
+    });
     setSendingMagic(false);
     if (error) alert("Error: " + error.message);
     else {
-      alert("✅ Magic link sent! Check your email.");
-      setShowEmailInput(false);
-      setEmail("");
+      alert("✅ Magic link sent! Check your email to login.");
+      setShowLoginForm(false);
+      resetLoginForm();
     }
+  };
+
+  const resetLoginForm = () => {
+    setFirstName("");
+    setLastName("");
+    setEmail("");
+    setAcceptNewsletter(false);
+    setAcceptTerms(false);
   };
 
   // ----------------- UPLOAD HANDLER -----------------
@@ -195,38 +218,25 @@ export default function StorySection() {
           <div className="flex items-center gap-2">
             {!user ? (
               <>
-                {!showEmailInput ? (
+                {!showLoginForm ? (
                   <Button
-                    onClick={() => setShowEmailInput(true)}
+                    onClick={() => setShowLoginForm(true)}
                     className="bg-yellow-500 hover:bg-yellow-600 text-black text-xs h-7 px-3 font-medium"
                   >
                     Login
                   </Button>
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="email@example.com"
-                      className="p-1.5 rounded border border-gray-300 text-black text-xs w-36 focus:outline-none focus:ring-1 focus:ring-yellow-400"
-                    />
-                    <Button
-                      onClick={sendMagicLink}
-                      disabled={sendingMagic}
-                      className="bg-green-500 hover:bg-green-600 text-white text-xs h-7 px-3 font-medium"
-                    >
-                      {sendingMagic ? "Sending..." : "Send Link"}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowEmailInput(false)}
-                      className="h-5 w-5 p-0 text-yellow-300 hover:bg-yellow-700"
-                    >
-                      <X size={12} />
-                    </Button>
-                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowLoginForm(false);
+                      resetLoginForm();
+                    }}
+                    className="h-5 w-5 p-0 text-yellow-300 hover:bg-yellow-700"
+                  >
+                    <X size={12} />
+                  </Button>
                 )}
               </>
             ) : (
@@ -256,6 +266,94 @@ export default function StorySection() {
             )}
           </div>
         </div>
+
+        {/* Login/Signup Form */}
+        {showLoginForm && (
+          <div className="p-4 bg-white/95 text-black rounded-lg shadow-md mb-3 border border-yellow-400">
+            <div className="text-center mb-4">
+              <h3 className="font-bold text-lg text-gray-800">Login / Sign Up</h3>
+              <div className="text-sm text-gray-600 mt-1">Enter your details to continue</div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  className="w-full p-2 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                  placeholder="First Name (Optional)"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                />
+                <input
+                  className="w-full p-2 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                  placeholder="Last Name (Optional)"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                />
+              </div>
+              
+              <input
+                type="email"
+                className="w-full p-2 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                placeholder="Enter your email address *"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+
+              <div className="space-y-2">
+                <div className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    id="newsletter"
+                    checked={acceptNewsletter}
+                    onChange={(e) => setAcceptNewsletter(e.target.checked)}
+                    className="mt-0.5"
+                  />
+                  <label htmlFor="newsletter" className="text-xs text-gray-700">
+                    I agree to receive newsletter and special offers
+                  </label>
+                </div>
+                
+                <div className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    id="terms"
+                    checked={acceptTerms}
+                    onChange={(e) => setAcceptTerms(e.target.checked)}
+                    className="mt-0.5"
+                    required
+                  />
+                  <label htmlFor="terms" className="text-xs text-gray-700">
+                    I agree to the Terms and Privacy Policy *
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <Button
+                  onClick={sendMagicLink}
+                  disabled={sendingMagic}
+                  className="bg-green-600 hover:bg-green-700 text-white text-xs h-8 px-4 flex-1 font-medium"
+                >
+                  {sendingMagic ? "Sending..." : "Send Magic Link"}
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowLoginForm(false);
+                    resetLoginForm();
+                  }}
+                  className="bg-gray-500 hover:bg-gray-600 text-white text-xs h-8 px-4 font-medium"
+                >
+                  Cancel
+                </Button>
+              </div>
+
+              <div className="text-center text-xs text-gray-500 mt-3">
+                We'll send a magic link to your email for secure login
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Upload Form */}
         {showUploadQuestions && (
