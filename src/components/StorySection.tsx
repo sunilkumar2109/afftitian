@@ -29,6 +29,7 @@ export default function StorySection() {
   const [loginSuccess, setLoginSuccess] = useState(false);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
+  const [showEmailInput, setShowEmailInput] = useState(false);
   const [showUploadQuestions, setShowUploadQuestions] = useState(false);
   const [offerTitle, setOfferTitle] = useState("");
   const [offerLink, setOfferLink] = useState("");
@@ -95,7 +96,11 @@ export default function StorySection() {
     const { error } = await supabase.auth.signInWithOtp({ email });
     setSendingMagic(false);
     if (error) alert("Error: " + error.message);
-    else alert("✅ Magic link sent! Check your email.");
+    else {
+      alert("✅ Magic link sent! Check your email.");
+      setShowEmailInput(false);
+      setEmail("");
+    }
   };
 
   // ----------------- UPLOAD HANDLER -----------------
@@ -180,37 +185,55 @@ export default function StorySection() {
   // ----------------- UI -----------------
   return (
     <>
-      {/* Main Story Section - For Browse Page */}
       <div className="bg-gradient-to-br from-amber-800 to-orange-700 rounded-lg border border-amber-500 shadow-lg p-3 mb-4">
-        {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
-            <h2 className="text-yellow-300 font-bold text-sm"> STORIES</h2>
+            <h2 className="text-yellow-300 font-bold text-sm">STORIES</h2>
           </div>
-          
-          {/* Login/Upload Section */}
+
           <div className="flex items-center gap-2">
             {!user ? (
-              <div className="flex items-center gap-2">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="email@example.com"
-                  className="p-1.5 rounded border border-gray-300 text-black text-xs w-32 focus:outline-none focus:ring-1 focus:ring-yellow-400"
-                />
-                <Button
-                  onClick={sendMagicLink}
-                  disabled={sendingMagic}
-                  className="bg-yellow-500 hover:bg-yellow-600 text-black text-xs h-7 px-2 font-medium"
-                >
-                  {sendingMagic ? "Sending..." : "Login"}
-                </Button>
-              </div>
+              <>
+                {!showEmailInput ? (
+                  <Button
+                    onClick={() => setShowEmailInput(true)}
+                    className="bg-yellow-500 hover:bg-yellow-600 text-black text-xs h-7 px-3 font-medium"
+                  >
+                    Login
+                  </Button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="email@example.com"
+                      className="p-1.5 rounded border border-gray-300 text-black text-xs w-36 focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                    />
+                    <Button
+                      onClick={sendMagicLink}
+                      disabled={sendingMagic}
+                      className="bg-green-500 hover:bg-green-600 text-white text-xs h-7 px-3 font-medium"
+                    >
+                      {sendingMagic ? "Sending..." : "Send Link"}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowEmailInput(false)}
+                      className="h-5 w-5 p-0 text-yellow-300 hover:bg-yellow-700"
+                    >
+                      <X size={12} />
+                    </Button>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="flex items-center gap-2">
-                <span className="text-yellow-200 text-xs font-medium">Hi, {user.email?.split('@')[0]}</span>
+                <span className="text-yellow-200 text-xs font-medium">
+                  Hi, {user.email?.split("@")[0]}
+                </span>
                 <Button
                   onClick={() => fileInputRef.current?.click()}
                   className="w-7 h-7 bg-yellow-400 hover:bg-yellow-500 text-black rounded-full p-0 shadow-md"
@@ -275,10 +298,9 @@ export default function StorySection() {
                 value={questionText}
                 onChange={(e) => setQuestionText(e.target.value)}
               />
-
               <div className="flex gap-2 pt-1">
-                <Button 
-                  onClick={handleUpload} 
+                <Button
+                  onClick={handleUpload}
                   disabled={loading}
                   className="bg-green-600 hover:bg-green-700 text-white text-xs h-7 px-3 flex-1 font-medium"
                 >
@@ -311,26 +333,25 @@ export default function StorySection() {
                 <div className="relative">
                   <div className="w-14 h-14 rounded-full border-2 border-yellow-400 overflow-hidden shadow-lg group-hover:border-yellow-300 group-hover:scale-105 transition-all duration-200">
                     {isVideoFile(story.media_url) ? (
-                      <video 
-                        src={story.media_url} 
-                        className="w-full h-full object-cover" 
-                        muted 
+                      <video
+                        src={story.media_url}
+                        className="w-full h-full object-cover"
+                        muted
                         preload="metadata"
                       />
                     ) : (
-                      <img 
-                        src={story.media_url} 
-                        className="w-full h-full object-cover" 
+                      <img
+                        src={story.media_url}
+                        className="w-full h-full object-cover"
                         alt={story.title || "Story"}
                         loading="lazy"
                       />
                     )}
                   </div>
-                  {/* Online indicator */}
                   <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-amber-800"></div>
                 </div>
                 <p className="text-[9px] text-yellow-200 mt-2 truncate w-[65px] text-center font-medium">
-                  {story.username?.split('@')[0] || "User"}
+                  {story.username?.split("@")[0] || "User"}
                 </p>
                 {story.payout && (
                   <div className="text-[8px] bg-green-600 text-white px-1.5 py-0.5 rounded-full mt-1 font-bold">
@@ -350,7 +371,6 @@ export default function StorySection() {
           onClick={() => setOpenIndex(null)}
         >
           <div className="relative w-full max-w-md rounded-xl overflow-hidden bg-white shadow-2xl">
-            {/* Close button */}
             <button
               onClick={() => setOpenIndex(null)}
               className="absolute top-3 right-3 z-10 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70 transition-colors"
@@ -358,24 +378,22 @@ export default function StorySection() {
               <X size={16} />
             </button>
 
-            {/* Media content */}
             {isVideoFile(stories[openIndex].media_url) ? (
-              <video 
-                src={stories[openIndex].media_url} 
-                className="w-full h-auto max-h-[70vh] object-contain" 
-                autoPlay 
-                controls 
+              <video
+                src={stories[openIndex].media_url}
+                className="w-full h-auto max-h-[70vh] object-contain"
+                autoPlay
+                controls
                 playsInline
               />
             ) : (
-              <img 
-                src={stories[openIndex].media_url} 
-                className="w-full h-auto max-h-[70vh] object-contain" 
+              <img
+                src={stories[openIndex].media_url}
+                className="w-full h-auto max-h-[70vh] object-contain"
                 alt={stories[openIndex].title || "Story"}
               />
             )}
 
-            {/* Story info overlay */}
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
               <div className="text-white">
                 <div className="font-bold text-lg mb-1">{stories[openIndex].title}</div>
@@ -389,18 +407,17 @@ export default function StorySection() {
                     {stories[openIndex].question}
                   </div>
                 )}
-                
-                {/* User info */}
+
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full bg-yellow-500 flex items-center justify-center text-xs font-bold">
                       {stories[openIndex].username?.charAt(0).toUpperCase() || "U"}
                     </div>
                     <span className="text-sm text-gray-300">
-                      {stories[openIndex].username?.split('@')[0] || "User"}
+                      {stories[openIndex].username?.split("@")[0] || "User"}
                     </span>
                   </div>
-                  
+
                   {stories[openIndex].offer_link && (
                     <Button
                       className="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2"
@@ -423,7 +440,6 @@ export default function StorySection() {
             </div>
           </div>
 
-          {/* Navigation arrows */}
           {openIndex > 0 && (
             <button
               onClick={(e) => {
